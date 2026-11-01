@@ -39,6 +39,7 @@ import { StatsHandler } from './stats-handler.js';
 import { StorageHandler } from './storage-handler.js';
 import { Subscribers } from './subscribers.js';
 import { TicketHandler } from './ticket-handler.js';
+import { startMetrics } from '../util/metrics.js';
 
 export class Client extends DiscordClient<true> {
   public commandHandler = new CommandHandler(this, {
@@ -209,6 +210,7 @@ export class Client extends DiscordClient<true> {
   }
 
   public async init(token: string) {
+    startMetrics(this);
     await this.commandHandler.register();
     await this.listenerHandler.register();
     await this.inhibitorHandler.register();
