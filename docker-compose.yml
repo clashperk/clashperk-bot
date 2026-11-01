@@ -7,7 +7,7 @@ services:
     #   context: .
     env_file:
       - .env
-    mem_limit: 10gb
+    mem_limit: 16gb
     # Set in /etc/docker/daemon.json on the VM instead; see docs/dns-eai-again.md
     # dns:
     #   - 1.1.1.1
