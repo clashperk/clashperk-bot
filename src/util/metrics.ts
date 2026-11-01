@@ -7,6 +7,8 @@ const PUSH_INTERVAL_MS = 30_000;
 // Discord drops an interaction that isn't answered within 3 s, so the buckets cluster around it.
 const AGE_BUCKETS = [0.25, 0.5, 1, 1.5, 2, 2.5, 3, 4, 6];
 const CALLBACK_PATH = /^\/interactions\/(\d+)\/[^/]+\/callback/;
+// Interactions we never answer (e.g. debounced autocomplete keystrokes) are dropped after this.
+const TYPE_TTL_SECONDS = 30;
 
 const receivedAge = new Histogram({
   name: 'discord_interaction_age_seconds',
@@ -18,7 +20,7 @@ const receivedAge = new Histogram({
 const responseAge = new Histogram({
   name: 'discord_interaction_response_age_seconds',
   help: 'Interaction age when Discord answers our first response; outcome "unknown" means it had already expired (10062)',
-  labelNames: ['outcome'],
+  labelNames: ['type', 'outcome'],
   buckets: AGE_BUCKETS
 });
 
@@ -36,16 +38,23 @@ export function startMetrics(client: Client) {
 
   collectDefaultMetrics();
 
+  // The callback request only carries the interaction id, so keep each id's type until it is answered.
+  const types = new Map<string, string>();
+
   // Prepended so the age is taken before any other interaction listener runs.
   client.prependListener(Events.InteractionCreate, (interaction) => {
-    receivedAge.observe({ type: InteractionType[interaction.type] }, ageOf(interaction.id));
+    const type = InteractionType[interaction.type];
+    types.set(interaction.id, type);
+    receivedAge.observe({ type }, ageOf(interaction.id));
   });
 
   client.rest.on(RESTEvents.Response, (request, response) => {
     const id = request.method.toLowerCase() === 'post' && CALLBACK_PATH.exec(request.path)?.[1];
     if (!id) return;
+    const type = types.get(id) ?? 'other';
+    types.delete(id);
     const outcome = response.status < 300 ? 'ok' : response.status === 404 ? 'unknown' : 'error';
-    responseAge.observe({ outcome }, ageOf(id));
+    responseAge.observe({ type, outcome }, ageOf(id));
   });
 
   const target = new URL(url);
@@ -74,5 +83,8 @@ export function startMetrics(client: Client) {
       failing = true;
     }
   };
-  setInterval(push, PUSH_INTERVAL_MS).unref();
+  setInterval(() => {
+    for (const id of types.keys()) if (ageOf(id) > TYPE_TTL_SECONDS) types.delete(id);
+    return push();
+  }, PUSH_INTERVAL_MS).unref();
 }
