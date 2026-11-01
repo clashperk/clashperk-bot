@@ -1,6 +1,5 @@
 import * as Sentry from '@sentry/node';
 import { NodeOptions, httpIntegration, rewriteFramesIntegration } from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 
 export const sentryConfig: NodeOptions = {
   dsn: process.env.SENTRY_DSN,
@@ -8,26 +7,13 @@ export const sentryConfig: NodeOptions = {
   environment: process.env.NODE_ENV ?? 'development',
   release: process.env.GIT_SHA,
 
-  tracesSampleRate: 1.0,
-  profileSessionSampleRate: 1.0,
+  // Only command executions are traced; every other root span (DB, HTTP) would be recorded and then dropped.
+  tracesSampler: ({ attributes }) => (attributes?.['interaction.command'] ? 1 : 0),
   sendDefaultPii: true,
-  profileLifecycle: 'trace',
 
   ignoreSpans: [{ op: /^(?!command_executed)/ }],
 
-  beforeSendSpan(span) {
-    return span;
-  },
-
-  beforeSendTransaction(event) {
-    if (event.contexts?.trace?.op === 'command_executed') {
-      return event;
-    }
-    return null;
-  },
-
   integrations: [
-    nodeProfilingIntegration(),
     rewriteFramesIntegration({
       iteratee(frame) {
         if (frame.filename) {
