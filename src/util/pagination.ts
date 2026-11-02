@@ -266,9 +266,6 @@ export const handleMessagePagination = async (
 
       if (action.customId === customIds.export && action.isButton()) {
         exportButton.setDisabled(true);
-        // await message.edit({ components: [] });
-
-        // await action.deferReply({ ephemeral: client.commandHandler.isMessagingDisabled(action) });
 
         await action.deferUpdate();
 
