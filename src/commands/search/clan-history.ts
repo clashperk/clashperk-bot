@@ -9,6 +9,8 @@ import {
 } from 'discord.js';
 import moment from 'moment';
 import ms from 'ms';
+import { api, encode } from '../../api/axios.js';
+import { GlobalClanEntity } from '../../api/generated.js';
 import { Command } from '../../lib/handlers.js';
 import { EMOJIS } from '../../util/emojis.js';
 
@@ -26,34 +28,23 @@ export default class ClanHistoryCommand extends Command {
     const data = await this.client.resolver.resolvePlayer(interaction, args.tag ?? args.user?.id);
     if (!data) return;
 
-    const clans = await this.client.globalDb
-      .collection('global_clan_history')
-      .aggregate<GlobalClanHistoryEntity>([
-        {
-          $match: {
-            playerTag: data.tag
-          }
-        },
-        {
-          $lookup: {
-            from: 'global_clans',
-            localField: 'clanTag',
-            foreignField: 'tag',
-            as: 'clan'
-          }
-        },
-        {
-          $unwind: {
-            path: '$clan'
-          }
-        },
-        {
-          $sort: {
-            lastSeen: -1
-          }
-        }
-      ])
-      .toArray();
+    // The API reports the current stint as running until now; the stored lastSeen
+    // of an open stint is when it started.
+    const history = await api.players
+      .getClanHistory({ playerTag: encode(data.tag) })
+      .then(({ data }) => data.items)
+      .catch(() => null);
+    if (!history) {
+      return interaction.editReply(
+        'Clan history is unavailable right now. Please try again later.'
+      );
+    }
+
+    const clans = history.map(({ clan, firstSeen, lastSeen }) => ({
+      clan,
+      firstSeen: new Date(firstSeen),
+      lastSeen: new Date(lastSeen)
+    }));
 
     if (!clans.length) {
       return interaction.editReply(`No clan history found for **${data.name} (${data.tag})`);
@@ -137,20 +128,4 @@ export default class ClanHistoryCommand extends Command {
     }
     return `[${clan.name} (${clan.tag})](http://cprk.us/c/${clan.tag.replace('#', '')})`;
   }
-}
-
-interface ClanHistoryEntity {
-  playerTag: string;
-  clanTag: string;
-  firstSeen: Date;
-  lastSeen: Date;
-}
-
-interface GlobalClanEntity {
-  tag: string;
-  name: string;
-}
-
-interface GlobalClanHistoryEntity extends ClanHistoryEntity {
-  clan: GlobalClanEntity;
 }
