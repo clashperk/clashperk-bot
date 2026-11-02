@@ -250,12 +250,12 @@ export default class LayoutCommand extends Command {
   }
 
   private async displayLink(interaction: ButtonInteraction<'cached'>, args: LayoutCommandArgs) {
-    const updated = await this.collection.findOneAndUpdate(
-      { messageIds: interaction.message.id, guildId: interaction.guild.id },
-      { $addToSet: { downloader: interaction.user.id } },
-      { returnDocument: 'after' }
-    );
-    if (!updated)
+    const filter = { messageIds: interaction.message.id, guildId: interaction.guild.id };
+    // Only a read happens before showModal: the modal must open within Discord's 3 s window.
+    const layout = await this.collection.findOne(filter, {
+      projection: { notes: 1, label: 1, link: 1, downloader: 1 }
+    });
+    if (!layout)
       return interaction.reply({
         flags: MessageFlags.Ephemeral,
         content: 'Layout data not found.'
@@ -268,11 +268,11 @@ export default class LayoutCommand extends Command {
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
           [
-            updated.notes || `# ${updated.label}`,
+            layout.notes || `# ${layout.label}`,
             '\u200b',
             'Click the link below to copy the layout:',
             '',
-            `${updated.link}`,
+            `${layout.link}`,
             '',
             'Thank you for using ClashPerk! ❤️'
           ].join('\n')
@@ -282,10 +282,12 @@ export default class LayoutCommand extends Command {
     try {
       await interaction.showModal(modal);
 
+      await this.collection.updateOne(filter, { $addToSet: { downloader: interaction.user.id } });
+      const isNew = !layout.downloader.includes(interaction.user.id);
       const row = this.getComponents({
         ...args,
         allow_layout_tracking: true,
-        downloads: updated?.downloader?.length || 0
+        downloads: layout.downloader.length + (isNew ? 1 : 0)
       });
       await interaction.editReply({ components: [row] });
 
