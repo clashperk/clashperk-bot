@@ -8,8 +8,9 @@ import {
   User
 } from 'discord.js';
 import moment from 'moment';
-import { ObjectId } from 'mongodb';
 import ms from 'ms';
+import { api, encode } from '../../api/axios.js';
+import { GlobalClanEntity } from '../../api/generated.js';
 import { Command } from '../../lib/handlers.js';
 import { EMOJIS } from '../../util/emojis.js';
 
@@ -27,43 +28,23 @@ export default class ClanHistoryCommand extends Command {
     const data = await this.client.resolver.resolvePlayer(interaction, args.tag ?? args.user?.id);
     if (!data) return;
 
-    const [stints, player] = await Promise.all([
-      this.client.globalDb
-        .collection('global_clan_history')
-        .aggregate<GlobalClanHistoryEntity>([
-          {
-            $match: {
-              playerTag: data.tag
-            }
-          },
-          {
-            $lookup: {
-              from: 'global_clans',
-              localField: 'clanTag',
-              foreignField: 'tag',
-              as: 'clan'
-            }
-          },
-          {
-            $unwind: {
-              path: '$clan'
-            }
-          }
-        ])
-        .toArray(),
-      this.client.globalDb
-        .collection<{ trackingId?: ObjectId }>('global_players')
-        .findOne({ tag: data.tag }, { projection: { _id: 0, trackingId: 1 } })
-    ]);
+    // The API reports the current stint as running until now; the stored lastSeen
+    // of an open stint is when it started.
+    const history = await api.players
+      .getClanHistory({ playerTag: encode(data.tag) })
+      .then(({ data }) => data.items)
+      .catch(() => null);
+    if (!history) {
+      return interaction.editReply(
+        'Clan history is unavailable right now. Please try again later.'
+      );
+    }
 
-    // The global sweep writes only on change, so the current stint's lastSeen is
-    // when it started; it runs until now. The resync above isn't awaited.
-    const now = new Date();
-    const clans = stints
-      .map((stint) =>
-        player?.trackingId?.equals(stint.trackingId) ? { ...stint, lastSeen: now } : stint
-      )
-      .sort((a, b) => b.lastSeen.getTime() - a.lastSeen.getTime());
+    const clans = history.map(({ clan, firstSeen, lastSeen }) => ({
+      clan,
+      firstSeen: new Date(firstSeen),
+      lastSeen: new Date(lastSeen)
+    }));
 
     if (!clans.length) {
       return interaction.editReply(`No clan history found for **${data.name} (${data.tag})`);
@@ -147,21 +128,4 @@ export default class ClanHistoryCommand extends Command {
     }
     return `[${clan.name} (${clan.tag})](http://cprk.us/c/${clan.tag.replace('#', '')})`;
   }
-}
-
-interface ClanHistoryEntity {
-  playerTag: string;
-  trackingId: ObjectId;
-  clanTag: string;
-  firstSeen: Date;
-  lastSeen: Date;
-}
-
-interface GlobalClanEntity {
-  tag: string;
-  name: string;
-}
-
-interface GlobalClanHistoryEntity extends ClanHistoryEntity {
-  clan: GlobalClanEntity;
 }
