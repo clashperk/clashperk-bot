@@ -1,6 +1,6 @@
-import { collectDefaultMetrics, Histogram, register } from '@prometheus-io/client';
+import { collectDefaultMetrics, Counter, Histogram, register } from '@prometheus-io/client';
 import { getInfo } from 'discord-hybrid-sharding';
-import { Events, InteractionType, RESTEvents, SnowflakeUtil } from 'discord.js';
+import { Events, Interaction, InteractionType, RESTEvents, SnowflakeUtil } from 'discord.js';
 import type { Client } from '../struct/client.js';
 
 const PUSH_INTERVAL_MS = 30_000;
@@ -9,6 +9,8 @@ const AGE_BUCKETS = [0.25, 0.5, 1, 1.5, 2, 2.5, 3, 4, 6];
 const CALLBACK_PATH = /^\/interactions\/(\d+)\/[^/]+\/callback/;
 // Interactions we never answer (e.g. debounced autocomplete keystrokes) are dropped after this.
 const TYPE_TTL_SECONDS = 30;
+// A command answered later than this counts as "slow": it is close to Discord's 3 s limit.
+const SLOW_SECONDS = 2;
 
 const receivedAge = new Histogram({
   name: 'discord_interaction_age_seconds',
@@ -24,6 +26,26 @@ const responseAge = new Histogram({
   buckets: AGE_BUCKETS
 });
 
+// A counter, not a histogram: a histogram per command per cluster would be tens of thousands of series.
+const commandResponses = new Counter({
+  name: 'discord_command_responses_total',
+  help: 'First responses to slash and context-menu commands; result is ok, slow (after 2 s), unknown (10062) or error',
+  labelNames: ['command', 'result']
+});
+
+/** Command name with its subcommand group and subcommand, e.g. "history clan-games"; null if not a command. */
+function commandOf(interaction: Interaction) {
+  if (interaction.isChatInputCommand()) {
+    const parts = [
+      interaction.commandName,
+      interaction.options.getSubcommandGroup(false),
+      interaction.options.getSubcommand(false)
+    ];
+    return parts.filter(Boolean).join(' ');
+  }
+  return interaction.isContextMenuCommand() ? interaction.commandName : null;
+}
+
 const ageOf = (id: string) => (Date.now() - SnowflakeUtil.timestampFrom(id)) / 1000;
 
 /** Pushes this cluster's metrics to VictoriaMetrics; off unless METRICS_PUSH_URL is set. */
@@ -38,23 +60,28 @@ export function startMetrics(client: Client) {
 
   collectDefaultMetrics();
 
-  // The callback request only carries the interaction id, so keep each id's type until it is answered.
-  const types = new Map<string, string>();
+  // The callback request only carries the interaction id, so keep each id's details until it is answered.
+  const pending = new Map<string, { type: string; command: string | null }>();
 
   // Prepended so the age is taken before any other interaction listener runs.
   client.prependListener(Events.InteractionCreate, (interaction) => {
     const type = InteractionType[interaction.type];
-    types.set(interaction.id, type);
+    pending.set(interaction.id, { type, command: commandOf(interaction) });
     receivedAge.observe({ type }, ageOf(interaction.id));
   });
 
   client.rest.on(RESTEvents.Response, (request, response) => {
     const id = request.method.toLowerCase() === 'post' && CALLBACK_PATH.exec(request.path)?.[1];
     if (!id) return;
-    const type = types.get(id) ?? 'other';
-    types.delete(id);
+    const { type, command } = pending.get(id) ?? { type: 'other', command: null };
+    pending.delete(id);
+    const age = ageOf(id);
     const outcome = response.status < 300 ? 'ok' : response.status === 404 ? 'unknown' : 'error';
-    responseAge.observe({ type, outcome }, ageOf(id));
+    responseAge.observe({ type, outcome }, age);
+    if (command) {
+      const result = outcome === 'ok' && age > SLOW_SECONDS ? 'slow' : outcome;
+      commandResponses.inc({ command, result });
+    }
   });
 
   const target = new URL(url);
@@ -84,7 +111,7 @@ export function startMetrics(client: Client) {
     }
   };
   setInterval(() => {
-    for (const id of types.keys()) if (ageOf(id) > TYPE_TTL_SECONDS) types.delete(id);
+    for (const id of pending.keys()) if (ageOf(id) > TYPE_TTL_SECONDS) pending.delete(id);
     return push();
   }, PUSH_INTERVAL_MS).unref();
 }

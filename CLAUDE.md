@@ -71,7 +71,7 @@ Log handlers (clan-log, clan-war-log, capital-log, donation-log, etc.) process g
 - **Node**: >= 20.x, Docker uses Node 22-alpine
 - **Databases**: MongoDB (replica set required), Redis, Clickhouse
 - **Monitoring**: Sentry for errors, PostHog + Mixpanel for analytics
-- **Metrics** (`src/util/metrics.ts`): each cluster pushes Node defaults plus `discord_interaction_age_seconds` (age when received) and `discord_interaction_response_age_seconds{type,outcome}` (age when Discord answers our first response; `outcome="unknown"` is a 10062) to VictoriaMetrics every 30s, with `job=bot` and `cluster=<id>`. Off unless `METRICS_PUSH_URL` is set; then `METRICS_PUSH_USER` / `METRICS_PUSH_PASSWORD` are required.
+- **Metrics** (`src/util/metrics.ts`): each cluster pushes Node defaults plus `discord_interaction_age_seconds` (age when received) and `discord_interaction_response_age_seconds{type,outcome}` (age when Discord answers our first response; `outcome="unknown"` is a 10062) and `discord_command_responses_total{command,result}` (per slash/context command: `ok`, `slow` after 2 s, `unknown`, `error`; a counter to keep series low) to VictoriaMetrics every 30s, with `job=bot` and `cluster=<id>`. Off unless `METRICS_PUSH_URL` is set; then `METRICS_PUSH_USER` / `METRICS_PUSH_PASSWORD` are required.
 
 ## Rules
 
