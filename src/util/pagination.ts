@@ -21,6 +21,18 @@ import { EMOJIS } from './emojis.js';
 const NEXT = '➡️';
 const PREV = '⬅️';
 
+// An expired interaction or deleted message must not become an unhandled rejection.
+function logFailures<T extends unknown[]>(
+  label: string,
+  listener: (...args: T) => Promise<unknown>
+) {
+  return (...args: T) => {
+    listener(...args).catch((error: Error) => {
+      container.resolve(Client).logger.error(`${label} ~ ${error.message}`, { label: 'COLLECTOR' });
+    });
+  };
+}
+
 export function dynamicPagination(
   interaction: CommandInteraction<'cached'>,
   embeds: EmbedBuilder[],
@@ -138,34 +150,40 @@ export const handlePagination = async (
     time: 10 * 60 * 1000
   });
 
-  collector.on('collect', async (action) => {
-    if (action.customId === customIds.next) {
-      index++;
-      if (index >= embeds.length) index = 0;
-      indexButton.setLabel(`${index + 1}/${embeds.length}`);
-      await action.update({ embeds: [embeds[index]], components: [row] });
-    }
+  collector.on(
+    'collect',
+    logFailures('pagination', async (action: MessageComponentInteraction<'cached'>) => {
+      if (action.customId === customIds.next) {
+        index++;
+        if (index >= embeds.length) index = 0;
+        indexButton.setLabel(`${index + 1}/${embeds.length}`);
+        await action.update({ embeds: [embeds[index]], components: [row] });
+      }
 
-    if (action.customId === customIds.prev) {
-      index--;
-      if (index < 0) index = embeds.length - 1;
-      indexButton.setLabel(`${index + 1}/${embeds.length}`);
-      await action.update({ embeds: [embeds[index]], components: [row] });
-    }
+      if (action.customId === customIds.prev) {
+        index--;
+        if (index < 0) index = embeds.length - 1;
+        indexButton.setLabel(`${index + 1}/${embeds.length}`);
+        await action.update({ embeds: [embeds[index]], components: [row] });
+      }
 
-    if (action.customId === customIds.export && action.isButton()) {
-      exportButton.setDisabled(true);
-      await interaction.editReply({ components: [row] });
+      if (action.customId === customIds.export && action.isButton()) {
+        exportButton.setDisabled(true);
+        await interaction.editReply({ components: [row] });
 
-      await action.deferReply({});
-      await onExport?.(action);
-    }
-  });
+        await action.deferReply({});
+        await onExport?.(action);
+      }
+    })
+  );
 
-  collector.on('end', async (_, reason) => {
-    Object.values(customIds).forEach((id) => client.components.delete(id));
-    if (!/delete/i.test(reason)) await interaction.editReply({ components: [] });
-  });
+  collector.on(
+    'end',
+    logFailures('pagination end', async (_, reason: string) => {
+      Object.values(customIds).forEach((id) => client.components.delete(id));
+      if (!/delete/i.test(reason)) await interaction.editReply({ components: [] });
+    })
+  );
 
   return row;
 };
@@ -229,37 +247,43 @@ export const handleMessagePagination = async (
     time: 10 * 60 * 1000
   });
 
-  collector.on('collect', async (action: ButtonInteraction<'cached'>) => {
-    if (action.customId === customIds.next) {
-      index++;
-      if (index >= embeds.length) index = 0;
-      indexButton.setLabel(`${index + 1}/${embeds.length}`);
-      await action.update({ embeds: [embeds[index]], components: [row] });
-    }
+  collector.on(
+    'collect',
+    logFailures('message pagination', async (action: ButtonInteraction<'cached'>) => {
+      if (action.customId === customIds.next) {
+        index++;
+        if (index >= embeds.length) index = 0;
+        indexButton.setLabel(`${index + 1}/${embeds.length}`);
+        await action.update({ embeds: [embeds[index]], components: [row] });
+      }
 
-    if (action.customId === customIds.prev) {
-      index--;
-      if (index < 0) index = embeds.length - 1;
-      indexButton.setLabel(`${index + 1}/${embeds.length}`);
-      await action.update({ embeds: [embeds[index]], components: [row] });
-    }
+      if (action.customId === customIds.prev) {
+        index--;
+        if (index < 0) index = embeds.length - 1;
+        indexButton.setLabel(`${index + 1}/${embeds.length}`);
+        await action.update({ embeds: [embeds[index]], components: [row] });
+      }
 
-    if (action.customId === customIds.export && action.isButton()) {
-      exportButton.setDisabled(true);
-      // await message.edit({ components: [] });
+      if (action.customId === customIds.export && action.isButton()) {
+        exportButton.setDisabled(true);
+        // await message.edit({ components: [] });
 
-      // await action.deferReply({ ephemeral: client.commandHandler.isMessagingDisabled(action) });
+        // await action.deferReply({ ephemeral: client.commandHandler.isMessagingDisabled(action) });
 
-      await action.deferUpdate();
+        await action.deferUpdate();
 
-      await onExport?.(action);
-    }
-  });
+        await onExport?.(action);
+      }
+    })
+  );
 
-  collector.on('end', async (_, reason) => {
-    Object.values(customIds).forEach((id) => client.components.delete(id));
-    if (!/delete/i.test(reason)) await message.edit({ components: [] });
-  });
+  collector.on(
+    'end',
+    logFailures('message pagination end', async (_, reason: string) => {
+      Object.values(customIds).forEach((id) => client.components.delete(id));
+      if (!/delete/i.test(reason)) await message.edit({ components: [] });
+    })
+  );
 
   return row;
 };
@@ -295,19 +319,25 @@ export const createInteractionCollector = ({
       Object.values(customIds).includes(action.customId) && action.user.id === interaction.user.id
   });
 
-  collector.on('collect', async (action) => {
-    if (action.isButton()) await onClick?.(action);
-    if (action.isStringSelectMenu()) await onSelect?.(action);
-    if (action.isUserSelectMenu()) await onUserSelect?.(action);
-    if (action.isRoleSelectMenu()) await onRoleSelect?.(action);
-    if (action.isChannelSelectMenu()) await onChannelSelect?.(action);
-  });
+  collector.on(
+    'collect',
+    logFailures('component', async (action: MessageComponentInteraction<'cached'>) => {
+      if (action.isButton()) await onClick?.(action);
+      if (action.isStringSelectMenu()) await onSelect?.(action);
+      if (action.isUserSelectMenu()) await onUserSelect?.(action);
+      if (action.isRoleSelectMenu()) await onRoleSelect?.(action);
+      if (action.isChannelSelectMenu()) await onChannelSelect?.(action);
+    })
+  );
 
-  collector.on('end', async (_, reason) => {
-    onClose?.();
-    Object.values(customIds).forEach((id) => client.components.delete(id));
-    if (!/delete/i.test(reason) && clear) await interaction.editReply({ components: [] });
-  });
+  collector.on(
+    'end',
+    logFailures('component end', async (_, reason: string) => {
+      onClose?.();
+      Object.values(customIds).forEach((id) => client.components.delete(id));
+      if (!/delete/i.test(reason) && clear) await interaction.editReply({ components: [] });
+    })
+  );
 
   return collector;
 };
