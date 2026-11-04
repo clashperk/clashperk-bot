@@ -19,6 +19,12 @@ export enum SubscriptionProvider {
   PATREON = 'patreon'
 }
 
+export enum TicketStatus {
+  OPEN = 'open',
+  SLEEP = 'sleep',
+  CLOSED = 'closed'
+}
+
 export enum TicketExtraButtonKind {
   LINK_ACCOUNT = 'link-account',
   URL = 'url'
@@ -318,7 +324,7 @@ export interface GuildAccessInputDto {
   /** @pattern ^\d{17,20}$ */
   guildId: string;
   /**
-   * The custom bot the session came from, if any.
+   * The custom bot the session uses; without it, the API picks the server's bot.
    * @pattern ^\d{17,20}$
    */
   applicationId?: string | null;
@@ -329,6 +335,8 @@ export interface GuildAccessDto {
   hasBot: boolean;
   /** Owner, Administrator, Manage Server or the bot manager role. */
   canManage: boolean;
+  /** The bot to act through in the server: a custom bot's ID, or null for ClashPerk. */
+  applicationId: string | null;
 }
 
 export interface CreateLinkInputDto {
@@ -910,6 +918,49 @@ export interface BattleLogLeaderboardDto {
   items: BattleLogLeaderboardItemDto[];
 }
 
+export interface ActiveWarsInputDto {
+  /** @maxItems 100 */
+  playerTags: string[];
+}
+
+export interface ActiveWarClanDto {
+  tag: string;
+  name: string;
+}
+
+export interface ActiveWarPlayerDto {
+  tag: string;
+  name: string;
+  townHallLevel: number;
+  /** Attacks used so far. */
+  attacks: number;
+}
+
+export interface ActiveWarDto {
+  warType: WarTypes;
+  /** From the war's times rather than the stored state, which can lag behind. */
+  state: 'preparation' | 'inWar';
+  /** Set for CWL rounds only. */
+  warTag: string | null;
+  /** The CWL round number; null for other wars. */
+  round: number | null;
+  /** @format date-time */
+  startTime: string;
+  /** @format date-time */
+  endTime: string;
+  id: number;
+  attacksPerMember: number;
+  /** The player's side. */
+  clan: ActiveWarClanDto;
+  opponent: ActiveWarClanDto;
+  player: ActiveWarPlayerDto;
+}
+
+export interface ActiveWarsDto {
+  /** One per player and war, soonest to end first. */
+  items: ActiveWarDto[];
+}
+
 export interface GlobalClanEntity {
   tag: string;
   name: string;
@@ -1052,6 +1103,55 @@ export interface LegendAttacksItemsDto {
   items: LegendAttacksDto[];
 }
 
+export interface LegendResetDto {
+  /** Trophies before the reset. */
+  from: number;
+  /** Trophies after the reset, always 5000. */
+  to: number;
+}
+
+export interface LegendDayBattleDto {
+  isAttack: boolean;
+  stars: number;
+  destruction: number;
+  trophyChange: number;
+  opponentTag: string;
+  /**
+   * When the battle ended.
+   * @format date-time
+   */
+  battleTime: string;
+}
+
+export interface LegendDayDto {
+  /**
+   * The game day, which starts at 05:00 UTC.
+   * @example "2026-10-12"
+   */
+  date: string;
+  /** Trophies at the start of the day, after any reset. Null when no trophy change was tracked. */
+  initialTrophies: number | null;
+  /** Trophies after the day's last tracked change. Null when no trophy change was tracked. */
+  currentTrophies: number | null;
+  /** The Monday reset to 5000 (everyone's, at season start), when it moved this player. */
+  reset?: LegendResetDto;
+  attackCount: number;
+  defenseCount: number;
+  /** Trophies gained from attacks. */
+  attackTrophies: number;
+  /** Trophies lost to defenses, as a negative number. */
+  defenseTrophies: number;
+  /** Oldest first. */
+  battles: LegendDayBattleDto[];
+}
+
+export interface LegendDaysDto {
+  tag: string;
+  seasonId: string;
+  /** Days with a battle or a tracked trophy change, oldest first. */
+  items: LegendDayDto[];
+}
+
 export interface LegendSeasonDto {
   seasonId: string;
   /** Trophies when the season's first attack or defense was tracked. */
@@ -1077,6 +1177,106 @@ export interface LegendRankDto {
   name: string;
   rank: number;
   trophies: number;
+}
+
+export interface RankingLocationDto {
+  /** A country code such as `IN`, or `global` for worldwide. */
+  countryCode: string;
+  name: string;
+}
+
+export interface RankingLocationsDto {
+  /** Global first, then countries by name. */
+  items: RankingLocationDto[];
+}
+
+export interface RankingSeasonsDto {
+  /** Saved league seasons before the current one, newest first. */
+  items: string[];
+}
+
+export interface RankingStandingsInputDto {
+  /** @maxItems 50 */
+  playerTags?: string[];
+  /** @maxItems 50 */
+  clanTags?: string[];
+}
+
+export interface RankingStandingDto {
+  tag: string;
+  name: string;
+  board: 'players' | 'clans' | 'capital' | 'builder-base-players' | 'builder-base-clans';
+  location: RankingLocationDto;
+  rank: number;
+  previousRank: number | null;
+  score: number;
+}
+
+export interface RankingStandingsDto {
+  /** Where the tags stand this season, on every saved board they're on. */
+  items: RankingStandingDto[];
+}
+
+export interface ClanBoardStandingDto {
+  board: 'players' | 'clans' | 'capital' | 'builder-base-players' | 'builder-base-clans';
+  location: RankingLocationDto;
+  /** Null when the clan isn't in this board's top 200. */
+  rank: number | null;
+  previousRank: number | null;
+  /** Points of the board's last place: what it takes to get on it. */
+  cutoff: number | null;
+}
+
+export interface ClanRankingSeasonDto {
+  season: string;
+  /** Season-end rank in the clan's country; null when outside the top 200. */
+  clans: number | null;
+  capital: number | null;
+}
+
+export interface ClanRankingsDto {
+  /** The clan's country; null when it hasn't set one. */
+  location: RankingLocationDto | null;
+  /** Clans and capital boards, in its country (when set) and worldwide, this season. */
+  boards: ClanBoardStandingDto[];
+  /** Past seasons in its country, newest first, at most 6. */
+  history: ClanRankingSeasonDto[];
+}
+
+export interface PlayerRankingSeasonDto {
+  season: string;
+  location: RankingLocationDto;
+  rank: number;
+  trophies: number;
+}
+
+export interface PlayerRankingsDto {
+  /** Every saved season and board the player finished on, newest first. */
+  items: PlayerRankingSeasonDto[];
+}
+
+export interface RankingEntryDto {
+  rank: number;
+  /** Rank at the end of the season before; null when it wasn't ranked then or isn't known. */
+  previousRank: number | null;
+  tag: string;
+  name: string;
+  /** Trophies for player boards, points for clan boards. */
+  score: number;
+  /** Live boards only. */
+  badgeUrl: string | null;
+  clan: {
+    tag: string;
+    name: string;
+  };
+}
+
+export interface RankingBoardDto {
+  location: RankingLocationDto;
+  board: 'players' | 'clans' | 'capital' | 'builder-base-players' | 'builder-base-clans';
+  /** The saved season, or null for the live board. */
+  season: string | null;
+  items: RankingEntryDto[];
 }
 
 export interface ClanWarLeagueRound {
@@ -1627,6 +1827,116 @@ export interface UserSettingsDto {
   timezone: TimezoneDto | null;
 }
 
+export interface TaskAccountDto {
+  /** Null when the game didn't return the player. */
+  townHallLevel: number | null;
+  tag: string;
+  name: string;
+}
+
+export interface TaskClanDto {
+  tag: string;
+  name: string;
+}
+
+export interface WarTaskDto {
+  warType: WarTypes;
+  /** From the war's times rather than the stored state, which can lag behind. */
+  state: 'preparation' | 'inWar';
+  /** Set for CWL rounds only. */
+  warTag: string | null;
+  /** The CWL round number; null for other wars. */
+  round: number | null;
+  /** @format date-time */
+  startTime: string;
+  /** @format date-time */
+  endTime: string;
+  account: TaskAccountDto;
+  /** The account's side. */
+  clan: TaskClanDto;
+  opponent: TaskClanDto;
+  attacks: number;
+  attackLimit: number;
+}
+
+export interface WarTasksDto {
+  /** One per account and war that hasn't ended, including CWL rounds in clans the account left. */
+  items: WarTaskDto[];
+}
+
+export interface CapitalRaidTaskDto {
+  /** Attacks allowed, bonus included; null until the account's first attack this weekend. */
+  attackLimit: number | null;
+  /** @format date-time */
+  endTime: string;
+  account: TaskAccountDto;
+  clan: TaskClanDto;
+  attacks: number;
+}
+
+export interface CapitalRaidTasksDto {
+  /** One per account whose current clan is raiding; empty outside a raid weekend. */
+  items: CapitalRaidTaskDto[];
+}
+
+export interface ClanGamesTaskDto {
+  /** The clan the account is earning points in; null when unknown. */
+  clan: TaskClanDto | null;
+  /** @format date-time */
+  endTime: string;
+  account: TaskAccountDto;
+  points: number;
+  maxPoints: number;
+}
+
+export interface ClanGamesTasksDto {
+  /** One per tracked account; empty outside Clan Games. */
+  items: ClanGamesTaskDto[];
+}
+
+export interface TaskLeagueDto {
+  iconUrl: string | null;
+  id: number;
+  name: string;
+}
+
+export interface LegendTaskDto {
+  /**
+   * When the legend day ends.
+   * @format date-time
+   */
+  endTime: string;
+  account: TaskAccountDto;
+  league: TaskLeagueDto;
+  /** Attacks on the current legend day. */
+  attacks: number;
+  attackLimit: number;
+}
+
+export interface LegendTasksDto {
+  /** One per account in Legend League. */
+  items: LegendTaskDto[];
+}
+
+export interface RankedTaskDto {
+  /** Null when the game data is unavailable. */
+  attackLimit: number | null;
+  /**
+   * When the ranked week ends.
+   * @format date-time
+   */
+  endTime: string;
+  account: TaskAccountDto;
+  league: TaskLeagueDto;
+  /** Attacks this ranked week. */
+  attacks: number;
+}
+
+export interface RankedTasksDto {
+  /** One per account in a ranked group this week. */
+  items: RankedTaskDto[];
+}
+
 export interface ClanTagInput {
   /** @pattern ^#?[0-9A-Za-z]{3,12}$ */
   clanTag: string;
@@ -1639,6 +1949,28 @@ export interface TimezoneInput {
    * @maxLength 64
    */
   id: string;
+}
+
+export interface GameExportDto {
+  data: Record<string, any>;
+  tag: string;
+  /**
+   * When the game made the export.
+   * @format date-time
+   */
+  exportedAt: string;
+  /** @format date-time */
+  updatedAt: string;
+}
+
+export interface GameExportsDto {
+  /** One per account this user saved an export for. */
+  items: GameExportDto[];
+}
+
+export interface GameExportInput {
+  /** The game's data export for this account, as copied from the game. */
+  data: Record<string, any>;
 }
 
 export interface GuildClanDto {
@@ -2552,6 +2884,58 @@ export interface TicketsDto {
   savedReplies: TicketSavedReplyDto[];
 }
 
+export interface TicketMemberDto {
+  id: string;
+  /** From Discord, or the name the bot last saw for someone who left. Null when neither is known. */
+  displayName: string | null;
+  /** Null when they aren't in the server. */
+  avatarUrl: string | null;
+}
+
+export interface TicketDto {
+  status: TicketStatus;
+  channelStatus: ChannelStatus;
+  id: string;
+  /** The ticket's number in the server. */
+  number: number;
+  panelId: string;
+  /** Null when the panel was deleted. */
+  panelName: string | null;
+  typeId: string;
+  /** Null when the type was deleted. */
+  typeLabel: string | null;
+  typeEmoji: string | null;
+  openedBy: TicketMemberDto;
+  claimedBy: TicketMemberDto | null;
+  closedBy: TicketMemberDto | null;
+  /** The linked game account the member picked, if the type asked for one. */
+  accountTag: string | null;
+  accountName: string | null;
+  channelId: string;
+  /** Null once the channel is deleted, which closing does. */
+  channelName: string | null;
+  staffThreadId: string | null;
+  /** @format date-time */
+  createdAt: string;
+  /** @format date-time */
+  closedAt: string | null;
+}
+
+export interface TicketCountsDto {
+  open: number;
+  sleep: number;
+  closed: number;
+}
+
+export interface TicketListDto {
+  tickets: TicketDto[];
+  counts: TicketCountsDto;
+  /** Tickets matching the status filter, across every page. */
+  total: number;
+  /** Pass as `before` for the next 25. Null on the last page. */
+  nextCursor: string | null;
+}
+
 export interface CreateTicketPanelInput {
   /**
    * @minLength 1
@@ -2942,25 +3326,13 @@ export type GetBotGuildsData = BotGuildsDto;
 
 export type GetBotGuildsError = ErrorResponseDto;
 
-export type GetBotGuildsViaPostData = BotGuildsDto;
-
-export type GetBotGuildsViaPostError = ErrorResponseDto;
-
 export type GetManagedGuildsData = ManagedGuildsDto;
 
 export type GetManagedGuildsError = ErrorResponseDto;
 
-export type GetManagedGuildsViaPostData = ManagedGuildsDto;
-
-export type GetManagedGuildsViaPostError = ErrorResponseDto;
-
 export type GetGuildAccessData = GuildAccessDto;
 
 export type GetGuildAccessError = ErrorResponseDto;
-
-export type GetGuildAccessViaPostData = GuildAccessDto;
-
-export type GetGuildAccessViaPostError = ErrorResponseDto;
 
 export type LinkData = ResultOkDto;
 
@@ -3125,6 +3497,10 @@ export type GetBattleLogLeaderboardViaPostData = BattleLogLeaderboardDto;
 
 export type GetBattleLogLeaderboardViaPostError = ErrorResponseDto;
 
+export type GetActiveWarsData = ActiveWarsDto;
+
+export type GetActiveWarsError = ErrorResponseDto;
+
 export interface GetClanHistoryParams {
   playerTag: string;
 }
@@ -3205,6 +3581,20 @@ export type GetLegendAttacksByPlayerTagData = LegendAttacksDto;
 
 export type GetLegendAttacksByPlayerTagError = ErrorResponseDto;
 
+export interface GetLegendDaysParams {
+  /**
+   * The league season's start date; the current season when left out.
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   * @example "2026-10-05"
+   */
+  seasonId?: string;
+  playerTag: string;
+}
+
+export type GetLegendDaysData = LegendDaysDto;
+
+export type GetLegendDaysError = ErrorResponseDto;
+
 export interface GetLegendSeasonsParams {
   playerTag: string;
 }
@@ -3220,6 +3610,53 @@ export interface EstimateRankParams {
 export type EstimateRankData = LegendRankDto;
 
 export type EstimateRankError = ErrorResponseDto;
+
+export type GetLocationsData = RankingLocationsDto;
+
+export type GetLocationsError = ErrorResponseDto;
+
+export type GetSeasonsData = RankingSeasonsDto;
+
+export type GetSeasonsError = ErrorResponseDto;
+
+export type GetStandingsData = RankingStandingsDto;
+
+export type GetStandingsError = ErrorResponseDto;
+
+export interface GetClanRankingsParams {
+  clanTag: string;
+}
+
+export type GetClanRankingsData = ClanRankingsDto;
+
+export type GetClanRankingsError = ErrorResponseDto;
+
+export interface GetPlayerRankingsParams {
+  playerTag: string;
+}
+
+export type GetPlayerRankingsData = PlayerRankingsDto;
+
+export type GetPlayerRankingsError = ErrorResponseDto;
+
+export interface GetBoardParams {
+  /**
+   * A saved league season (from `/rankings/seasons`); the live board when left out.
+   * @pattern ^\d{4}-\d{2}(-\d{2})?$
+   * @example "2026-09-07"
+   */
+  season?: string;
+  /**
+   * @pattern ^(global|[A-Z]{2})$
+   * @example "IN"
+   */
+  countryCode: string;
+  board: 'players' | 'clans' | 'capital' | 'builder-base-players' | 'builder-base-clans';
+}
+
+export type GetBoardData = RankingBoardDto;
+
+export type GetBoardError = ErrorResponseDto;
 
 export interface GetClanWarLeagueGroupsParams {
   clanTag: string;
@@ -3480,6 +3917,26 @@ export type GetUserSettingsData = UserSettingsDto;
 
 export type GetUserSettingsError = ErrorResponseDto;
 
+export type GetWarTasksData = WarTasksDto;
+
+export type GetWarTasksError = ErrorResponseDto;
+
+export type GetCapitalRaidTasksData = CapitalRaidTasksDto;
+
+export type GetCapitalRaidTasksError = ErrorResponseDto;
+
+export type GetClanGamesTasksData = ClanGamesTasksDto;
+
+export type GetClanGamesTasksError = ErrorResponseDto;
+
+export type GetLegendTasksData = LegendTasksDto;
+
+export type GetLegendTasksError = ErrorResponseDto;
+
+export type GetRankedTasksData = RankedTasksDto;
+
+export type GetRankedTasksError = ErrorResponseDto;
+
 export type SetDefaultClanData = UserSettingsDto;
 
 export type SetDefaultClanError = ErrorResponseDto;
@@ -3507,6 +3964,26 @@ export type SetTimezoneError = ErrorResponseDto;
 export type ClearTimezoneData = UserSettingsDto;
 
 export type ClearTimezoneError = ErrorResponseDto;
+
+export type GetGameExportsData = GameExportsDto;
+
+export type GetGameExportsError = ErrorResponseDto;
+
+export interface SaveGameExportParams {
+  playerTag: string;
+}
+
+export type SaveGameExportData = GameExportDto;
+
+export type SaveGameExportError = ErrorResponseDto;
+
+export interface RemoveGameExportParams {
+  playerTag: string;
+}
+
+export type RemoveGameExportData = ResultOkDto;
+
+export type RemoveGameExportError = ErrorResponseDto;
 
 export interface GetGuildClansParams {
   guildId: string;
@@ -3971,6 +4448,26 @@ export type GetTicketsData = TicketsDto;
 
 export type GetTicketsError = ErrorResponseDto;
 
+export interface ListTicketsParams {
+  status?: TicketStatus;
+  /** The `nextCursor` of the page before, for the tickets opened before it. */
+  before?: string;
+  guildId: string;
+}
+
+export type ListTicketsData = TicketListDto;
+
+export type ListTicketsError = ErrorResponseDto;
+
+export interface CloseTicketParams {
+  guildId: string;
+  ticketId: string;
+}
+
+export type CloseTicketData = any;
+
+export type CloseTicketError = ErrorResponseDto;
+
 export interface CreateTicketPanelParams {
   guildId: string;
 }
@@ -4204,24 +4701,6 @@ export namespace Auth {
   }
 
   /**
-   * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
-   * @tags Auth
-   * @name GetBotGuildsViaPost
-   * @request POST:/auth/bot-guilds
-   * @deprecated
-   * @secure
-   * @response `200` `GetBotGuildsViaPostData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace GetBotGuildsViaPost {
-    export type RequestParams = {};
-    export type RequestQuery = {};
-    export type RequestBody = BotGuildsInputDto;
-    export type RequestHeaders = {};
-    export type ResponseBody = GetBotGuildsViaPostData;
-  }
-
-  /**
    * No description
    * @tags Auth
    * @name GetManagedGuilds
@@ -4239,24 +4718,6 @@ export namespace Auth {
   }
 
   /**
-   * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
-   * @tags Auth
-   * @name GetManagedGuildsViaPost
-   * @request POST:/auth/managed-guilds
-   * @deprecated
-   * @secure
-   * @response `200` `GetManagedGuildsViaPostData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace GetManagedGuildsViaPost {
-    export type RequestParams = {};
-    export type RequestQuery = {};
-    export type RequestBody = ManagedGuildsInputDto;
-    export type RequestHeaders = {};
-    export type ResponseBody = GetManagedGuildsViaPostData;
-  }
-
-  /**
    * No description
    * @tags Auth
    * @name GetGuildAccess
@@ -4271,24 +4732,6 @@ export namespace Auth {
     export type RequestBody = GuildAccessInputDto;
     export type RequestHeaders = {};
     export type ResponseBody = GetGuildAccessData;
-  }
-
-  /**
-   * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
-   * @tags Auth
-   * @name GetGuildAccessViaPost
-   * @request POST:/auth/guild-access
-   * @deprecated
-   * @secure
-   * @response `200` `GetGuildAccessViaPostData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace GetGuildAccessViaPost {
-    export type RequestParams = {};
-    export type RequestQuery = {};
-    export type RequestBody = GuildAccessInputDto;
-    export type RequestHeaders = {};
-    export type ResponseBody = GetGuildAccessViaPostData;
   }
 }
 
@@ -4716,6 +5159,24 @@ export namespace Players {
   }
 
   /**
+   * @description Deprecated: use `GET /users/me/tasks/wars`, which reads your linked accounts.
+   * @tags Players
+   * @name GetActiveWars
+   * @request QUERY:/players/wars/active
+   * @deprecated
+   * @secure
+   * @response `200` `GetActiveWarsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetActiveWars {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = ActiveWarsInputDto;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetActiveWarsData;
+  }
+
+  /**
    * No description
    * @tags Players
    * @name GetClanHistory
@@ -4899,6 +5360,33 @@ export namespace Legends {
   /**
    * No description
    * @tags Legends
+   * @name GetLegendDays
+   * @summary A season's game days: start and end trophies, the Monday reset, and the battles.
+   * @request GET:/legends/{playerTag}/days
+   * @secure
+   * @response `200` `GetLegendDaysData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetLegendDays {
+    export type RequestParams = {
+      playerTag: string;
+    };
+    export type RequestQuery = {
+      /**
+       * The league season's start date; the current season when left out.
+       * @pattern ^\d{4}-\d{2}-\d{2}$
+       * @example "2026-10-05"
+       */
+      seasonId?: string;
+    };
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetLegendDaysData;
+  }
+
+  /**
+   * No description
+   * @tags Legends
    * @name GetLegendSeasons
    * @request GET:/legends/{playerTag}/seasons
    * @secure
@@ -4932,6 +5420,128 @@ export namespace Legends {
     export type RequestBody = never;
     export type RequestHeaders = {};
     export type ResponseBody = EstimateRankData;
+  }
+}
+
+export namespace Rankings {
+  /**
+   * No description
+   * @tags Rankings
+   * @name GetLocations
+   * @request GET:/rankings/locations
+   * @secure
+   * @response `200` `GetLocationsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetLocations {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetLocationsData;
+  }
+
+  /**
+   * No description
+   * @tags Rankings
+   * @name GetSeasons
+   * @request GET:/rankings/seasons
+   * @secure
+   * @response `200` `GetSeasonsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetSeasons {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetSeasonsData;
+  }
+
+  /**
+   * No description
+   * @tags Rankings
+   * @name GetStandings
+   * @request QUERY:/rankings/standings
+   * @secure
+   * @response `200` `GetStandingsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetStandings {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = RankingStandingsInputDto;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetStandingsData;
+  }
+
+  /**
+   * No description
+   * @tags Rankings
+   * @name GetClanRankings
+   * @request GET:/rankings/clans/{clanTag}
+   * @secure
+   * @response `200` `GetClanRankingsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetClanRankings {
+    export type RequestParams = {
+      clanTag: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetClanRankingsData;
+  }
+
+  /**
+   * No description
+   * @tags Rankings
+   * @name GetPlayerRankings
+   * @request GET:/rankings/players/{playerTag}
+   * @secure
+   * @response `200` `GetPlayerRankingsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetPlayerRankings {
+    export type RequestParams = {
+      playerTag: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetPlayerRankingsData;
+  }
+
+  /**
+   * No description
+   * @tags Rankings
+   * @name GetBoard
+   * @request GET:/rankings/{countryCode}/{board}
+   * @secure
+   * @response `200` `GetBoardData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetBoard {
+    export type RequestParams = {
+      /**
+       * @pattern ^(global|[A-Z]{2})$
+       * @example "IN"
+       */
+      countryCode: string;
+      board: 'players' | 'clans' | 'capital' | 'builder-base-players' | 'builder-base-clans';
+    };
+    export type RequestQuery = {
+      /**
+       * A saved league season (from `/rankings/seasons`); the live board when left out.
+       * @pattern ^\d{4}-\d{2}(-\d{2})?$
+       * @example "2026-09-07"
+       */
+      season?: string;
+    };
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetBoardData;
   }
 }
 
@@ -5498,6 +6108,91 @@ export namespace Users {
   /**
    * No description
    * @tags Users
+   * @name GetWarTasks
+   * @request GET:/users/me/tasks/wars
+   * @secure
+   * @response `200` `GetWarTasksData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetWarTasks {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetWarTasksData;
+  }
+
+  /**
+   * No description
+   * @tags Users
+   * @name GetCapitalRaidTasks
+   * @request GET:/users/me/tasks/capital-raids
+   * @secure
+   * @response `200` `GetCapitalRaidTasksData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetCapitalRaidTasks {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetCapitalRaidTasksData;
+  }
+
+  /**
+   * No description
+   * @tags Users
+   * @name GetClanGamesTasks
+   * @request GET:/users/me/tasks/clan-games
+   * @secure
+   * @response `200` `GetClanGamesTasksData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetClanGamesTasks {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetClanGamesTasksData;
+  }
+
+  /**
+   * No description
+   * @tags Users
+   * @name GetLegendTasks
+   * @request GET:/users/me/tasks/legends
+   * @secure
+   * @response `200` `GetLegendTasksData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetLegendTasks {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetLegendTasksData;
+  }
+
+  /**
+   * No description
+   * @tags Users
+   * @name GetRankedTasks
+   * @request GET:/users/me/tasks/ranked
+   * @secure
+   * @response `200` `GetRankedTasksData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetRankedTasks {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetRankedTasksData;
+  }
+
+  /**
+   * No description
+   * @tags Users
    * @name SetDefaultClan
    * @request PUT:/users/me/clan
    * @secure
@@ -5597,6 +6292,62 @@ export namespace Users {
     export type RequestBody = never;
     export type RequestHeaders = {};
     export type ResponseBody = ClearTimezoneData;
+  }
+
+  /**
+   * No description
+   * @tags Users
+   * @name GetGameExports
+   * @summary Game data exports this user saved for their accounts; nobody else's copies are included.
+   * @request GET:/users/me/game-exports
+   * @secure
+   * @response `200` `GetGameExportsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetGameExports {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetGameExportsData;
+  }
+
+  /**
+   * No description
+   * @tags Users
+   * @name SaveGameExport
+   * @request PUT:/users/me/game-exports/{playerTag}
+   * @secure
+   * @response `200` `SaveGameExportData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace SaveGameExport {
+    export type RequestParams = {
+      playerTag: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = GameExportInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = SaveGameExportData;
+  }
+
+  /**
+   * No description
+   * @tags Users
+   * @name RemoveGameExport
+   * @request DELETE:/users/me/game-exports/{playerTag}
+   * @secure
+   * @response `200` `RemoveGameExportData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace RemoveGameExport {
+    export type RequestParams = {
+      playerTag: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = RemoveGameExportData;
   }
 }
 
@@ -6676,6 +7427,51 @@ export namespace Guilds {
   /**
    * No description
    * @tags Guilds
+   * @name ListTickets
+   * @summary Tickets members opened, newest first, 25 a page.
+   * @request GET:/guilds/{guildId}/tickets/list
+   * @secure
+   * @response `200` `ListTicketsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace ListTickets {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {
+      status?: TicketStatus;
+      /** The `nextCursor` of the page before, for the tickets opened before it. */
+      before?: string;
+    };
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = ListTicketsData;
+  }
+
+  /**
+   * No description
+   * @tags Guilds
+   * @name CloseTicket
+   * @summary Closes a ticket as the bot's Close button does: transcript to the log, channel deleted.
+   * @request POST:/guilds/{guildId}/tickets/{ticketId}/close
+   * @secure
+   * @response `204` `CloseTicketData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace CloseTicket {
+    export type RequestParams = {
+      guildId: string;
+      ticketId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = CloseTicketData;
+  }
+
+  /**
+   * No description
+   * @tags Guilds
    * @name CreateTicketPanel
    * @request POST:/guilds/{guildId}/tickets/panels
    * @secure
@@ -7177,7 +7973,7 @@ export class HttpClient<SecurityDataType = unknown> {
 
 /**
  * @title ClashPerk Discord Bot API
- * @version v2.0.90
+ * @version v2.0.115
  * @baseUrl /v1
  * @contact
  *
@@ -7316,28 +8112,6 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
-     *
-     * @tags Auth
-     * @name GetBotGuildsViaPost
-     * @request POST:/auth/bot-guilds
-     * @deprecated
-     * @secure
-     * @response `200` `GetBotGuildsViaPostData`
-     * @response `500` `ErrorResponseDto`
-     */
-    getBotGuildsViaPost: (data: BotGuildsInputDto, params: RequestParams = {}) =>
-      this.http.request<GetBotGuildsViaPostData, GetBotGuildsViaPostError>({
-        path: `/auth/bot-guilds`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
      * No description
      *
      * @tags Auth
@@ -7359,28 +8133,6 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
-     *
-     * @tags Auth
-     * @name GetManagedGuildsViaPost
-     * @request POST:/auth/managed-guilds
-     * @deprecated
-     * @secure
-     * @response `200` `GetManagedGuildsViaPostData`
-     * @response `500` `ErrorResponseDto`
-     */
-    getManagedGuildsViaPost: (data: ManagedGuildsInputDto, params: RequestParams = {}) =>
-      this.http.request<GetManagedGuildsViaPostData, GetManagedGuildsViaPostError>({
-        path: `/auth/managed-guilds`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
      * No description
      *
      * @tags Auth
@@ -7394,28 +8146,6 @@ export class Api<SecurityDataType extends unknown> {
       this.http.request<GetGuildAccessData, GetGuildAccessError>({
         path: `/auth/guild-access`,
         method: 'QUERY',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
-     *
-     * @tags Auth
-     * @name GetGuildAccessViaPost
-     * @request POST:/auth/guild-access
-     * @deprecated
-     * @secure
-     * @response `200` `GetGuildAccessViaPostData`
-     * @response `500` `ErrorResponseDto`
-     */
-    getGuildAccessViaPost: (data: GuildAccessInputDto, params: RequestParams = {}) =>
-      this.http.request<GetGuildAccessViaPostData, GetGuildAccessViaPostError>({
-        path: `/auth/guild-access`,
-        method: 'POST',
         body: data,
         secure: true,
         type: ContentType.Json,
@@ -7859,6 +8589,28 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
+     * @description Deprecated: use `GET /users/me/tasks/wars`, which reads your linked accounts.
+     *
+     * @tags Players
+     * @name GetActiveWars
+     * @request QUERY:/players/wars/active
+     * @deprecated
+     * @secure
+     * @response `200` `GetActiveWarsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getActiveWars: (data: ActiveWarsInputDto, params: RequestParams = {}) =>
+      this.http.request<GetActiveWarsData, GetActiveWarsError>({
+        path: `/players/wars/active`,
+        method: 'QUERY',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
      * No description
      *
      * @tags Players
@@ -8036,6 +8788,27 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Legends
+     * @name GetLegendDays
+     * @summary A season's game days: start and end trophies, the Monday reset, and the battles.
+     * @request GET:/legends/{playerTag}/days
+     * @secure
+     * @response `200` `GetLegendDaysData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getLegendDays: ({ playerTag, ...query }: GetLegendDaysParams, params: RequestParams = {}) =>
+      this.http.request<GetLegendDaysData, GetLegendDaysError>({
+        path: `/legends/${playerTag}/days`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Legends
      * @name GetLegendSeasons
      * @request GET:/legends/{playerTag}/seasons
      * @secure
@@ -8065,6 +8838,124 @@ export class Api<SecurityDataType extends unknown> {
       this.http.request<EstimateRankData, EstimateRankError>({
         path: `/legends/${playerTag}/estimate-rank`,
         method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      })
+  };
+  rankings = {
+    /**
+     * No description
+     *
+     * @tags Rankings
+     * @name GetLocations
+     * @request GET:/rankings/locations
+     * @secure
+     * @response `200` `GetLocationsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getLocations: (params: RequestParams = {}) =>
+      this.http.request<GetLocationsData, GetLocationsError>({
+        path: `/rankings/locations`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Rankings
+     * @name GetSeasons
+     * @request GET:/rankings/seasons
+     * @secure
+     * @response `200` `GetSeasonsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getSeasons: (params: RequestParams = {}) =>
+      this.http.request<GetSeasonsData, GetSeasonsError>({
+        path: `/rankings/seasons`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Rankings
+     * @name GetStandings
+     * @request QUERY:/rankings/standings
+     * @secure
+     * @response `200` `GetStandingsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getStandings: (data: RankingStandingsInputDto, params: RequestParams = {}) =>
+      this.http.request<GetStandingsData, GetStandingsError>({
+        path: `/rankings/standings`,
+        method: 'QUERY',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Rankings
+     * @name GetClanRankings
+     * @request GET:/rankings/clans/{clanTag}
+     * @secure
+     * @response `200` `GetClanRankingsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getClanRankings: ({ clanTag }: GetClanRankingsParams, params: RequestParams = {}) =>
+      this.http.request<GetClanRankingsData, GetClanRankingsError>({
+        path: `/rankings/clans/${clanTag}`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Rankings
+     * @name GetPlayerRankings
+     * @request GET:/rankings/players/{playerTag}
+     * @secure
+     * @response `200` `GetPlayerRankingsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getPlayerRankings: ({ playerTag }: GetPlayerRankingsParams, params: RequestParams = {}) =>
+      this.http.request<GetPlayerRankingsData, GetPlayerRankingsError>({
+        path: `/rankings/players/${playerTag}`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Rankings
+     * @name GetBoard
+     * @request GET:/rankings/{countryCode}/{board}
+     * @secure
+     * @response `200` `GetBoardData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getBoard: ({ countryCode, board, ...query }: GetBoardParams, params: RequestParams = {}) =>
+      this.http.request<GetBoardData, GetBoardError>({
+        path: `/rankings/${countryCode}/${board}`,
+        method: 'GET',
+        query: query,
         secure: true,
         format: 'json',
         ...params
@@ -8654,6 +9545,101 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Users
+     * @name GetWarTasks
+     * @request GET:/users/me/tasks/wars
+     * @secure
+     * @response `200` `GetWarTasksData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getWarTasks: (params: RequestParams = {}) =>
+      this.http.request<GetWarTasksData, GetWarTasksError>({
+        path: `/users/me/tasks/wars`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Users
+     * @name GetCapitalRaidTasks
+     * @request GET:/users/me/tasks/capital-raids
+     * @secure
+     * @response `200` `GetCapitalRaidTasksData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getCapitalRaidTasks: (params: RequestParams = {}) =>
+      this.http.request<GetCapitalRaidTasksData, GetCapitalRaidTasksError>({
+        path: `/users/me/tasks/capital-raids`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Users
+     * @name GetClanGamesTasks
+     * @request GET:/users/me/tasks/clan-games
+     * @secure
+     * @response `200` `GetClanGamesTasksData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getClanGamesTasks: (params: RequestParams = {}) =>
+      this.http.request<GetClanGamesTasksData, GetClanGamesTasksError>({
+        path: `/users/me/tasks/clan-games`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Users
+     * @name GetLegendTasks
+     * @request GET:/users/me/tasks/legends
+     * @secure
+     * @response `200` `GetLegendTasksData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getLegendTasks: (params: RequestParams = {}) =>
+      this.http.request<GetLegendTasksData, GetLegendTasksError>({
+        path: `/users/me/tasks/legends`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Users
+     * @name GetRankedTasks
+     * @request GET:/users/me/tasks/ranked
+     * @secure
+     * @response `200` `GetRankedTasksData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getRankedTasks: (params: RequestParams = {}) =>
+      this.http.request<GetRankedTasksData, GetRankedTasksError>({
+        path: `/users/me/tasks/ranked`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Users
      * @name SetDefaultClan
      * @request PUT:/users/me/clan
      * @secure
@@ -8764,6 +9750,70 @@ export class Api<SecurityDataType extends unknown> {
     clearTimezone: (params: RequestParams = {}) =>
       this.http.request<ClearTimezoneData, ClearTimezoneError>({
         path: `/users/me/timezone`,
+        method: 'DELETE',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Users
+     * @name GetGameExports
+     * @summary Game data exports this user saved for their accounts; nobody else's copies are included.
+     * @request GET:/users/me/game-exports
+     * @secure
+     * @response `200` `GetGameExportsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getGameExports: (params: RequestParams = {}) =>
+      this.http.request<GetGameExportsData, GetGameExportsError>({
+        path: `/users/me/game-exports`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Users
+     * @name SaveGameExport
+     * @request PUT:/users/me/game-exports/{playerTag}
+     * @secure
+     * @response `200` `SaveGameExportData`
+     * @response `500` `ErrorResponseDto`
+     */
+    saveGameExport: (
+      { playerTag }: SaveGameExportParams,
+      data: GameExportInput,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<SaveGameExportData, SaveGameExportError>({
+        path: `/users/me/game-exports/${playerTag}`,
+        method: 'PUT',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Users
+     * @name RemoveGameExport
+     * @request DELETE:/users/me/game-exports/{playerTag}
+     * @secure
+     * @response `200` `RemoveGameExportData`
+     * @response `500` `ErrorResponseDto`
+     */
+    removeGameExport: ({ playerTag }: RemoveGameExportParams, params: RequestParams = {}) =>
+      this.http.request<RemoveGameExportData, RemoveGameExportError>({
+        path: `/users/me/game-exports/${playerTag}`,
         method: 'DELETE',
         secure: true,
         format: 'json',
@@ -9966,6 +11016,46 @@ export class Api<SecurityDataType extends unknown> {
         method: 'GET',
         secure: true,
         format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Guilds
+     * @name ListTickets
+     * @summary Tickets members opened, newest first, 25 a page.
+     * @request GET:/guilds/{guildId}/tickets/list
+     * @secure
+     * @response `200` `ListTicketsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    listTickets: ({ guildId, ...query }: ListTicketsParams, params: RequestParams = {}) =>
+      this.http.request<ListTicketsData, ListTicketsError>({
+        path: `/guilds/${guildId}/tickets/list`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Guilds
+     * @name CloseTicket
+     * @summary Closes a ticket as the bot's Close button does: transcript to the log, channel deleted.
+     * @request POST:/guilds/{guildId}/tickets/{ticketId}/close
+     * @secure
+     * @response `204` `CloseTicketData`
+     * @response `500` `ErrorResponseDto`
+     */
+    closeTicket: ({ guildId, ticketId }: CloseTicketParams, params: RequestParams = {}) =>
+      this.http.request<CloseTicketData, CloseTicketError>({
+        path: `/guilds/${guildId}/tickets/${ticketId}/close`,
+        method: 'POST',
+        secure: true,
         ...params
       }),
 
