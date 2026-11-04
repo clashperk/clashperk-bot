@@ -2,7 +2,7 @@ import { APIPlayer } from 'clashofclans.js';
 import moment from 'moment';
 import { container } from 'tsyringe';
 import { api, encode } from '../api/axios.js';
-import { BattleLogDailyDto, BattleLogDto } from '../api/generated.js';
+import { BattleLogDailyDto, BattleLogDto, LegendDayDto } from '../api/generated.js';
 import { Client } from '../struct/client.js';
 import { Collections, LeaguePromotionsMap } from '../util/constants.js';
 import { Season, Util } from '../util/toolkit.js';
@@ -51,6 +51,11 @@ export const getLegendBattleLog = async (playerTag: string): Promise<BattleLogDt
       startTrophies: logsMap[log.battleDate]?.start ?? log.trophies,
       endTrophies: logsMap[log.battleDate]?.end ?? log.trophies
     }));
+};
+
+export const getLegendDays = async (playerTag: string): Promise<LegendDayDto[]> => {
+  const result = await api.legends.getLegendDays({ playerTag: encode(playerTag) });
+  return result.data.items;
 };
 
 export const getRankedBattleLog = async (

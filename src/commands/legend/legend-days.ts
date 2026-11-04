@@ -24,11 +24,11 @@ import moment from 'moment';
 import ms from 'ms';
 import pluralize from 'pluralize';
 import { api, encode } from '../../api/axios.js';
-import { BattleLogDto } from '../../api/generated.js';
+import { LegendDayDto } from '../../api/generated.js';
 import {
   aggregateLegendBattleLog,
-  getLegendBattleLog,
   getLegendBattleLogAggregate,
+  getLegendDays,
   getLegendTimestampAgainstDay,
   getRankedBattleLog,
   getTournament
@@ -115,8 +115,8 @@ export default class LegendDaysCommand extends Command {
       });
     }
 
-    const battles = await getLegendBattleLog(data.tag);
-    if (!battles.length) {
+    const days = await getLegendDays(data.tag);
+    if (!days.length) {
       return interaction.followUp({
         content: [
           `No data available for **${data.name} (${data.tag})**`,
@@ -126,8 +126,8 @@ export default class LegendDaysCommand extends Command {
     }
 
     const embed = args.prev
-      ? await this.logs(data, battles)
-      : await this.embed(interaction, data, battles, args.day);
+      ? await this.logs(data, days)
+      : await this.embed(interaction, data, days, args.day);
 
     embed.setTimestamp().setColor(this.client.embed(interaction));
     await interaction.editReply({
@@ -247,32 +247,29 @@ export default class LegendDaysCommand extends Command {
   private async embed(
     interaction: CommandInteraction | ButtonInteraction,
     data: APIPlayer,
-    battleLogs: BattleLogDto[],
+    legendDays: LegendDayDto[],
     _day?: number
   ) {
     const { startTime, day } = getLegendTimestampAgainstDay(_day);
     const battleDate = new Date(startTime).toISOString().slice(0, 10);
-    const dayBattles = battleLogs.filter((b) => {
-      return b.battleDate === battleDate;
-    });
+    const legendDay = legendDays.find((d) => d.date === battleDate);
+    const dayBattles = legendDay?.battles ?? [];
 
     const attacks = dayBattles.filter((b) => b.isAttack);
     const defenses = dayBattles.filter((b) => !b.isAttack);
 
-    const trophiesFromAttacks = attacks.reduce((acc, b) => acc + b.trophyChange, 0);
-    const trophiesFromDefenses = defenses.reduce((acc, b) => acc + b.trophyChange, 0);
+    const trophiesFromAttacks = legendDay?.attackTrophies ?? 0;
+    const trophiesFromDefenses = legendDay?.defenseTrophies ?? 0;
     const netTrophies = trophiesFromAttacks + trophiesFromDefenses;
 
     let streak = 0;
-    for (const b of attacks) {
+    for (const b of [...attacks].reverse()) {
       if (b.stars === 3) streak++;
       else break;
     }
 
-    const firstBattle = dayBattles.at(-1);
-    const lastBattle = dayBattles.at(0);
-    const initialTrophies = firstBattle ? firstBattle.startTrophies : data.trophies;
-    const currentTrophies = lastBattle ? lastBattle.endTrophies : data.trophies;
+    const initialTrophies = legendDay?.initialTrophies ?? data.trophies;
+    const currentTrophies = legendDay?.currentTrophies ?? data.trophies;
 
     const { globalRank, countryRank } = await this.rankings(data.tag);
 
@@ -295,6 +292,9 @@ export default class LegendDaysCommand extends Command {
       {
         name: '**Overview**',
         value: [
+          ...(legendDay?.reset
+            ? [`- Reset to ${legendDay.reset.to} (from ${legendDay.reset.from})`]
+            : []),
           `- Initial Trophies: ${initialTrophies}`,
           `- Current Trophies: ${currentTrophies}`,
           `- ${attacks.length} attack${attacks.length === 1 ? '' : 's'} (+${trophiesFromAttacks} trophies)`,
@@ -330,10 +330,9 @@ export default class LegendDaysCommand extends Command {
         name: '**Attacks**',
         value: attacks.length
           ? attacks
-              .reverse()
               .map(
                 (b) =>
-                  `\` ${padStart(`+${b.trophyChange}`, 3)}\` \u200b \`${'★'.repeat(b.stars)}${'☆'.repeat(3 - b.stars)}\` \u200b \`${padStart(b.destruction, 3)}%\` \u200b ${time(new Date(b.ingestedAt), 'R')}`
+                  `\` ${padStart(`+${b.trophyChange}`, 3)}\` \u200b \`${'★'.repeat(b.stars)}${'☆'.repeat(3 - b.stars)}\` \u200b \`${padStart(b.destruction, 3)}%\` \u200b ${time(new Date(b.battleTime), 'R')}`
               )
               .join('\n')
           : '-',
@@ -343,10 +342,9 @@ export default class LegendDaysCommand extends Command {
         name: '**Defenses**',
         value: defenses.length
           ? defenses
-              .reverse()
               .map(
                 (b) =>
-                  `\` ${padStart(`${b.trophyChange === 0 ? '+' : ''}${b.trophyChange}`, 3)}\` \u200b \`${'★'.repeat(b.stars)}${'☆'.repeat(3 - b.stars)}\` \u200b \`${padStart(b.destruction, 3)}%\` \u200b ${time(new Date(b.ingestedAt), 'R')}`
+                  `\` ${padStart(`${b.trophyChange === 0 ? '+' : ''}${b.trophyChange}`, 3)}\` \u200b \`${'★'.repeat(b.stars)}${'☆'.repeat(3 - b.stars)}\` \u200b \`${padStart(b.destruction, 3)}%\` \u200b ${time(new Date(b.battleTime), 'R')}`
               )
               .join('\n')
           : '-',
@@ -426,27 +424,21 @@ export default class LegendDaysCommand extends Command {
     });
   }
 
-  private async logs(data: APIPlayer, battleLogs: BattleLogDto[]) {
+  private async logs(data: APIPlayer, legendDays: LegendDayDto[]) {
     const days = Util.getLegendDays();
 
     const perDayLogs = days.map(({ startTime }) => {
       const battleDate = new Date(startTime).toISOString().slice(0, 10);
-      const dayBattles = battleLogs.filter((b) => b.battleDate === battleDate);
+      const legendDay = legendDays.find((d) => d.date === battleDate);
 
-      const attacks = dayBattles.filter((b) => b.isAttack);
-      const defenses = dayBattles.filter((b) => !b.isAttack);
-
-      const gain = attacks.reduce((acc, b) => acc + b.trophyChange, 0);
-      const loss = defenses.reduce((acc, b) => acc + b.trophyChange, 0);
-
-      const firstBattle = dayBattles.at(-1);
-      const lastBattle = dayBattles.at(0);
-      const initial = firstBattle?.startTrophies;
-      const final = lastBattle?.endTrophies;
+      const gain = legendDay?.attackTrophies ?? 0;
+      const loss = legendDay?.defenseTrophies ?? 0;
+      const initial = legendDay?.initialTrophies;
+      const final = legendDay?.currentTrophies;
 
       return {
-        attackCount: attacks.length,
-        defenseCount: defenses.length,
+        attackCount: legendDay?.attackCount ?? 0,
+        defenseCount: legendDay?.defenseCount ?? 0,
         gain,
         loss,
         net: initial && final ? final - initial : gain + loss,
