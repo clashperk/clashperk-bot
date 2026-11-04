@@ -220,10 +220,8 @@ export const calculateTrophies = (
     // 5 base + 1 per 9% destruction ABOVE the initial 1%
     attackerGain = 5 + Math.floor((destruction - 1) / 9);
   } else {
-    // 0 stars: 1 trophy base, + 1 per 10% destruction ABOVE 9%
-    if (destruction >= 9) {
-      attackerGain = 1 + Math.floor((destruction - 9) / 10);
-    }
+    // 0 stars: 1 trophy per full 10% destruction, so nothing under 10%
+    attackerGain = Math.floor(destruction / 10);
   }
 
   // Cap at 40 (standard trophy pool)
