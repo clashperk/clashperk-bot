@@ -97,21 +97,38 @@ export default class LegendDaysCommand extends Command {
           .setCustomId(customIds.overview)
           .setStyle(args.prev ? ButtonStyle.Success : ButtonStyle.Primary)
       )
-      .addComponents(
+      .addComponents(this.profileButton(data.tag));
+
+    // legend-attacks is guild-only, while this command also runs in DMs.
+    if (data.clan && interaction.inGuild()) {
+      row.addComponents(
         new ButtonBuilder()
-          .setLabel('View season')
-          .setStyle(ButtonStyle.Link)
-          .setURL(
-            dashboardUrl(
-              `/web/players/${encodeURIComponent(data.tag)}/legends?utm_source=discord&utm_campaign=legend-days`
-            )
+          .setLabel('Clan Attacks')
+          .setStyle(ButtonStyle.Secondary)
+          .setCustomId(
+            this.createId({ cmd: 'legend-attacks', clans: data.clan.tag, ephemeral: true })
           )
       );
+    }
+
+    row.addComponents(
+      new ButtonBuilder()
+        .setLabel('View season')
+        .setStyle(ButtonStyle.Link)
+        .setURL(
+          dashboardUrl(
+            `/web/players/${encodeURIComponent(data.tag)}/legends?utm_source=discord&utm_campaign=legend-days`
+          )
+        )
+    );
 
     if (!data.leagueTier || data.leagueTier.id !== LEGEND_LEAGUE_ID) {
       if (await this.rankedBattles(interaction, data)) return;
       return interaction.followUp({
-        content: `**${data.name} (${data.tag})** is not in the Legend League. \n**Ranked battle logs are coming soon!**`
+        content: `**${data.name} (${data.tag})** is not in the Legend League. \n**Ranked battle logs are coming soon!**`,
+        components: [
+          new ActionRowBuilder<ButtonBuilder>().addComponents(this.playerLinks(data.tag))
+        ]
       });
     }
 
@@ -654,10 +671,29 @@ export default class LegendDaysCommand extends Command {
       new ButtonBuilder()
         .setEmoji(EMOJIS.REFRESH)
         .setCustomId(JSON.stringify({ cmd: this.id, tag: player.tag }))
-        .setStyle(ButtonStyle.Secondary)
+        .setStyle(ButtonStyle.Secondary),
+      ...this.playerLinks(player.tag)
     );
 
     return interaction.editReply({ embeds: [embed], components: [row], content: null });
+  }
+
+  // Ephemeral, so a click opens a private reply instead of replacing the shared message.
+  private profileButton(tag: string) {
+    return new ButtonBuilder()
+      .setLabel('Profile')
+      .setStyle(ButtonStyle.Secondary)
+      .setCustomId(this.createId({ cmd: 'player', tag, ephemeral: true }));
+  }
+
+  private playerLinks(tag: string) {
+    return [
+      this.profileButton(tag),
+      new ButtonBuilder()
+        .setLabel('Upgrades')
+        .setStyle(ButtonStyle.Secondary)
+        .setCustomId(this.createId({ cmd: 'upgrades', tag, ephemeral: true }))
+    ];
   }
 
   private async getLastTournament(playerTag: string) {

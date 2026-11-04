@@ -2,6 +2,7 @@ import { ATTACK_COUNTS, LEGEND_LEAGUE_ID } from '@app/constants';
 import {
   ActionRowBuilder,
   ButtonBuilder,
+  ButtonInteraction,
   ButtonStyle,
   CommandInteraction,
   EmbedBuilder,
@@ -30,7 +31,7 @@ export default class LegendAttacksCommand extends Command {
   }
 
   public async exec(
-    interaction: CommandInteraction<'cached'>,
+    interaction: CommandInteraction<'cached'> | ButtonInteraction<'cached'>,
     args: {
       clans?: string;
       user?: User;
@@ -146,7 +147,7 @@ export default class LegendAttacksCommand extends Command {
   }
 
   private async getClans(
-    interaction: CommandInteraction<'cached'>,
+    interaction: CommandInteraction<'cached'> | ButtonInteraction<'cached'>,
     args: { clans?: string; user?: User }
   ) {
     const isSingleTag =
