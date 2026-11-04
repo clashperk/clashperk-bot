@@ -1,5 +1,6 @@
 import { Collections, PLAYER_LEAGUE_MAP } from '@app/constants';
 import {
+  PlayerLinksEntity,
   TicketEntity,
   TicketGuildSettingsEntity,
   TicketPanelEntity,
@@ -1039,9 +1040,10 @@ export default class TicketOpenCommand extends Command {
     }
 
     // Build variable map
-    const creatorMember = await interaction
-      .guild!.members.fetch(ticket.creatorId)
-      .catch(() => null);
+    const [creatorMember, leader] = await Promise.all([
+      interaction.guild!.members.fetch(ticket.creatorId).catch(() => null),
+      ticket.clanTag ? this.getClanLeader(ticket.clanTag) : null
+    ]);
 
     const vars: Record<string, string> = {
       user_mention: `<@${ticket.creatorId}>`,
@@ -1054,8 +1056,9 @@ export default class TicketOpenCommand extends Command {
       clan_link: ticket.clanTag
         ? `https://link.clashofclans.com/?action=OpenClanProfile&tag=${ticket.clanTag.replace('#', '')}`
         : '',
-      clan_leader: '',
-      clan_leader_mention: '',
+      // Left out when unknown, so staff are asked to fill them in.
+      ...(leader ? { clan_leader: leader.name } : {}),
+      ...(leader?.userId ? { clan_leader_mention: `<@${leader.userId}>` } : {}),
       ticket_count: String(ticket.count).padStart(4, '0'),
       ticket_status: ticket.status,
       server_name: interaction.guild!.name
@@ -1360,6 +1363,17 @@ export default class TicketOpenCommand extends Command {
   }
 
   // =================== UTILITY ===================
+
+  /** The clan's leader and the Discord account linked to them, if any. */
+  private async getClanLeader(clanTag: string) {
+    const { body, res } = await this.client.coc.getClan(clanTag);
+    const leader = res.ok ? body.memberList.find((member) => member.role === 'leader') : null;
+    if (!leader) return null;
+    const link = await this.client.db
+      .collection<PlayerLinksEntity>(Collections.PLAYER_LINKS)
+      .findOne({ tag: leader.tag });
+    return { name: leader.name, userId: link?.userId ?? null };
+  }
 
   public async getTicketByChannel(channelId: string) {
     return this.client.db.collection<TicketEntity>(Collections.TICKETS).findOne({ channelId });

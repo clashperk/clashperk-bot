@@ -155,7 +155,7 @@ interface TicketGuildSettingsEntity {
 }
 ```
 
-**Saved reply variables** — resolved in `sendReply`, defined as `SAVED_REPLY_VARIABLES` in `tickets.entity.ts`, and listed in the dashboard's Saved Replies section so users can reference them: `{user_mention}`, `{user_name}`, `{account_name}`, `{account_th}`, `{account_heroes}`, `{clan_name}`, `{clan_tag}`, `{clan_link}`, `{clan_leader}`, `{clan_leader_mention}`, `{ticket_count}`, `{ticket_status}`, `{server_name}`. Any unknown `{...}` token triggers a fill-in modal before the reply is sent.
+**Saved reply variables** — resolved in `sendReply`, defined as `SAVED_REPLY_VARIABLES` in `tickets.entity.ts`, and listed in the dashboard's Saved Replies section so users can reference them: `{user_mention}`, `{user_name}`, `{account_name}`, `{account_th}`, `{account_heroes}`, `{clan_name}`, `{clan_tag}`, `{clan_link}`, `{clan_leader}`, `{clan_leader_mention}`, `{ticket_count}`, `{ticket_status}`, `{server_name}`. `{clan_leader}` is the leader of the clan set with **Set Clan**, read live from the game, and `{clan_leader_mention}` mentions the Discord account linked to them. Either is left unresolved when there's no clan or no linked leader. Any unknown or unresolved `{...}` token triggers a fill-in modal before the reply is sent.
 
 ### `TicketEntity` (collection: `Tickets`)
 
@@ -454,6 +454,8 @@ A: Answer text                           ← only if questions were answered
 | `/ticket-delete` | Hard delete the channel and update DB                                          |
 | `/ticket-info`   | Show ticket metadata (panel, type, creator, account, status, trophies, league) |
 | `/ticket-add`    | Add a Discord member to the ticket channel                                     |
+
+The dashboard lists every ticket (`GET /guilds/:guildId/tickets/list`, filterable by status) and closes open or sleeping ones through `POST /guilds/:guildId/tickets/:ticketId/close` in the API. That route does what **Delete Ticket** does: it posts the transcript of the last 100 messages to the panel's `ticketClose` log and a line to `statusChange`, sets `status`, `closedAt` and `closedBy`, and deletes the channel. A ticket whose channel is already gone is only marked closed.
 
 ---
 
