@@ -47,13 +47,23 @@ export const guildLimits: Record<string, number> = {
 /** The `status` of a subscription granted from the admin panel for a payment made elsewhere. */
 export const MANUAL_STATUS = 'manual';
 
+const customBotTiers: string[] = [
+  CustomTiers.LIFETIME_CUSTOM_BOT,
+  CustomTiers.SPONSORED_CUSTOM_BOT,
+  CustomScopes.CUSTOM_BOT
+];
+
+// Patreon members carry a special tier in `note`. Manual grants keep it in `rewardId`.
 export const hasCustomBotAccess = (patron: Pick<PatreonMembersEntity, 'rewardId' | 'note'>) =>
   [rewards.gold, rewards.gold_deprecated].includes(patron.rewardId) ||
-  [
-    CustomTiers.LIFETIME_CUSTOM_BOT,
-    CustomTiers.SPONSORED_CUSTOM_BOT,
-    CustomScopes.CUSTOM_BOT
-  ].includes(patron.note);
+  customBotTiers.includes(patron.note) ||
+  customBotTiers.includes(patron.rewardId);
+
+/** The special tier `/config` shows. A manual grant's note is its payment, so its tier is its plan. */
+const tierOf = (patron: PatreonMembersEntity) => {
+  if (patron.status !== MANUAL_STATUS) return patron.note;
+  return (Object.values(CustomTiers) as string[]).includes(patron.rewardId) ? patron.rewardId : '';
+};
 
 const isGrantLive = (patron: PatreonMembersEntity) =>
   !patron.expiresAt || patron.expiresAt.getTime() > Date.now();
@@ -125,8 +135,7 @@ export class Subscribers {
     this.patrons.clear(); // clear old user_id and guild_id
 
     for (const data of patrons) {
-      // `/config` shows this as the tier, and a manual grant's note is its payment reference.
-      const note = data.status === MANUAL_STATUS ? '' : data.note;
+      const note = tierOf(data);
       if (data.userId) this.patrons.set(data.userId, { note });
 
       for (const guild of data.guilds) {
