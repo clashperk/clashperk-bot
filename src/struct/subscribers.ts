@@ -125,10 +125,12 @@ export class Subscribers {
     this.patrons.clear(); // clear old user_id and guild_id
 
     for (const data of patrons) {
-      if (data.userId) this.patrons.set(data.userId, { note: data.note });
+      // `/config` shows this as the tier, and a manual grant's note is its payment reference.
+      const note = data.status === MANUAL_STATUS ? '' : data.note;
+      if (data.userId) this.patrons.set(data.userId, { note });
 
       for (const guild of data.guilds) {
-        this.patrons.set(guild.id, { note: data.note });
+        this.patrons.set(guild.id, { note });
 
         const guildLimit = this.client.settings.get(guild.id, Settings.CLAN_LIMIT, 2);
         if (guildLimit !== guild.limit && this.client.guilds.cache.has(guild.id)) {
