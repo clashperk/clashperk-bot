@@ -12,7 +12,7 @@ import {
 } from 'discord.js';
 import { WithId } from 'mongodb';
 import { Args, Command } from '../../lib/handlers.js';
-import { CustomTiers, guildLimits, PatreonUser } from '../../struct/subscribers.js';
+import { CustomTiers, guildLimits, MANUAL_STATUS, PatreonUser } from '../../struct/subscribers.js';
 
 const defaultClanLimit = 100;
 
@@ -36,6 +36,14 @@ export default class RedeemCommand extends Command {
   }
 
   public async exec(interaction: CommandInteraction<'cached'>, { disable }: { disable?: boolean }) {
+    const collection = this.client.db.collection<PatreonMembersEntity>(Collections.PATREON_MEMBERS);
+    const grant = await collection.findOne({
+      status: MANUAL_STATUS,
+      userId: interaction.user.id,
+      active: true
+    });
+    if (grant) return this.redeemGrant(interaction, grant, disable);
+
     const result = await this.client.subscribers.fetchAPI();
     if (!result) {
       return interaction.editReply({
@@ -88,7 +96,6 @@ export default class RedeemCommand extends Command {
       });
     }
 
-    const collection = this.client.db.collection<PatreonMembersEntity>(Collections.PATREON_MEMBERS);
     let user = await collection.findOne({ id: patron.id });
 
     if (disable) {
@@ -131,9 +138,7 @@ export default class RedeemCommand extends Command {
       );
     }
 
-    const embed = new EmbedBuilder()
-      .setColor(16345172)
-      .setDescription([`Subscription enabled for **${interaction.guild.name}**`].join('\n'));
+    const embed = this.enabledEmbed(interaction);
 
     const patronStatus = pledge?.attributes.patron_status ?? 'unknown_status';
 
@@ -189,19 +194,7 @@ export default class RedeemCommand extends Command {
     const redeemed = !isListed && this.redeemed({ ...user, rewardId });
     if (redeemed) {
       if (!this.isNew(user, interaction, patron)) await this.client.subscribers.refresh();
-      const embed = new EmbedBuilder()
-        .setColor(16345172)
-        .setDescription(
-          [
-            "You've already claimed your subscription!",
-            'If you think it is wrong, please [contact us.](<https://discord.gg/ppuppun>)'
-          ].join('\n')
-        );
-      return this.disableRedemption(interaction, {
-        select: false,
-        user,
-        message: { embeds: [embed] }
-      });
+      return this.alreadyClaimed(interaction, user);
     }
 
     // not redeemed
@@ -242,6 +235,69 @@ export default class RedeemCommand extends Command {
     await this.client.subscribers.refresh();
     await this.sync(interaction.guild.id);
     return interaction.editReply({ embeds: [embed] });
+  }
+
+  /** A subscription granted from the admin panel, for a payment made outside Patreon. */
+  private async redeemGrant(
+    interaction: CommandInteraction<'cached'>,
+    grant: WithId<PatreonMembersEntity>,
+    disable?: boolean
+  ) {
+    if (disable) {
+      if (!grant.guilds.length) {
+        return interaction.editReply('**You do not have an active subscription.**');
+      }
+      return this.disableRedemption(interaction, {
+        select: true,
+        user: grant,
+        message: { content: '**Manage Subscriptions**' }
+      });
+    }
+
+    if (this.client.subscribers.has(interaction.guild.id)) {
+      return interaction.editReply('**This server already has an active subscription.**');
+    }
+    if (this.redeemed(grant)) return this.alreadyClaimed(interaction, grant);
+
+    await this.client.db.collection<PatreonMembersEntity>(Collections.PATREON_MEMBERS).updateOne(
+      { '_id': grant._id, 'guilds.id': { $ne: interaction.guild.id } },
+      {
+        $set: { username: interaction.user.username, redeemed: true },
+        $push: {
+          guilds: {
+            id: interaction.guild.id,
+            name: interaction.guild.name,
+            limit: defaultClanLimit
+          }
+        }
+      }
+    );
+
+    await this.client.subscribers.refresh();
+    await this.sync(interaction.guild.id);
+    return interaction.editReply({ embeds: [this.enabledEmbed(interaction)] });
+  }
+
+  private enabledEmbed(interaction: CommandInteraction<'cached'>) {
+    return new EmbedBuilder()
+      .setColor(16345172)
+      .setDescription(`Subscription enabled for **${interaction.guild.name}**`);
+  }
+
+  private alreadyClaimed(interaction: CommandInteraction, user: WithId<PatreonMembersEntity>) {
+    const embed = new EmbedBuilder()
+      .setColor(16345172)
+      .setDescription(
+        [
+          "You've already claimed your subscription!",
+          'If you think it is wrong, please [contact us.](<https://discord.gg/ppuppun>)'
+        ].join('\n')
+      );
+    return this.disableRedemption(interaction, {
+      select: false,
+      user,
+      message: { embeds: [embed] }
+    });
   }
 
   private async disableRedemption(

@@ -24,8 +24,10 @@ export interface PatreonMembersEntity {
 
   isGifted: boolean;
   isLifetime: boolean;
+  /** A special tier for Patreon, or `<source>: <reference>` for a manual grant. */
   note: CustomTiers;
   email: string;
+  /** Patreon's patron status, or `manual` for a grant paid elsewhere. */
   status: string;
 
   applicationId?: string;
@@ -41,5 +43,7 @@ export interface PatreonMembersEntity {
   >;
 
   lastChargeDate: Date;
+  /** Manual grants only: when it ends, null for lifetime. */
+  expiresAt?: Date | null;
   createdAt: Date;
 }
