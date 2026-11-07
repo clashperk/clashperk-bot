@@ -44,19 +44,42 @@ export const guildLimits: Record<string, number> = {
   ...customTierLimits
 };
 
+/** The `status` of a subscription granted from the admin panel for a payment made elsewhere. */
+export const MANUAL_STATUS = 'manual';
+
+export const hasCustomBotAccess = (patron: Pick<PatreonMembersEntity, 'rewardId' | 'note'>) =>
+  [rewards.gold, rewards.gold_deprecated].includes(patron.rewardId) ||
+  [
+    CustomTiers.LIFETIME_CUSTOM_BOT,
+    CustomTiers.SPONSORED_CUSTOM_BOT,
+    CustomScopes.CUSTOM_BOT
+  ].includes(patron.note);
+
+const isGrantLive = (patron: PatreonMembersEntity) =>
+  !patron.expiresAt || patron.expiresAt.getTime() > Date.now();
+
 export class Subscribers {
   private readonly collection: Collection<PatreonMembersEntity>;
   private readonly patrons = new Map<string, { note: string }>();
 
   public constructor(private readonly client: Client) {
     this.collection = this.client.db.collection(Collections.PATREON_MEMBERS);
-    this.client.changeStreams.on<PatreonMembersEntity>(
+    this.client.changeStreams.on<WithId<PatreonMembersEntity>>(
       Collections.PATREON_MEMBERS,
       { operationType: { $in: ['insert', 'update', 'delete'] } },
       async (change) => {
-        if (['update', 'insert'].includes(change.operationType)) {
-          await this.refresh();
-        }
+        if (change.operationType !== 'update' && change.operationType !== 'insert') return;
+        await this.refresh();
+
+        const patron = change.fullDocument;
+        if (patron?.status !== MANUAL_STATUS || !this.ownsSideEffects()) return;
+        await this.syncManualGrant(patron, {
+          created: change.operationType === 'insert',
+          changed:
+            change.operationType === 'update'
+              ? Object.keys(change.updateDescription.updatedFields ?? {})
+              : []
+        });
       }
     );
   }
@@ -115,9 +138,16 @@ export class Subscribers {
     }
   }
 
+  private ownsSideEffects() {
+    return !this.client.isCustom() && this.client.cluster.id === 0;
+  }
+
   public async autoSyncSubscription(debug = false) {
-    if (this.client.isCustom()) return null;
-    if (this.client.cluster.id !== 0) return null;
+    if (!this.ownsSideEffects()) return null;
+
+    for (const grant of await this.collection.find({ status: MANUAL_STATUS }).toArray()) {
+      await this.syncManualGrant(grant, { created: false, changed: [] });
+    }
 
     const res = await this.fetchAPI();
     if (!res) return null;
@@ -128,7 +158,7 @@ export class Subscribers {
       return;
     }
 
-    const patrons = await this.collection.find().toArray();
+    const patrons = await this.collection.find({ status: { $ne: MANUAL_STATUS } }).toArray();
     for (const patron of patrons) {
       if (['00000000'].includes(patron.id)) continue;
 
@@ -209,25 +239,8 @@ export class Subscribers {
         for (const guild of (patron.guilds ?? []).slice(guildLimits[rewardId]))
           await this.deleteGuild(guild.id, patron.id);
 
-        const lostCustomBot =
-          ![rewards.gold, rewards.gold_deprecated].includes(rewardId) &&
-          ![
-            CustomTiers.LIFETIME_CUSTOM_BOT,
-            CustomTiers.SPONSORED_CUSTOM_BOT,
-            CustomScopes.CUSTOM_BOT
-          ].includes(patron.note);
-
-        if (lostCustomBot && patron.applicationId) {
-          await this.client.customBotManager.suspendService(patron.applicationId);
-        }
-
-        if (lostCustomBot) {
-          for (const [guildId, profile] of Object.entries(patron.customBots ?? {})) {
-            if (profile.active) {
-              const guild = this.client.guilds.cache.get(guildId);
-              if (guild) await this.unsetBotProfile(guild, patron);
-            }
-          }
+        if (!hasCustomBotAccess({ rewardId, note: patron.note })) {
+          await this.suspendCustomBot(patron);
         }
 
         this.client.logger.info(
@@ -253,21 +266,7 @@ export class Subscribers {
         { $set: { declined: false, active: true, cancelled: false } }
       );
 
-      for (const guild of patron.guilds ?? []) await this.restoreGuild(guild.id);
-      if (patron.applicationId)
-        await this.client.customBotManager.resumeService(patron.applicationId);
-
-      for (const [guildId, profile] of Object.entries(patron.customBots ?? {})) {
-        const guild = this.client.guilds.cache.get(guildId);
-        if (guild) {
-          await this.setBotProfile(guild, patron, {
-            nick: profile.nickname,
-            avatar: profile.avatarUrl,
-            banner: profile.banner,
-            bio: profile.bio
-          });
-        }
-      }
+      await this.resume(patron);
 
       this.client.logger.info(
         `Subscription Resumed ${patron.username} (${patron.userId}/${patron.id})`,
@@ -302,17 +301,7 @@ export class Subscribers {
         { $set: { active: false, cancelled: isFormer, declined: isDeclined, status: patronStatus } }
       );
 
-      for (const guild of patron.guilds ?? []) await this.deleteGuild(guild.id, patron.id);
-      if (patron.applicationId) {
-        await this.client.customBotManager.suspendService(patron.applicationId);
-      }
-
-      for (const [guildId, profile] of Object.entries(patron.customBots ?? {})) {
-        if (profile.active) {
-          const guild = this.client.guilds.cache.get(guildId);
-          if (guild) await this.unsetBotProfile(guild, patron);
-        }
-      }
+      await this.suspend(patron);
 
       this.client.logger.info(
         `Subscription Canceled ${patron.username} (${patron.userId}/${patron.id})`,
@@ -329,6 +318,88 @@ export class Subscribers {
 
       // const user = await this.client.users.fetch(patron.userId);
       // if (embed) await user.send({ embeds: [embed] });
+    }
+  }
+
+  /**
+   * Applies a manual grant's current state: the bot owns `active` and flips it from `expiresAt`.
+   * `changed` lists the fields an update set, to act on servers or plan the admin changed.
+   */
+  public async syncManualGrant(
+    grant: WithId<PatreonMembersEntity>,
+    { created, changed }: { created: boolean; changed: string[] }
+  ) {
+    const live = isGrantLive(grant);
+
+    if (grant.active !== live) {
+      await this.collection.updateOne({ _id: grant._id }, { $set: { active: live } });
+      if (live) await this.resume(grant);
+      else await this.suspend(grant);
+
+      const label = live ? 'Manual Grant Resumed' : 'Manual Grant Ended';
+      this.client.logger.info(`${label} ${grant.username} (${grant.userId}/${grant.id})`, {
+        label: 'PATRON'
+      });
+      await this.sendWebhook(grant, {
+        label,
+        color: live ? COLOR_CODES.GREEN : COLOR_CODES.RED,
+        status: grant.status
+      });
+      return;
+    }
+    if (!live) return;
+
+    if (created || changed.some((field) => field.startsWith('guilds'))) {
+      for (const guild of grant.guilds ?? []) await this.restoreGuild(guild.id);
+    }
+    if (changed.includes('rewardId') && !hasCustomBotAccess(grant)) {
+      await this.suspendCustomBot(grant);
+    }
+
+    const audited = ['rewardId', 'expiresAt', 'lifetimeSupport', 'note'];
+    if (created || changed.some((field) => audited.includes(field))) {
+      await this.sendWebhook(grant, {
+        label: created ? 'Manual Grant Created' : 'Manual Grant Updated',
+        color: created ? COLOR_CODES.PURPLE : COLOR_CODES.YELLOW,
+        status: grant.status
+      });
+    }
+  }
+
+  private async resume(patron: PatreonMembersEntity) {
+    for (const guild of patron.guilds ?? []) await this.restoreGuild(guild.id);
+    if (patron.applicationId) {
+      await this.client.customBotManager.resumeService(patron.applicationId);
+    }
+
+    for (const [guildId, profile] of Object.entries(patron.customBots ?? {})) {
+      const guild = this.client.guilds.cache.get(guildId);
+      if (guild) {
+        await this.setBotProfile(guild, patron, {
+          nick: profile.nickname,
+          avatar: profile.avatarUrl,
+          banner: profile.banner,
+          bio: profile.bio
+        });
+      }
+    }
+  }
+
+  private async suspend(patron: PatreonMembersEntity) {
+    for (const guild of patron.guilds ?? []) await this.deleteGuild(guild.id, patron.id);
+    await this.suspendCustomBot(patron);
+  }
+
+  private async suspendCustomBot(patron: PatreonMembersEntity) {
+    if (patron.applicationId) {
+      await this.client.customBotManager.suspendService(patron.applicationId);
+    }
+
+    for (const [guildId, profile] of Object.entries(patron.customBots ?? {})) {
+      if (profile.active) {
+        const guild = this.client.guilds.cache.get(guildId);
+        if (guild) await this.unsetBotProfile(guild, patron);
+      }
     }
   }
 
@@ -571,7 +642,9 @@ export class Subscribers {
             `**Patron**`,
             `${patron.name} (${patron.id})`,
             '',
-            `**Status:** [${status}](https://www.patreon.com/members?query=${encodeURIComponent(patron.email || patron.name)})`,
+            patron.status === MANUAL_STATUS
+              ? `**Status:** manual, ${patron.expiresAt ? `ends <t:${Math.floor(patron.expiresAt.getTime() / 1000)}:F>` : 'lifetime'}`
+              : `**Status:** [${status}](https://www.patreon.com/members?query=${encodeURIComponent(patron.email || patron.name)})`,
             `**Pledge:** $${(patron.entitledAmount / 100).toFixed(2)}`,
             `**Lifetime:** $${(patron.lifetimeSupport / 100).toFixed(2)}`,
             `**Last Charged:** ${patron.lastChargeDate?.toUTCString()}`,

@@ -18,9 +18,8 @@ import {
   TextInputStyle
 } from 'discord.js';
 import moment from 'moment';
-import { WithId } from 'mongodb';
 import { Command } from '../../lib/handlers.js';
-import { CustomScopes, CustomTiers, rewards } from '../../struct/subscribers.js';
+import { hasCustomBotAccess } from '../../struct/subscribers.js';
 import { EMOJIS } from '../../util/emojis.js';
 import { createInteractionCollector } from '../../util/pagination.js';
 
@@ -120,7 +119,7 @@ export default class SetupCustomBotCommand extends Command {
 
     const handleTokenSetup = async (action: ButtonInteraction<'cached'>) => {
       const isEligible =
-        patron && this.isEligible(patron) && this.isAllowedGuild(patron, action.guildId);
+        patron && hasCustomBotAccess(patron) && this.isAllowedGuild(patron, action.guildId);
       if (!isEligible) return fallbackMessage(action);
 
       const modalCustomId = this.client.uuid(action.user.id);
@@ -247,7 +246,7 @@ export default class SetupCustomBotCommand extends Command {
 
     const handleCustomize = async (action: ButtonInteraction<'cached'>) => {
       const isEligible =
-        patron && this.isEligible(patron) && this.isAllowedGuild(patron, action.guildId);
+        patron && hasCustomBotAccess(patron) && this.isAllowedGuild(patron, action.guildId);
       if (!isEligible) return fallbackMessage(action);
 
       const modalCustomId = this.client.uuid(action.user.id);
@@ -353,18 +352,6 @@ export default class SetupCustomBotCommand extends Command {
         if (action.customId === customIds.customize) return handleCustomize(action);
       }
     });
-  }
-
-  private isEligible(patron: WithId<PatreonMembersEntity>) {
-    if (patron.rewardId === rewards.gold || patron.rewardId === rewards.gold_deprecated) {
-      return true;
-    }
-
-    return [
-      CustomTiers.LIFETIME_CUSTOM_BOT,
-      CustomTiers.SPONSORED_CUSTOM_BOT,
-      CustomScopes.CUSTOM_BOT
-    ].includes(patron.note);
   }
 
   private isAllowedGuild(patron: PatreonMembersEntity, guildId: string) {
