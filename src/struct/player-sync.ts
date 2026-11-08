@@ -2,84 +2,42 @@ import { Collections, LEGEND_LEAGUE_ID, UNRANKED_TIER_ID } from '@app/constants'
 import { GlobalPlayersEntity, PlayersEntity } from '@app/entities';
 import { APIPlayer } from 'clashofclans.js';
 import moment from 'moment';
-import { ObjectId } from 'mongodb';
+import { Db } from 'mongodb';
 import { api, encode } from '../api/axios.js';
 import { Client } from './client.js';
+
+const NO_CLAN_TAG = '#00000';
+
+// Unswept clans are seeded the way radar seeds them; swept ones become due now.
+export async function scheduleClanSweeps(globalDb: Db, clanTags: (string | undefined)[]) {
+  const tags = [...new Set(clanTags)].filter((tag): tag is string => !!tag && tag !== NO_CLAN_TAG);
+  if (!tags.length) return;
+
+  await globalDb.collection('global_clan_sweeps').bulkWrite(
+    tags.map((tag) => ({
+      updateOne: {
+        filter: { tag },
+        update: { $min: { nextSweepAt: new Date() }, $setOnInsert: { unchangedSweeps: 0 } },
+        upsert: true
+      }
+    })),
+    { ordered: false }
+  );
+}
 
 export class PlayerSync {
   public constructor(private readonly client: Client) {}
 
+  // Radar's sweep owns global players and history. A lookup only pulls the
+  // player's old and new clans forward so the sweep records the move soon.
   public async reSyncClanHistory(player: APIPlayer) {
-    const clanHistoryRepository = this.client.globalDb.collection('global_clan_history');
-    const playersRepository =
-      this.client.globalDb.collection<GlobalPlayersEntity>('global_players');
-    const clansRepository = this.client.globalDb.collection('global_clans');
+    const entity = await this.client.globalDb
+      .collection<GlobalPlayersEntity>('global_players')
+      .findOne({ tag: player.tag }, { projection: { clanTag: 1 } });
 
-    const entity = await playersRepository.findOne({ tag: player.tag });
+    if (entity && entity.clanTag === (player.clan?.tag ?? NO_CLAN_TAG)) return;
 
-    const clanTag = player.clan?.tag ?? '#00000';
-    const trackingId = entity && entity.clanTag === clanTag ? entity.trackingId : new ObjectId();
-
-    if (!entity || entity.clanTag !== clanTag) {
-      await playersRepository.updateOne(
-        { tag: player.tag },
-        {
-          $setOnInsert: {
-            createdAt: new Date()
-          },
-          $set: {
-            name: player.name,
-            townHall: player.townHallLevel,
-            trophies: player.trophies,
-            donations: player.donations,
-            attackWins: player.attackWins,
-            leagueId: player.leagueTier?.id ?? UNRANKED_TIER_ID,
-            clanTag,
-            trackingId
-          }
-        },
-        {
-          upsert: true
-        }
-      );
-    }
-
-    await clanHistoryRepository.updateOne(
-      { playerTag: player.tag, trackingId },
-      {
-        $setOnInsert: {
-          firstSeen: new Date()
-        },
-        $set: {
-          clanTag,
-          lastSeen: new Date()
-        }
-      },
-      {
-        upsert: true
-      }
-    );
-
-    if (!player.clan) return;
-
-    await clansRepository.updateOne(
-      {
-        tag: clanTag
-      },
-      {
-        $setOnInsert: {
-          createdAt: new Date(),
-          teamSize: 0
-        },
-        $set: {
-          name: player.clan.name,
-          level: player.clan.clanLevel
-        }
-      },
-      {
-        upsert: true
-      }
-    );
+    await scheduleClanSweeps(this.client.globalDb, [player.clan?.tag, entity?.clanTag]);
   }
 
   public async reSyncLegends(player: APIPlayer) {

@@ -23,6 +23,7 @@ import { cluster, unique } from 'radash';
 import { i18n } from '../util/i18n.js';
 import { Season, Util } from '../util/toolkit.js';
 import { Client } from './client.js';
+import { scheduleClanSweeps } from './player-sync.js';
 
 const defaultCategories = ['War', 'CWL', 'Farming', 'Esports', 'Events'];
 
@@ -259,6 +260,9 @@ export class StorageHandler {
       },
       { upsert: true, returnDocument: 'after' }
     );
+
+    // global tracking must not block linking a clan
+    await scheduleClanSweeps(this.client.globalDb, [data.tag]).catch(() => null);
 
     return clan!._id.toHexString();
   }
