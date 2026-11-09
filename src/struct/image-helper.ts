@@ -1,7 +1,9 @@
-import { WAR_LEAGUE_MAP } from '@app/constants';
+import { BattlesPerWeek, WAR_LEAGUE_MAP } from '@app/constants';
+import { APIPlayer } from 'clashofclans.js';
 import moment from 'moment';
 import { LegendArmiesDto } from '../api/generated.js';
 import { CWLRankCard } from '../helper/cwl.helper.js';
+import type { Tournament } from '../helper/legends.helper.js';
 import { Util } from '../util/toolkit.js';
 
 function formatNumber(num: number) {
@@ -81,6 +83,98 @@ export const createLegendGraph = async ({
     file: Buffer.from(arrayBuffer),
     name: 'legend-rank-card.jpeg' as const,
     attachmentKey: 'attachment://legend-rank-card.jpeg' as const
+  };
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Trophies and battles per game day of a tournament week, Monday first, up to the latest day played. */
+const rankedDays = (tournament: Tournament, weekStart: Date) => {
+  const days = Array.from({ length: 7 }, () => ({
+    offense: 0,
+    defense: 0,
+    attacks: 0,
+    defenses: 0
+  }));
+  let latest = -1;
+  for (const battle of tournament.battles) {
+    const index = Math.floor(
+      (new Date(battle.ingestedAt).getTime() - weekStart.getTime()) / DAY_MS
+    );
+    const day = days[index];
+    if (!day) continue;
+    latest = Math.max(latest, index);
+    if (battle.isAttack) {
+      day.offense += battle.trophyChange;
+      day.attacks++;
+    } else {
+      day.defense += battle.trophyChange;
+      day.defenses++;
+    }
+  }
+  return days.slice(0, latest + 1);
+};
+
+const starCounts = (battles: Tournament['battles']) => {
+  const counts = [0, 0, 0, 0];
+  for (const battle of battles) counts[battle.stars]++;
+  return counts;
+};
+
+export const createRankedGraph = async ({
+  player,
+  tournament,
+  lastTournament,
+  weekStart
+}: {
+  player: APIPlayer;
+  tournament: Tournament;
+  lastTournament: Tournament | null;
+  weekStart: Date;
+}) => {
+  const leagueId = String(player.leagueTier!.id);
+  const lastWeekStart = new Date(weekStart.getTime() - 7 * DAY_MS);
+  const lastDays = lastTournament ? rankedDays(lastTournament, lastWeekStart) : [];
+  const lastAttacks = lastDays.reduce((sum, day) => sum + day.attacks, 0);
+  const lastOffense = lastDays.reduce((sum, day) => sum + day.offense, 0);
+
+  const arrayBuffer = await fetch(`${process.env.IMAGE_GEN_API_BASE_URL}/legends/ranked-graph`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: player.name,
+      townHall: player.townHallLevel.toString(),
+      clanName: player.clan?.name,
+      clanBadgeURL: player.clan?.badgeUrls.large,
+      league: {
+        id: player.leagueTier!.id,
+        name: player.leagueTier!.name,
+        iconUrl: player.leagueTier!.iconUrls.large
+      },
+      weekStart: weekStart.toISOString(),
+      trophies: tournament.member.leagueTrophies,
+      rank: tournament.rank,
+      promotion: tournament.promotionZone,
+      demotion: tournament.demotionZone,
+      attacksAllowed: BattlesPerWeek[leagueId] ?? 0,
+      members: tournament.members,
+      days: rankedDays(tournament, weekStart),
+      lastWeek: lastDays.length
+        ? {
+            days: lastDays.map((day) => day.offense + day.defense),
+            perAttack: lastAttacks ? Math.round(lastOffense / lastAttacks) : undefined
+          }
+        : undefined,
+      attackStars: starCounts(tournament.battles.filter((b) => b.isAttack)),
+      defenseStars: starCounts(tournament.battles.filter((b) => !b.isAttack)),
+      defenseWins: tournament.member.defenseWinCount
+    })
+  }).then((res) => res.arrayBuffer());
+
+  return {
+    file: Buffer.from(arrayBuffer),
+    name: 'ranked-week-card.jpeg' as const,
+    attachmentKey: 'attachment://ranked-week-card.jpeg' as const
   };
 };
 
