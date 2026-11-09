@@ -8,10 +8,10 @@ import {
   ButtonStyle,
   CommandInteraction,
   EmbedBuilder,
+  embedLength,
   MessageFlags,
   User
 } from 'discord.js';
-import { cluster } from 'radash';
 import { Command } from '../../lib/handlers.js';
 import { CreateGoogleSheet, createGoogleSheet, createHyperlink } from '../../struct/google.js';
 import { EMOJIS, HEROES, TOWN_HALLS } from '../../util/emojis.js';
@@ -176,27 +176,21 @@ export default class ProfileCommand extends Command {
       });
     });
 
-    const embeds: EmbedBuilder[] = [];
-    cluster(_fields, 15).forEach((fields, page) => {
-      if (page === 0) {
-        embed.setFields(
-          fields.map(({ field, values }, itemIndex) => ({
-            name: itemIndex === 0 ? `**Player Accounts (${playerTags.length})**` : '\u200b',
-            value: [field, ...values].join('\n')
-          }))
-        );
-        embeds.push(embed);
+    // Accounts with many hero emojis and long names overflow 6000 chars well before 15 fields.
+    const embeds: EmbedBuilder[] = [embed];
+    let page = embed;
+    for (const { field, values } of _fields) {
+      const value = [field, ...values].join('\n');
+      const count = page.data.fields?.length ?? 0;
+      const name = count === 0 ? `**Player Accounts (${playerTags.length})**` : '\u200b';
+      if (count >= 15 || embedLength(page.data) + name.length + value.length > 6000) {
+        page = new EmbedBuilder(embed.toJSON()).setDescription(null).setFields();
+        embeds.push(page);
+        page.addFields({ name: `**Player Accounts (${playerTags.length})**`, value });
       } else {
-        embeds.push(
-          new EmbedBuilder(embed.toJSON()).setDescription(null).setFields(
-            fields.map(({ field, values }, itemIndex) => ({
-              name: itemIndex === 0 ? `**Player Accounts (${playerTags.length})**` : '\u200b',
-              value: [field, ...values].join('\n')
-            }))
-          )
-        );
+        page.addFields({ name, value });
       }
-    });
+    }
 
     if (!interaction.inCachedGuild()) {
       for (const embed of embeds) {
