@@ -52,6 +52,8 @@ import {
 } from '../../util/helper.js';
 import { Season, Util } from '../../util/toolkit.js';
 
+const MIN_LAST_SEASON_DAYS = 7;
+
 export default class LegendDaysCommand extends Command {
   public constructor() {
     super('legend-days', {
@@ -373,8 +375,11 @@ export default class LegendDaysCommand extends Command {
     if (!result.length) return null;
 
     const season = result.at(0)!;
-    const lastSeason = result.at(1);
-    const prevFinalTrophies = lastSeason?.logs.at(-1)?.trophies ?? '';
+    const prevSeason = result.at(1);
+    const prevFinalTrophies = prevSeason?.logs.at(-1)?.trophies ?? '';
+    // A few tracked days aren't a season: comparing against them gives nonsense like "+267 vs last".
+    const lastSeason =
+      prevSeason && prevSeason.logs.length >= MIN_LAST_SEASON_DAYS ? prevSeason : undefined;
 
     if (season._id !== Season.leagueId) return null;
 
@@ -410,7 +415,7 @@ export default class LegendDaysCommand extends Command {
 
     return createLegendGraph({
       stats: await this.cardStats(data.tag, legendDays),
-      datasets: result.slice(0, 2),
+      datasets: lastSeason ? [season, lastSeason] : [season],
       data: {
         name: data.name,
         townHallLevel: data.townHallLevel,
