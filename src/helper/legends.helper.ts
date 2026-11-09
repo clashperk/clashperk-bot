@@ -153,9 +153,13 @@ export const getTournament = async (player: APIPlayer, lastTournament = false) =
     isInDemotionZone,
     promotionZone,
     isInPromotionZone,
-    battles: [...attacks, ...defenses]
+    battles: [...attacks, ...defenses],
+    member: body.members[rankIndex],
+    members: body.members.map((m) => ({ name: m.playerName, trophies: m.leagueTrophies }))
   };
 };
+
+export type Tournament = NonNullable<Awaited<ReturnType<typeof getTournament>>>;
 
 export const getLegendBattleLogAggregate = async (
   playerTag: string

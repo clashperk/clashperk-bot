@@ -32,10 +32,15 @@ import {
   getLegendDays,
   getLegendTimestampAgainstDay,
   getRankedBattleLog,
-  getTournament
+  getTournament,
+  Tournament
 } from '../../helper/legends.helper.js';
 import { Args, Command } from '../../lib/handlers.js';
-import { createLegendGraph, LegendCardStats } from '../../struct/image-helper.js';
+import {
+  createLegendGraph,
+  createRankedGraph,
+  LegendCardStats
+} from '../../struct/image-helper.js';
 import {
   EMOJIS,
   HOME_BASE_LEAGUES,
@@ -682,7 +687,27 @@ export default class LegendDaysCommand extends Command {
         .setStyle(ButtonStyle.Secondary)
     );
 
-    return interaction.editReply({ embeds: [embed], components: [row], content: null });
+    await interaction.editReply({ embeds: [embed], components: [row], content: null });
+    if (Season.isTournamentReset) return;
+
+    const card = await this.rankedCard(player, tournament);
+    if (!card) return;
+    embed.setImage(card.attachmentKey);
+    return interaction.editReply({
+      embeds: [embed],
+      components: [row],
+      files: [new AttachmentBuilder(card.file, { name: card.name })]
+    });
+  }
+
+  private async rankedCard(player: APIPlayer, tournament: Tournament) {
+    const lastTournament = await getTournament(player, true).catch(() => null);
+    return createRankedGraph({
+      player,
+      tournament,
+      lastTournament,
+      weekStart: Util.getTournamentWindow().startTime
+    }).catch(() => null);
   }
 
   private async getLastTournament(playerTag: string) {
