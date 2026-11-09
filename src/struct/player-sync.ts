@@ -62,6 +62,6 @@ export class PlayerSync {
       }
     );
     // background bookkeeping; a failure here must not break the command that triggered it
-    await api.players.addPlayerAccount({ playerTag: encode(player.tag) }).catch(() => null);
+    await api.players.trackLegendPlayer({ playerTag: encode(player.tag) }).catch(() => null);
   }
 }
