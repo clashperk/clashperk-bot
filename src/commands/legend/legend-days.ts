@@ -43,6 +43,7 @@ import {
 } from '../../struct/image-helper.js';
 import { EMOJIS, HOME_BASE_LEAGUES, PLAYER_LEAGUE_TIERS, TOWN_HALLS } from '../../util/emojis.js';
 import {
+  dashboardLink,
   dashboardUrl,
   formatLeague,
   getMenuFromMessage,
@@ -646,7 +647,13 @@ export default class LegendDaysCommand extends Command {
       new ButtonBuilder()
         .setEmoji(EMOJIS.REFRESH)
         .setCustomId(JSON.stringify({ cmd: this.id, tag: player.tag }))
-        .setStyle(ButtonStyle.Secondary)
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setLabel('View ranked')
+        .setStyle(ButtonStyle.Link)
+        .setURL(
+          dashboardLink(`/players/${encodeURIComponent(player.tag)}/ranked`, 'ranked-battles')
+        )
     );
 
     await interaction.editReply({ embeds: [embed], components: [row], content: null });
