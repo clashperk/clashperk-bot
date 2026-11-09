@@ -1098,6 +1098,42 @@ export interface LegendDayBattleDto {
   battleTime: string;
 }
 
+export interface LegendArmyUnitDto {
+  /** @example "Thrower" */
+  name: string;
+  count: number;
+}
+
+export interface LegendHeroSetupDto {
+  /** @example "Archer Queen" */
+  name: string;
+  pet: string | null;
+  equipment: string[];
+  /** Share of the season's attacks with this exact setup, in percent. */
+  share: number;
+}
+
+export interface LegendArmyDto {
+  /** Share of the season's attacks with this exact army, in percent. */
+  share: number;
+  /** Most first. */
+  troops: LegendArmyUnitDto[];
+  /** Most first. */
+  spells: LegendArmyUnitDto[];
+  siege: LegendArmyUnitDto | null;
+}
+
+export interface LegendArmiesDto {
+  tag: string;
+  seasonId: string;
+  /** Legend attacks with an army code. */
+  attacks: number;
+  /** Each hero's most used pet and equipment, most used hero first. */
+  heroes: LegendHeroSetupDto[];
+  /** The most used army, without the clan castle. Null with no attacks. */
+  army: LegendArmyDto | null;
+}
+
 export interface LegendDayDto {
   /**
    * The game day, which starts at 05:00 UTC.
@@ -3654,6 +3690,20 @@ export type GetLegendDaysData = LegendDaysDto;
 
 export type GetLegendDaysError = ErrorResponseDto;
 
+export interface GetLegendArmiesParams {
+  /**
+   * The league season's start date; the current season when left out.
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   * @example "2026-10-05"
+   */
+  seasonId?: string;
+  playerTag: string;
+}
+
+export type GetLegendArmiesData = LegendArmiesDto;
+
+export type GetLegendArmiesError = ErrorResponseDto;
+
 export interface GetLegendSeasonsParams {
   playerTag: string;
 }
@@ -5486,6 +5536,33 @@ export namespace Legends {
     export type RequestBody = never;
     export type RequestHeaders = {};
     export type ResponseBody = GetLegendDaysData;
+  }
+
+  /**
+   * @description Each hero with the pet and equipment used most, and the army used most, from the season's legend attacks.
+   * @tags Legends
+   * @name GetLegendArmies
+   * @summary Get a player's most used legend armies
+   * @request GET:/legends/{playerTag}/armies
+   * @secure
+   * @response `200` `GetLegendArmiesData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetLegendArmies {
+    export type RequestParams = {
+      playerTag: string;
+    };
+    export type RequestQuery = {
+      /**
+       * The league season's start date; the current season when left out.
+       * @pattern ^\d{4}-\d{2}-\d{2}$
+       * @example "2026-10-05"
+       */
+      seasonId?: string;
+    };
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetLegendArmiesData;
   }
 
   /**
@@ -9120,6 +9197,27 @@ export class Api<SecurityDataType extends unknown> {
     getLegendDays: ({ playerTag, ...query }: GetLegendDaysParams, params: RequestParams = {}) =>
       this.http.request<GetLegendDaysData, GetLegendDaysError>({
         path: `/legends/${playerTag}/days`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Each hero with the pet and equipment used most, and the army used most, from the season's legend attacks.
+     *
+     * @tags Legends
+     * @name GetLegendArmies
+     * @summary Get a player's most used legend armies
+     * @request GET:/legends/{playerTag}/armies
+     * @secure
+     * @response `200` `GetLegendArmiesData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getLegendArmies: ({ playerTag, ...query }: GetLegendArmiesParams, params: RequestParams = {}) =>
+      this.http.request<GetLegendArmiesData, GetLegendArmiesError>({
+        path: `/legends/${playerTag}/armies`,
         method: 'GET',
         query: query,
         secure: true,
