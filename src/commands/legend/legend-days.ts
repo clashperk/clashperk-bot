@@ -657,7 +657,7 @@ export default class LegendDaysCommand extends Command {
         )
     );
 
-    await interaction.editReply({ embeds: [embed], components: [row], content: null });
+    await interaction.editReply({ embeds: [embed], components: [row], content: null, files: [] });
 
     const card = await this.rankedCard(player, tournament, weekStart, isLastWeek);
     if (!card) return;
