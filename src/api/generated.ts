@@ -874,6 +874,17 @@ export interface RankedDto {
   history: RankedHistoryItemDto[];
 }
 
+export interface RankedArmiesDto {
+  tag: string;
+  weekId: string;
+  /** Ranked attacks with an army code. */
+  attacks: number;
+  /** Each hero's most used pet and equipment, most used hero first. */
+  heroes: LegendHeroSetupDto[];
+  /** The most used army, without the clan castle. Null with no attacks. */
+  army: LegendArmyDto | null;
+}
+
 export interface BattleLogDto {
   name: string;
   tag: string;
@@ -1109,12 +1120,12 @@ export interface LegendHeroSetupDto {
   name: string;
   pet: string | null;
   equipment: string[];
-  /** Share of the season's attacks with this exact setup, in percent. */
+  /** Share of the attacks with this exact setup, in percent. */
   share: number;
 }
 
 export interface LegendArmyDto {
-  /** Share of the season's attacks with this exact army, in percent. */
+  /** Share of the attacks with this exact army, in percent. */
   share: number;
   /** Most first. */
   troops: LegendArmyUnitDto[];
@@ -3572,6 +3583,20 @@ export type GetPlayerRankedWeeksData = RankedDto;
 
 export type GetPlayerRankedWeeksError = ErrorResponseDto;
 
+export interface GetRankedArmiesParams {
+  /**
+   * The ranked week's start date (Monday); the current week when left out.
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   * @example "2026-11-02"
+   */
+  weekId?: string;
+  playerTag: string;
+}
+
+export type GetRankedArmiesData = RankedArmiesDto;
+
+export type GetRankedArmiesError = ErrorResponseDto;
+
 export interface GetPlayerBattleLogParams {
   playerTag: string;
 }
@@ -5243,6 +5268,33 @@ export namespace Players {
     export type RequestBody = never;
     export type RequestHeaders = {};
     export type ResponseBody = GetPlayerRankedWeeksData;
+  }
+
+  /**
+   * @description Each hero with the pet and equipment used most, and the army used most, from the week's ranked attacks.
+   * @tags Players
+   * @name GetRankedArmies
+   * @summary Get a player's most used ranked armies
+   * @request GET:/players/{playerTag}/ranked/armies
+   * @secure
+   * @response `200` `GetRankedArmiesData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetRankedArmies {
+    export type RequestParams = {
+      playerTag: string;
+    };
+    export type RequestQuery = {
+      /**
+       * The ranked week's start date (Monday); the current week when left out.
+       * @pattern ^\d{4}-\d{2}-\d{2}$
+       * @example "2026-11-02"
+       */
+      weekId?: string;
+    };
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetRankedArmiesData;
   }
 
   /**
@@ -8908,6 +8960,27 @@ export class Api<SecurityDataType extends unknown> {
       this.http.request<GetPlayerRankedWeeksData, GetPlayerRankedWeeksError>({
         path: `/players/${playerTag}/ranked`,
         method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Each hero with the pet and equipment used most, and the army used most, from the week's ranked attacks.
+     *
+     * @tags Players
+     * @name GetRankedArmies
+     * @summary Get a player's most used ranked armies
+     * @request GET:/players/{playerTag}/ranked/armies
+     * @secure
+     * @response `200` `GetRankedArmiesData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getRankedArmies: ({ playerTag, ...query }: GetRankedArmiesParams, params: RequestParams = {}) =>
+      this.http.request<GetRankedArmiesData, GetRankedArmiesError>({
+        path: `/players/${playerTag}/ranked/armies`,
+        method: 'GET',
+        query: query,
         secure: true,
         format: 'json',
         ...params
