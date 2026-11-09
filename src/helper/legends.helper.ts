@@ -77,7 +77,12 @@ export const getRankedBattleLog = async (
   return result.data.items.filter((b) => b.battleWeek === weekId && b.battleType === 'ranked');
 };
 
-export const getTournament = async (player: APIPlayer, lastTournament = false) => {
+/** A player's ranked group; `league` is the group's league when it differs from the player's current one. */
+export const getTournament = async (
+  player: APIPlayer,
+  lastTournament = false,
+  league: APIPlayer['leagueTier'] = player.leagueTier
+) => {
   const client = container.resolve(Client);
   const { body, res } = await client.coc.getLeagueGroup(
     lastTournament ? player.previousLeagueGroupTag : player.currentLeagueGroupTag,
@@ -137,7 +142,7 @@ export const getTournament = async (player: APIPlayer, lastTournament = false) =
   const rank = rankIndex + 1;
   const topPercentage = Math.ceil((rank / total) * 100);
 
-  const leagueId = String(player.leagueTier?.id ?? 0);
+  const leagueId = String(league?.id ?? 0);
   const promotions = LeaguePromotionsMap[leagueId as keyof typeof LeaguePromotionsMap];
   const demotionZone = promotions ? Math.ceil(total * (promotions.demotion / 100)) : 0;
   const isInDemotionZone = demotionZone > 0 && rank > total - demotionZone;
@@ -154,6 +159,7 @@ export const getTournament = async (player: APIPlayer, lastTournament = false) =
     promotionZone,
     isInPromotionZone,
     battles: [...attacks, ...defenses],
+    league,
     member: body.members[rankIndex],
     members: body.members.map((m) => ({ name: m.playerName, trophies: m.leagueTrophies }))
   };
