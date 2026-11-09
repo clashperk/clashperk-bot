@@ -58,6 +58,14 @@ export const getLegendDays = async (playerTag: string): Promise<LegendDayDto[]> 
   return result.data.items;
 };
 
+/** Null when the API can't say, so the card is drawn without the army panels. */
+export const getLegendArmies = async (playerTag: string) => {
+  const result = await api.legends
+    .getLegendArmies({ playerTag: encode(playerTag) })
+    .catch(() => null);
+  return result?.data ?? null;
+};
+
 export const getRankedBattleLog = async (
   playerTag: string,
   weekId: string

@@ -28,13 +28,14 @@ import { LegendDayDto } from '../../api/generated.js';
 import {
   aggregateLegendBattleLog,
   getLegendBattleLogAggregate,
+  getLegendArmies,
   getLegendDays,
   getLegendTimestampAgainstDay,
   getRankedBattleLog,
   getTournament
 } from '../../helper/legends.helper.js';
 import { Args, Command } from '../../lib/handlers.js';
-import { createLegendGraph } from '../../struct/image-helper.js';
+import { createLegendGraph, LegendCardStats } from '../../struct/image-helper.js';
 import {
   EMOJIS,
   HOME_BASE_LEAGUES,
@@ -142,7 +143,7 @@ export default class LegendDaysCommand extends Command {
       files: []
     });
 
-    const result = args.prev ? await this.graph(data) : null;
+    const result = args.prev ? await this.graph(data, days) : null;
     if (result) {
       const rawFile = new AttachmentBuilder(result.file, { name: result.name });
       embed.setImage(result.attachmentKey);
@@ -359,7 +360,7 @@ export default class LegendDaysCommand extends Command {
     return embed;
   }
 
-  private async graph(data: APIPlayer) {
+  private async graph(data: APIPlayer, legendDays: LegendDayDto[]) {
     const dailyItems = await getLegendBattleLogAggregate(data.tag);
     if (!dailyItems.length) return null;
 
@@ -408,6 +409,7 @@ export default class LegendDaysCommand extends Command {
     }
 
     return createLegendGraph({
+      stats: await this.cardStats(data.tag, legendDays),
       datasets: result.slice(0, 2),
       data: {
         name: data.name,
@@ -422,6 +424,32 @@ export default class LegendDaysCommand extends Command {
       seasonStart,
       lastSeason
     });
+  }
+
+  private async cardStats(tag: string, legendDays: LegendDayDto[]): Promise<LegendCardStats> {
+    const [armies, { globalRank }] = await Promise.all([getLegendArmies(tag), this.rankings(tag)]);
+
+    const byDate = new Map(legendDays.map((day) => [day.date, day]));
+    const days = Util.getLegendDays().map(({ startTime }) => {
+      const day = byDate.get(new Date(startTime).toISOString().slice(0, 10));
+      return day
+        ? { offense: day.attackTrophies, defense: day.defenseTrophies, attacks: day.attackCount }
+        : null;
+    });
+
+    const attackStars = [0, 0, 0, 0];
+    const defenseStars = [0, 0, 0, 0];
+    for (const battle of legendDays.flatMap((day) => day.battles)) {
+      (battle.isAttack ? attackStars : defenseStars)[battle.stars]++;
+    }
+
+    return {
+      rank: globalRank ? { rank: globalRank } : undefined,
+      days,
+      attackStars,
+      defenseStars,
+      mostUsed: armies?.army ? armies : undefined
+    };
   }
 
   private async logs(data: APIPlayer, legendDays: LegendDayDto[]) {
