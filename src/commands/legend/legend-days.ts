@@ -29,6 +29,7 @@ import {
   aggregateLegendBattleLog,
   getLegendBattleLogAggregate,
   getLegendArmies,
+  getRankedArmies,
   getLegendDays,
   getLegendTimestampAgainstDay,
   getRankedBattleLog,
@@ -705,8 +706,17 @@ export default class LegendDaysCommand extends Command {
     isLastWeek: boolean
   ) {
     // Last week's own previous group isn't in the API, so it has no comparison line.
-    const lastTournament = isLastWeek ? null : await getTournament(player, true).catch(() => null);
-    return createRankedGraph({ player, tournament, lastTournament, weekStart }).catch(() => null);
+    const [lastTournament, armies] = await Promise.all([
+      isLastWeek ? null : getTournament(player, true).catch(() => null),
+      getRankedArmies(player.tag, weekStart.toISOString().slice(0, 10))
+    ]);
+    return createRankedGraph({
+      player,
+      tournament,
+      lastTournament,
+      weekStart,
+      mostUsed: armies?.army ? armies : undefined
+    }).catch(() => null);
   }
 
   private async getLastTournament(playerTag: string) {

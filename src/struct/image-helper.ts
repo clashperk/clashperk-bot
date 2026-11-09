@@ -17,8 +17,10 @@ export interface LegendCardStats {
   /** Counts of 0★ to 3★ results. */
   attackStars: number[];
   defenseStars: number[];
-  mostUsed?: Pick<LegendArmiesDto, 'attacks' | 'heroes' | 'army'>;
+  mostUsed?: MostUsed;
 }
+
+type MostUsed = Pick<LegendArmiesDto, 'attacks' | 'heroes' | 'army'>;
 
 export const createLegendGraph = async ({
   datasets,
@@ -125,12 +127,14 @@ export const createRankedGraph = async ({
   player,
   tournament,
   lastTournament,
-  weekStart
+  weekStart,
+  mostUsed
 }: {
   player: APIPlayer;
   tournament: Tournament;
   lastTournament: Tournament | null;
   weekStart: Date;
+  mostUsed?: MostUsed;
 }) => {
   const league = tournament.league!;
   const leagueId = String(league.id);
@@ -164,7 +168,8 @@ export const createRankedGraph = async ({
         : undefined,
       attackStars: starCounts(tournament.battles.filter((b) => b.isAttack)),
       defenseStars: starCounts(tournament.battles.filter((b) => !b.isAttack)),
-      defenseWins: tournament.member.defenseWinCount
+      defenseWins: tournament.member.defenseWinCount,
+      mostUsed
     })
   }).then((res) => res.arrayBuffer());
 

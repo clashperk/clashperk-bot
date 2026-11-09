@@ -66,6 +66,14 @@ export const getLegendArmies = async (playerTag: string) => {
   return result?.data ?? null;
 };
 
+/** One ranked week's most used heroes and army; null when the API can't say. */
+export const getRankedArmies = async (playerTag: string, weekId: string) => {
+  const result = await api.players
+    .getRankedArmies({ playerTag: encode(playerTag), weekId })
+    .catch(() => null);
+  return result?.data ?? null;
+};
+
 export const getRankedBattleLog = async (
   playerTag: string,
   weekId: string
