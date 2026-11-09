@@ -596,6 +596,16 @@ export default class LegendDaysCommand extends Command {
     //   });
     // }
 
+    if (Season.isTournamentReset) {
+      const { startTime, endTime } = Util.getTournamentWindow();
+      embed.addFields([
+        {
+          name: 'Upcoming Tournament',
+          value: `${time(startTime, 'D')} - ${time(endTime, 'D')}`
+        }
+      ]);
+    }
+
     await this.addClanField(embed, player);
 
     embed.addFields([
@@ -631,16 +641,6 @@ export default class LegendDaysCommand extends Command {
         inline: true
       }
     ]);
-
-    if (Season.isTournamentReset) {
-      const { startTime, endTime } = Util.getTournamentWindow();
-      embed.addFields([
-        {
-          name: 'Upcoming Tournament',
-          value: `${time(startTime, 'D')} - ${time(endTime, 'D')}`
-        }
-      ]);
-    }
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
