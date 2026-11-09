@@ -31,7 +31,7 @@ export default class ClanHistoryCommand extends Command {
     // The API reports the current stint as running until now; the stored lastSeen
     // of an open stint is when it started.
     const history = await api.players
-      .getClanHistory({ playerTag: encode(data.tag) })
+      .getPlayerClanHistory({ playerTag: encode(data.tag) })
       .then(({ data }) => data.items)
       .catch(() => null);
     if (!history) {

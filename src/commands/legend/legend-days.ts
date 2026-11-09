@@ -507,7 +507,7 @@ export default class LegendDaysCommand extends Command {
 
     if (!globalRank) {
       try {
-        const estimate = await api.legends.estimateRank({ playerTag: encode(tag) });
+        const estimate = await api.legends.estimateLegendRank({ playerTag: encode(tag) });
         globalRank = estimate.data.rank;
       } catch {
         // Silently ignore estimate errors

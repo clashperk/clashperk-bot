@@ -10,13 +10,62 @@
  * ---------------------------------------------------------------
  */
 
+export enum PaymentSource {
+  PATREON = 'patreon',
+  KOFI = 'ko-fi',
+  BUY_ME_A_COFFEE = 'buymeacoffee',
+  PAYPAL = 'paypal',
+  OTHER = 'other'
+}
+
+export enum SubscriptionPlan {
+  BRONZE = 'bronze',
+  SILVER = 'silver',
+  GOLD = 'gold',
+  GIFTED = 'gifted',
+  SPONSORED = 'sponsored',
+  SPONSORED_CUSTOM_BOT = 'sponsored_custom_bot',
+  LIFETIME = 'lifetime',
+  LIFETIME_CUSTOM_BOT = 'lifetime_custom_bot'
+}
+
 export enum BillingCadence {
   MONTHLY = 'monthly',
-  YEARLY = 'yearly'
+  YEARLY = 'yearly',
+  ONE_TIME = 'one_time'
 }
 
 export enum SubscriptionProvider {
-  PATREON = 'patreon'
+  PATREON = 'patreon',
+  MANUAL = 'manual'
+}
+
+export enum RaidAttacksLeft {
+  One = 1,
+  Two = 2,
+  Three = 3,
+  Four = 4,
+  Five = 5,
+  Six = 6
+}
+
+export enum ReminderWarType {
+  Normal = 'normal',
+  Friendly = 'friendly',
+  Cwl = 'cwl'
+}
+
+/** Ping members with this many attacks left; empty pings nobody. */
+export enum WarAttacksLeft {
+  One = 1,
+  Two = 2
+}
+
+export enum ReminderClanRole {
+  Leader = 'leader',
+  CoLeader = 'coLeader',
+  Admin = 'admin',
+  Member = 'member'
 }
 
 export enum TicketStatus {
@@ -33,6 +82,12 @@ export enum TicketExtraButtonKind {
 export enum TicketDisplayMode {
   MENU = 'menu',
   BUTTONS = 'buttons'
+}
+
+export enum ButtonType {
+  Link = 'link',
+  Refresh = 'refresh',
+  MyRosters = 'myRosters'
 }
 
 /** Set for the link button only. */
@@ -108,34 +163,6 @@ export enum ClanLogType {
   TOWN_HALL_UPGRADE_LOG = 'town_hall_upgrade_log',
   WAR_PREFERENCE_LOG = 'war_preference_log',
   RANKED_BATTLE_LEAGUE_CHANGE_LOG = 'ranked_battle_league_change_log'
-}
-
-export enum RaidAttacksLeft {
-  One = 1,
-  Two = 2,
-  Three = 3,
-  Four = 4,
-  Five = 5,
-  Six = 6
-}
-
-export enum ReminderWarType {
-  Normal = 'normal',
-  Friendly = 'friendly',
-  Cwl = 'cwl'
-}
-
-/** Ping members with this many attacks left; empty pings nobody. */
-export enum WarAttacksLeft {
-  One = 1,
-  Two = 2
-}
-
-export enum ReminderClanRole {
-  Leader = 'leader',
-  CoLeader = 'coLeader',
-  Admin = 'admin',
-  Member = 'member'
 }
 
 export enum RosterSortBy {
@@ -232,21 +259,6 @@ export interface LoginOkDto {
   roles: UserRoles[];
   userId: string;
   accessToken: string;
-}
-
-export interface GenerateTokenInputDto {
-  /** @default ["user","admin","viewer","fetch:wars","fetch:clans","fetch:players","fetch:legends","fetch:links","manage:links","fetch:rosters","manage:rosters","manage:reminders"] */
-  roles: UserRoles[];
-  userId: string;
-}
-
-export interface GenerateTokenDto {
-  roles: UserRoles[];
-  userId: string;
-  accessToken: string;
-  passKey: string;
-  isBot: boolean;
-  displayName: string;
 }
 
 export interface AuthUserDto {
@@ -349,6 +361,10 @@ export interface ResultOkDto {
   message: string;
 }
 
+export interface SetHiddenInputDto {
+  hidden: boolean;
+}
+
 export interface GetLinksInputDto {
   /**
    * @maxItems 100
@@ -370,6 +386,8 @@ export interface LinksDto {
   userId: string;
   username: string;
   verified: boolean;
+  /** Left out of the owner's task lists. */
+  hidden?: boolean;
 }
 
 export interface ClanActivityInputDto {
@@ -918,49 +936,6 @@ export interface BattleLogLeaderboardDto {
   items: BattleLogLeaderboardItemDto[];
 }
 
-export interface ActiveWarsInputDto {
-  /** @maxItems 100 */
-  playerTags: string[];
-}
-
-export interface ActiveWarClanDto {
-  tag: string;
-  name: string;
-}
-
-export interface ActiveWarPlayerDto {
-  tag: string;
-  name: string;
-  townHallLevel: number;
-  /** Attacks used so far. */
-  attacks: number;
-}
-
-export interface ActiveWarDto {
-  warType: WarTypes;
-  /** From the war's times rather than the stored state, which can lag behind. */
-  state: 'preparation' | 'inWar';
-  /** Set for CWL rounds only. */
-  warTag: string | null;
-  /** The CWL round number; null for other wars. */
-  round: number | null;
-  /** @format date-time */
-  startTime: string;
-  /** @format date-time */
-  endTime: string;
-  id: number;
-  attacksPerMember: number;
-  /** The player's side. */
-  clan: ActiveWarClanDto;
-  opponent: ActiveWarClanDto;
-  player: ActiveWarPlayerDto;
-}
-
-export interface ActiveWarsDto {
-  /** One per player and war, soonest to end first. */
-  items: ActiveWarDto[];
-}
-
 export interface GlobalClanEntity {
   tag: string;
   name: string;
@@ -1139,8 +1114,13 @@ export interface LegendDayDto {
   defenseCount: number;
   /** Trophies gained from attacks. */
   attackTrophies: number;
-  /** Trophies lost to defenses, as a negative number. */
+  /** Trophies lost to defenses, as a negative number, including `missedDefenseTrophies`. */
   defenseTrophies: number;
+  /**
+   * Trophies the game took at the end of the day for defenses the player didn't get (fewer than
+   * 8), as a negative number. Absent when none were taken.
+   */
+  missedDefenseTrophies?: number;
   /** Oldest first. */
   battles: LegendDayBattleDto[];
 }
@@ -2051,100 +2031,6 @@ export interface ClanCategoryInput {
   name: string;
 }
 
-export interface ReminderClanDto {
-  tag: string;
-  name: string;
-}
-
-export interface ReminderScheduleDto {
-  warType: 'normal' | 'friendly' | 'cwl';
-  id: string;
-  clan: ReminderClanDto;
-  /**
-   * When the bot pings (or pinged) for this clan.
-   * @format date-time
-   */
-  timestamp: string;
-  triggered: boolean;
-  /** Bot outcome once handled, e.g. `reminder_sent_successfully` or a skip reason. */
-  reason: string | null;
-}
-
-export interface ClanWarReminderDto {
-  disabled: boolean;
-  townHalls: number[];
-  remaining: number[];
-  warTypes: string[];
-  smartSkip: boolean;
-  silent: boolean;
-  randomLimit: number | null;
-  id: string;
-  /** Short ID the bot shows in Discord: the last 5 hex characters, uppercased. */
-  shortId: string;
-  channelId: string;
-  channelName: string | null;
-  threadId: string | null;
-  message: string;
-  /** Time before the event ends, in milliseconds. */
-  duration: number;
-  roles: string[];
-  linkedOnly: boolean;
-  clans: ReminderClanDto[];
-  /** Runs from the last 3 days and upcoming ones, oldest first. The bot drops older runs. */
-  schedules: ReminderScheduleDto[];
-  /** @format date-time */
-  createdAt: string;
-}
-
-export interface CapitalRaidReminderDto {
-  allMembers: boolean;
-  minThreshold: number;
-  remaining: number[];
-  id: string;
-  /** Short ID the bot shows in Discord: the last 5 hex characters, uppercased. */
-  shortId: string;
-  channelId: string;
-  channelName: string | null;
-  threadId: string | null;
-  message: string;
-  /** Time before the event ends, in milliseconds. */
-  duration: number;
-  roles: string[];
-  linkedOnly: boolean;
-  clans: ReminderClanDto[];
-  /** Runs from the last 3 days and upcoming ones, oldest first. The bot drops older runs. */
-  schedules: ReminderScheduleDto[];
-  /** @format date-time */
-  createdAt: string;
-}
-
-export interface ClanGamesReminderDto {
-  allMembers: boolean;
-  minPoints: number;
-  id: string;
-  /** Short ID the bot shows in Discord: the last 5 hex characters, uppercased. */
-  shortId: string;
-  channelId: string;
-  channelName: string | null;
-  threadId: string | null;
-  message: string;
-  /** Time before the event ends, in milliseconds. */
-  duration: number;
-  roles: string[];
-  linkedOnly: boolean;
-  clans: ReminderClanDto[];
-  /** Runs from the last 3 days and upcoming ones, oldest first. The bot drops older runs. */
-  schedules: ReminderScheduleDto[];
-  /** @format date-time */
-  createdAt: string;
-}
-
-export interface GuildRemindersDto {
-  clanWars: ClanWarReminderDto[];
-  capitalRaids: CapitalRaidReminderDto[];
-  clanGames: ClanGamesReminderDto[];
-}
-
 export interface GuildChannelDto {
   id: string;
   name: string;
@@ -2158,6 +2044,20 @@ export interface GuildChannelDto {
   hasWebhook: boolean;
 }
 
+export interface GuildCategoryDto {
+  id: string;
+  name: string;
+}
+
+export interface MentionChannelDto {
+  id: string;
+  name: string;
+  /** Discord channel type: 0 text, 2 voice, 5 announcement, 13 stage, 15 forum, 16 media; 10, 11, 12 threads. */
+  type: number;
+  /** A thread's channel; null for a channel. */
+  parentId: string | null;
+}
+
 export interface GuildRoleDto {
   id: string;
   name: string;
@@ -2165,146 +2065,17 @@ export interface GuildRoleDto {
   position: number;
 }
 
-export interface ReminderPingsDto {
-  /** optIn pings only members with the role; optOut skips them. */
-  mode: 'optIn' | 'optOut';
-  /** @pattern ^\d{17,20}$ */
-  clanWarsRole: string | null;
-  /** @pattern ^\d{17,20}$ */
-  capitalRaidsRole: string | null;
-  /** @pattern ^\d{17,20}$ */
-  clanGamesRole: string | null;
-}
-
-export interface ReminderPingsInput {
-  /** optIn pings only members with the role; optOut skips them. */
-  mode: 'optIn' | 'optOut';
-  /** @pattern ^\d{17,20}$ */
-  clanWarsRole: string | null;
-  /** @pattern ^\d{17,20}$ */
-  capitalRaidsRole: string | null;
-  /** @pattern ^\d{17,20}$ */
-  clanGamesRole: string | null;
-}
-
-export interface ReminderWebhookInput {
-  /** @pattern ^\d{17,20}$ */
+export interface GuildEmojiDto {
   id: string;
-  /** @minLength 1 */
-  token: string;
+  name: string;
+  animated: boolean;
 }
 
-export interface ClanWarReminderInput {
-  /** @uniqueItems true */
-  roles: ReminderClanRole[];
-  /**
-   * Ping members with this many attacks left; empty pings nobody.
-   * @uniqueItems true
-   */
-  remaining: WarAttacksLeft[];
-  /**
-   * @minItems 1
-   * @uniqueItems true
-   */
-  warTypes: ReminderWarType[];
-  disabled: boolean;
-  /** @uniqueItems true */
-  townHalls: number[];
-  /** Skip once the clan reaches 100% destruction. */
-  smartSkip: boolean;
-  /** Post the message only, without mentioning members. */
-  silent: boolean;
-  /** @pattern ^\d{17,20}$ */
-  channelId: string;
-  /** From Discord's `webhook.incoming` sign-in; without one, a known webhook in the channel is reused. */
-  webhook?: ReminderWebhookInput;
-  /**
-   * @minLength 1
-   * @maxLength 1800
-   */
-  message: string;
-  /**
-   * Time before the event ends, in milliseconds.
-   * @min 900000
-   */
-  duration: number;
-  linkedOnly: boolean;
-  /**
-   * @maxItems 100
-   * @minItems 1
-   * @uniqueItems true
-   */
-  clans: string[];
-}
-
-export interface ReminderIdDto {
-  id: string;
-}
-
-export interface CapitalRaidReminderInput {
-  /** @uniqueItems true */
-  roles: ReminderClanRole[];
-  /** @uniqueItems true */
-  remaining: RaidAttacksLeft[];
-  allMembers: boolean;
-  /**
-   * @min 0
-   * @max 6
-   */
-  minThreshold: number;
-  /** @pattern ^\d{17,20}$ */
-  channelId: string;
-  /** From Discord's `webhook.incoming` sign-in; without one, a known webhook in the channel is reused. */
-  webhook?: ReminderWebhookInput;
-  /**
-   * @minLength 1
-   * @maxLength 1800
-   */
-  message: string;
-  /**
-   * Time before the event ends, in milliseconds.
-   * @min 900000
-   */
-  duration: number;
-  linkedOnly: boolean;
-  /**
-   * @maxItems 100
-   * @minItems 1
-   * @uniqueItems true
-   */
-  clans: string[];
-}
-
-export interface ClanGamesReminderInput {
-  /** @uniqueItems true */
-  roles: ReminderClanRole[];
-  allMembers: boolean;
-  /**
-   * @min 0
-   * @max 10000
-   */
-  minPoints: number;
-  /** @pattern ^\d{17,20}$ */
-  channelId: string;
-  /** From Discord's `webhook.incoming` sign-in; without one, a known webhook in the channel is reused. */
-  webhook?: ReminderWebhookInput;
-  /**
-   * @minLength 1
-   * @maxLength 1800
-   */
-  message: string;
-  /**
-   * Time before the event ends, in milliseconds.
-   * @min 900000
-   */
-  duration: number;
-  linkedOnly: boolean;
-  /**
-   * @maxItems 100
-   * @minItems 1
-   * @uniqueItems true
-   */
-  clans: string[];
+export interface GuildEmojisDto {
+  /** This server's, without the ones it lost with its boost level. */
+  server: GuildEmojiDto[];
+  /** The bot's own, which it can use in any server. */
+  bot: GuildEmojiDto[];
 }
 
 export interface GuildClanLogDto {
@@ -2350,6 +2121,13 @@ export interface ClanEmbedDto {
 export interface ClanEmbedStateDto {
   /** Null when the clan has no embed. */
   embed: ClanEmbedDto | null;
+}
+
+export interface ReminderWebhookInput {
+  /** @pattern ^\d{17,20}$ */
+  id: string;
+  /** @minLength 1 */
+  token: string;
 }
 
 export interface ClanEmbedInput {
@@ -2796,11 +2574,6 @@ export interface GuildBetaDto {
   beta: boolean;
 }
 
-export interface GuildCategoryDto {
-  id: string;
-  name: string;
-}
-
 export interface TicketEmbedDto {
   title: string | null;
   description: string | null;
@@ -3150,8 +2923,233 @@ export interface TicketSavedRepliesInput {
   savedReplies: TicketSavedReplyInput[];
 }
 
-export interface MessageOkDto {
+export interface ReminderClanDto {
+  tag: string;
+  name: string;
+}
+
+export interface ReminderScheduleDto {
+  warType: 'normal' | 'friendly' | 'cwl';
+  id: string;
+  clan: ReminderClanDto;
+  /**
+   * When the bot pings (or pinged) for this clan.
+   * @format date-time
+   */
+  timestamp: string;
+  triggered: boolean;
+  /** Bot outcome once handled, e.g. `reminder_sent_successfully` or a skip reason. */
+  reason: string | null;
+}
+
+export interface ClanWarReminderDto {
+  disabled: boolean;
+  townHalls: number[];
+  remaining: number[];
+  warTypes: string[];
+  smartSkip: boolean;
+  silent: boolean;
+  randomLimit: number | null;
+  id: string;
+  /** Short ID the bot shows in Discord: the last 5 hex characters, uppercased. */
+  shortId: string;
+  channelId: string;
+  channelName: string | null;
+  threadId: string | null;
   message: string;
+  /** Time before the event ends, in milliseconds. */
+  duration: number;
+  roles: string[];
+  linkedOnly: boolean;
+  clans: ReminderClanDto[];
+  /** Runs from the last 3 days and upcoming ones, oldest first. The bot drops older runs. */
+  schedules: ReminderScheduleDto[];
+  /** @format date-time */
+  createdAt: string;
+}
+
+export interface CapitalRaidReminderDto {
+  allMembers: boolean;
+  minThreshold: number;
+  remaining: number[];
+  id: string;
+  /** Short ID the bot shows in Discord: the last 5 hex characters, uppercased. */
+  shortId: string;
+  channelId: string;
+  channelName: string | null;
+  threadId: string | null;
+  message: string;
+  /** Time before the event ends, in milliseconds. */
+  duration: number;
+  roles: string[];
+  linkedOnly: boolean;
+  clans: ReminderClanDto[];
+  /** Runs from the last 3 days and upcoming ones, oldest first. The bot drops older runs. */
+  schedules: ReminderScheduleDto[];
+  /** @format date-time */
+  createdAt: string;
+}
+
+export interface ClanGamesReminderDto {
+  allMembers: boolean;
+  minPoints: number;
+  id: string;
+  /** Short ID the bot shows in Discord: the last 5 hex characters, uppercased. */
+  shortId: string;
+  channelId: string;
+  channelName: string | null;
+  threadId: string | null;
+  message: string;
+  /** Time before the event ends, in milliseconds. */
+  duration: number;
+  roles: string[];
+  linkedOnly: boolean;
+  clans: ReminderClanDto[];
+  /** Runs from the last 3 days and upcoming ones, oldest first. The bot drops older runs. */
+  schedules: ReminderScheduleDto[];
+  /** @format date-time */
+  createdAt: string;
+}
+
+export interface GuildRemindersDto {
+  clanWars: ClanWarReminderDto[];
+  capitalRaids: CapitalRaidReminderDto[];
+  clanGames: ClanGamesReminderDto[];
+}
+
+export interface ReminderPingsDto {
+  /** optIn pings only members with the role; optOut skips them. */
+  mode: 'optIn' | 'optOut';
+  /** @pattern ^\d{17,20}$ */
+  clanWarsRole: string | null;
+  /** @pattern ^\d{17,20}$ */
+  capitalRaidsRole: string | null;
+  /** @pattern ^\d{17,20}$ */
+  clanGamesRole: string | null;
+}
+
+export interface ReminderPingsInput {
+  /** optIn pings only members with the role; optOut skips them. */
+  mode: 'optIn' | 'optOut';
+  /** @pattern ^\d{17,20}$ */
+  clanWarsRole: string | null;
+  /** @pattern ^\d{17,20}$ */
+  capitalRaidsRole: string | null;
+  /** @pattern ^\d{17,20}$ */
+  clanGamesRole: string | null;
+}
+
+export interface ClanWarReminderInput {
+  /** @uniqueItems true */
+  roles: ReminderClanRole[];
+  /**
+   * Ping members with this many attacks left; empty pings nobody.
+   * @uniqueItems true
+   */
+  remaining: WarAttacksLeft[];
+  /**
+   * @minItems 1
+   * @uniqueItems true
+   */
+  warTypes: ReminderWarType[];
+  disabled: boolean;
+  /** @uniqueItems true */
+  townHalls: number[];
+  /** Skip once the clan reaches 100% destruction. */
+  smartSkip: boolean;
+  /** Post the message only, without mentioning members. */
+  silent: boolean;
+  /** @pattern ^\d{17,20}$ */
+  channelId: string;
+  /** From Discord's `webhook.incoming` sign-in; without one, a known webhook in the channel is reused. */
+  webhook?: ReminderWebhookInput;
+  /**
+   * @minLength 1
+   * @maxLength 1800
+   */
+  message: string;
+  /**
+   * Time before the event ends, in milliseconds.
+   * @min 900000
+   */
+  duration: number;
+  linkedOnly: boolean;
+  /**
+   * @maxItems 100
+   * @minItems 1
+   * @uniqueItems true
+   */
+  clans: string[];
+}
+
+export interface ReminderIdDto {
+  id: string;
+}
+
+export interface CapitalRaidReminderInput {
+  /** @uniqueItems true */
+  roles: ReminderClanRole[];
+  /** @uniqueItems true */
+  remaining: RaidAttacksLeft[];
+  allMembers: boolean;
+  /**
+   * @min 0
+   * @max 6
+   */
+  minThreshold: number;
+  /** @pattern ^\d{17,20}$ */
+  channelId: string;
+  /** From Discord's `webhook.incoming` sign-in; without one, a known webhook in the channel is reused. */
+  webhook?: ReminderWebhookInput;
+  /**
+   * @minLength 1
+   * @maxLength 1800
+   */
+  message: string;
+  /**
+   * Time before the event ends, in milliseconds.
+   * @min 900000
+   */
+  duration: number;
+  linkedOnly: boolean;
+  /**
+   * @maxItems 100
+   * @minItems 1
+   * @uniqueItems true
+   */
+  clans: string[];
+}
+
+export interface ClanGamesReminderInput {
+  /** @uniqueItems true */
+  roles: ReminderClanRole[];
+  allMembers: boolean;
+  /**
+   * @min 0
+   * @max 10000
+   */
+  minPoints: number;
+  /** @pattern ^\d{17,20}$ */
+  channelId: string;
+  /** From Discord's `webhook.incoming` sign-in; without one, a known webhook in the channel is reused. */
+  webhook?: ReminderWebhookInput;
+  /**
+   * @minLength 1
+   * @maxLength 1800
+   */
+  message: string;
+  /**
+   * Time before the event ends, in milliseconds.
+   * @min 900000
+   */
+  duration: number;
+  linkedOnly: boolean;
+  /**
+   * @maxItems 100
+   * @minItems 1
+   * @uniqueItems true
+   */
+  clans: string[];
 }
 
 export interface ExportMembersInput {
@@ -3214,7 +3212,10 @@ export interface BetaGuildIdsDto {
 
 export interface SubscriberServerDto {
   id: string;
+  /** The server's current name when ClashPerk is in it, or the name when it was added. */
   name: string;
+  /** Null without an icon or when ClashPerk isn't in the server. */
+  iconUrl: string | null;
   /** Clans this subscription lets the server have logs for. */
   clanLimit: number;
 }
@@ -3224,31 +3225,85 @@ export interface SubscriberDto {
   cadence: BillingCadence;
   id: string;
   name: string;
-  /** The Discord account that redeemed it; null until someone does. */
+  /** The Discord account that redeemed it. Null until someone does. */
   discordUserId: string | null;
   discordUsername: string | null;
-  /** Bronze, silver or gold; null for special tiers or an unknown reward. */
+  /** Bronze, silver or gold. Null for special tiers or an unknown reward. */
   plan: string | null;
   /** A special tier such as `lifetime` or `gifted`. */
   tier: string | null;
+  /** Manual grants: where it was paid and the payment's reference. */
+  note: string | null;
   active: boolean;
   /** The provider's own status, e.g. `active_patron` or `declined_patron`. */
   status: string | null;
-  /** What each charge bills, for a month or a year. */
+  /** What each charge bills, for a month or a year, or a manual grant's last payment. */
   billedCents: number;
-  /** The charge spread per month, estimated for yearly plans. */
+  /** The charge spread per month, estimated for yearly plans and manual grants. */
   monthlyCents: number;
   lifetimeCents: number;
   customBot: boolean;
   servers: SubscriberServerDto[];
   /** @format date-time */
   lastChargeDate: string | null;
+  /**
+   * Manual grants: when it ends. Null for lifetime or Patreon.
+   * @format date-time
+   */
+  expiresAt: string | null;
   /** @format date-time */
   createdAt: string;
 }
 
 export interface SubscribersDto {
   subscribers: SubscriberDto[];
+}
+
+export interface SubscriptionPaymentInput {
+  source: PaymentSource;
+  /**
+   * The transaction ID or receipt link.
+   * @minLength 1
+   * @maxLength 200
+   */
+  reference?: string;
+  /**
+   * What was paid, in US cents.
+   * @min 0
+   * @max 1000000
+   */
+  amountCents: number;
+}
+
+export interface GrantSubscriptionInput {
+  plan: SubscriptionPlan;
+  discordUserId: string;
+  /**
+   * Who paid, as the payment shows it.
+   * @minLength 1
+   * @maxLength 100
+   */
+  name: string;
+  /** @format email */
+  email?: string;
+  payment: SubscriptionPaymentInput;
+  /** ISO time it ends, in the future. Null for lifetime. */
+  expiresAt: string | null;
+  /**
+   * Servers to cover now. The user can add the rest with /redeem.
+   * @maxItems 10
+   */
+  serverIds?: string[];
+}
+
+export interface UpdateSubscriptionInput {
+  plan?: SubscriptionPlan;
+  /** ISO time it ends. Null for lifetime. A past time ends it now. */
+  expiresAt?: string | null;
+  /** A new payment, such as a renewal. It's added to the lifetime total. */
+  payment?: SubscriptionPaymentInput;
+  /** @maxItems 10 */
+  addServerIds?: string[];
 }
 
 export interface DeveloperDto {
@@ -3282,7 +3337,7 @@ export interface AddDeveloperInput {
 
 export interface AddedDeveloperDto {
   developer: DeveloperDto;
-  /** Shown once; the account signs in with it at /auth/login. */
+  /** Shown only once. Sign in with it at /auth/login. */
   passKey: string;
 }
 
@@ -3294,13 +3349,13 @@ export interface EditDeveloperInput {
   roles: UserRoles[];
 }
 
+export interface MessageOkDto {
+  message: string;
+}
+
 export type LoginData = LoginOkDto;
 
 export type LoginError = ErrorResponseDto;
-
-export type GeneratePasskeyData = GenerateTokenDto;
-
-export type GeneratePasskeyError = ErrorResponseDto;
 
 export interface GetAuthUserParams {
   userId: string;
@@ -3310,13 +3365,13 @@ export type GetAuthUserData = AuthUserDto;
 
 export type GetAuthUserError = ErrorResponseDto;
 
-export interface DecodeHandoffTokenParams {
+export interface GetHandoffUserParams {
   token: string;
 }
 
-export type DecodeHandoffTokenData = HandoffUserDto;
+export type GetHandoffUserData = HandoffUserDto;
 
-export type DecodeHandoffTokenError = ErrorResponseDto;
+export type GetHandoffUserError = ErrorResponseDto;
 
 export type CreateHandoffTokenData = HandoffTokenDto;
 
@@ -3334,17 +3389,17 @@ export type GetGuildAccessData = GuildAccessDto;
 
 export type GetGuildAccessError = ErrorResponseDto;
 
-export type LinkData = ResultOkDto;
+export type CreateLinkData = ResultOkDto;
 
-export type LinkError = ErrorResponseDto;
+export type CreateLinkError = ErrorResponseDto;
 
-export interface UnlinkParams {
+export interface DeleteLinkParams {
   playerTag: string;
 }
 
-export type UnlinkData = ResultOkDto;
+export type DeleteLinkData = ResultOkDto;
 
-export type UnlinkError = ErrorResponseDto;
+export type DeleteLinkError = ErrorResponseDto;
 
 export interface SetDefaultLinkParams {
   playerTag: string;
@@ -3354,6 +3409,14 @@ export type SetDefaultLinkData = ResultOkDto;
 
 export type SetDefaultLinkError = ErrorResponseDto;
 
+export interface SetLinkHiddenParams {
+  playerTag: string;
+}
+
+export type SetLinkHiddenData = ResultOkDto;
+
+export type SetLinkHiddenError = ErrorResponseDto;
+
 export type GetLinksData = LinksDto[];
 
 export type GetLinksError = ErrorResponseDto;
@@ -3362,13 +3425,13 @@ export type GetLinksViaPostData = LinksDto[];
 
 export type GetLinksViaPostError = ErrorResponseDto;
 
-export type GetActivityData = ClanActivityDto;
+export type GetClanActivityData = ClanActivityDto;
 
-export type GetActivityError = ErrorResponseDto;
+export type GetClanActivityError = ErrorResponseDto;
 
-export type GetActivityViaPostData = ClanActivityDto;
+export type GetClanActivityViaPostData = ClanActivityDto;
 
-export type GetActivityViaPostError = ErrorResponseDto;
+export type GetClanActivityViaPostError = ErrorResponseDto;
 
 export interface GetClanParams {
   clanTag: string;
@@ -3378,15 +3441,15 @@ export type GetClanData = ClanDto;
 
 export type GetClanError = ErrorResponseDto;
 
-export interface GetLastSeenParams {
+export interface GetClanLastSeenParams {
   clanTag: string;
 }
 
-export type GetLastSeenData = LastSeenDto;
+export type GetClanLastSeenData = LastSeenDto;
 
-export type GetLastSeenError = ErrorResponseDto;
+export type GetClanLastSeenError = ErrorResponseDto;
 
-export interface GetCapitalContributionParams {
+export interface GetClanCapitalContributionsParams {
   /**
    * @pattern ^\d{4}-\d{2}$
    * @example "2026-09"
@@ -3395,11 +3458,11 @@ export interface GetCapitalContributionParams {
   clanTag: string;
 }
 
-export type GetCapitalContributionData = CapitalContributionDto;
+export type GetClanCapitalContributionsData = CapitalContributionDto;
 
-export type GetCapitalContributionError = ErrorResponseDto;
+export type GetClanCapitalContributionsError = ErrorResponseDto;
 
-export interface GetCapitalRaidsParams {
+export interface GetClanCapitalRaidsParams {
   /**
    * @min 1
    * @max 60
@@ -3409,9 +3472,9 @@ export interface GetCapitalRaidsParams {
   clanTag: string;
 }
 
-export type GetCapitalRaidsData = CapitalRaidsDto;
+export type GetClanCapitalRaidsData = CapitalRaidsDto;
 
-export type GetCapitalRaidsError = ErrorResponseDto;
+export type GetClanCapitalRaidsError = ErrorResponseDto;
 
 export interface GetClanGamesParams {
   /**
@@ -3443,15 +3506,15 @@ export type GetPlayerData = PlayerDto;
 
 export type GetPlayerError = ErrorResponseDto;
 
-export interface AddPlayerAccountParams {
+export interface TrackLegendPlayerParams {
   playerTag: string;
 }
 
-export type AddPlayerAccountData = ResultOkDto;
+export type TrackLegendPlayerData = ResultOkDto;
 
-export type AddPlayerAccountError = ErrorResponseDto;
+export type TrackLegendPlayerError = ErrorResponseDto;
 
-export interface GetSeasonStatsParams {
+export interface GetPlayerSeasonsParams {
   /**
    * @min 1
    * @max 12
@@ -3461,33 +3524,33 @@ export interface GetSeasonStatsParams {
   playerTag: string;
 }
 
-export type GetSeasonStatsData = PlayerSeasonStatsItemsDto;
+export type GetPlayerSeasonsData = PlayerSeasonStatsItemsDto;
 
-export type GetSeasonStatsError = ErrorResponseDto;
+export type GetPlayerSeasonsError = ErrorResponseDto;
 
-export interface GetRankedParams {
+export interface GetPlayerRankedWeeksParams {
   playerTag: string;
 }
 
-export type GetRankedData = RankedDto;
+export type GetPlayerRankedWeeksData = RankedDto;
 
-export type GetRankedError = ErrorResponseDto;
+export type GetPlayerRankedWeeksError = ErrorResponseDto;
 
-export interface GetBattleLogParams {
+export interface GetPlayerBattleLogParams {
   playerTag: string;
 }
 
-export type GetBattleLogData = BattleLogItemsDto;
+export type GetPlayerBattleLogData = BattleLogItemsDto;
 
-export type GetBattleLogError = ErrorResponseDto;
+export type GetPlayerBattleLogError = ErrorResponseDto;
 
-export interface GetBattleLogAggregateParams {
+export interface GetPlayerDailyBattlesParams {
   playerTag: string;
 }
 
-export type GetBattleLogAggregateData = BattleLogAggregateItemsDto;
+export type GetPlayerDailyBattlesData = BattleLogAggregateItemsDto;
 
-export type GetBattleLogAggregateError = ErrorResponseDto;
+export type GetPlayerDailyBattlesError = ErrorResponseDto;
 
 export type GetBattleLogLeaderboardData = BattleLogLeaderboardDto;
 
@@ -3497,19 +3560,15 @@ export type GetBattleLogLeaderboardViaPostData = BattleLogLeaderboardDto;
 
 export type GetBattleLogLeaderboardViaPostError = ErrorResponseDto;
 
-export type GetActiveWarsData = ActiveWarsDto;
-
-export type GetActiveWarsError = ErrorResponseDto;
-
-export interface GetClanHistoryParams {
+export interface GetPlayerClanHistoryParams {
   playerTag: string;
 }
 
-export type GetClanHistoryData = ClanHistoryItemsDto;
+export type GetPlayerClanHistoryData = ClanHistoryItemsDto;
 
-export type GetClanHistoryError = ErrorResponseDto;
+export type GetPlayerClanHistoryError = ErrorResponseDto;
 
-export interface GetAttackHistoryParams {
+export interface GetPlayerWarsParams {
   /**
    * The newest wars first, at most this many.
    * @min 1
@@ -3525,11 +3584,11 @@ export interface GetAttackHistoryParams {
   playerTag: string;
 }
 
-export type GetAttackHistoryData = AttackHistoryItemsDto;
+export type GetPlayerWarsData = AttackHistoryItemsDto;
 
-export type GetAttackHistoryError = ErrorResponseDto;
+export type GetPlayerWarsError = ErrorResponseDto;
 
-export interface AggregateAttackHistoryParams {
+export interface GetPlayerWarTotalsParams {
   /**
    * Date string or timestamp in milliseconds
    * @format date-time
@@ -3538,11 +3597,11 @@ export interface AggregateAttackHistoryParams {
   playerTag: string;
 }
 
-export type AggregateAttackHistoryData = AggregateAttackHistoryItemsDto;
+export type GetPlayerWarTotalsData = AggregateAttackHistoryItemsDto;
 
-export type AggregateAttackHistoryError = ErrorResponseDto;
+export type GetPlayerWarTotalsError = ErrorResponseDto;
 
-export interface AggregateClanWarLeagueHistoryParams {
+export interface GetPlayerClanWarLeagueTotalsParams {
   /**
    * Date string or timestamp in milliseconds
    * @format date-time
@@ -3551,9 +3610,9 @@ export interface AggregateClanWarLeagueHistoryParams {
   playerTag: string;
 }
 
-export type AggregateClanWarLeagueHistoryData = AggregateClanWarLeagueHistoryItemsDto;
+export type GetPlayerClanWarLeagueTotalsData = AggregateClanWarLeagueHistoryItemsDto;
 
-export type AggregateClanWarLeagueHistoryError = ErrorResponseDto;
+export type GetPlayerClanWarLeagueTotalsError = ErrorResponseDto;
 
 export type GetLegendRankingThresholdsData = LegendRankingThresholdsDto;
 
@@ -3567,7 +3626,7 @@ export type GetLegendAttacksViaPostData = LegendAttacksItemsDto;
 
 export type GetLegendAttacksViaPostError = ErrorResponseDto;
 
-export interface GetLegendAttacksByPlayerTagParams {
+export interface GetPlayerLegendAttacksParams {
   /**
    * The league season's start date; the current season when left out.
    * @pattern ^\d{4}-\d{2}-\d{2}$
@@ -3577,9 +3636,9 @@ export interface GetLegendAttacksByPlayerTagParams {
   playerTag: string;
 }
 
-export type GetLegendAttacksByPlayerTagData = LegendAttacksDto;
+export type GetPlayerLegendAttacksData = LegendAttacksDto;
 
-export type GetLegendAttacksByPlayerTagError = ErrorResponseDto;
+export type GetPlayerLegendAttacksError = ErrorResponseDto;
 
 export interface GetLegendDaysParams {
   /**
@@ -3603,25 +3662,25 @@ export type GetLegendSeasonsData = LegendSeasonsDto;
 
 export type GetLegendSeasonsError = ErrorResponseDto;
 
-export interface EstimateRankParams {
+export interface EstimateLegendRankParams {
   playerTag: string;
 }
 
-export type EstimateRankData = LegendRankDto;
+export type EstimateLegendRankData = LegendRankDto;
 
-export type EstimateRankError = ErrorResponseDto;
+export type EstimateLegendRankError = ErrorResponseDto;
 
-export type GetLocationsData = RankingLocationsDto;
+export type GetRankingLocationsData = RankingLocationsDto;
 
-export type GetLocationsError = ErrorResponseDto;
+export type GetRankingLocationsError = ErrorResponseDto;
 
-export type GetSeasonsData = RankingSeasonsDto;
+export type GetRankingSeasonsData = RankingSeasonsDto;
 
-export type GetSeasonsError = ErrorResponseDto;
+export type GetRankingSeasonsError = ErrorResponseDto;
 
-export type GetStandingsData = RankingStandingsDto;
+export type FindRankingsData = RankingStandingsDto;
 
-export type GetStandingsError = ErrorResponseDto;
+export type FindRankingsError = ErrorResponseDto;
 
 export interface GetClanRankingsParams {
   clanTag: string;
@@ -3639,7 +3698,7 @@ export type GetPlayerRankingsData = PlayerRankingsDto;
 
 export type GetPlayerRankingsError = ErrorResponseDto;
 
-export interface GetBoardParams {
+export interface GetRankingBoardParams {
   /**
    * A saved league season (from `/rankings/seasons`); the live board when left out.
    * @pattern ^\d{4}-\d{2}(-\d{2})?$
@@ -3654,25 +3713,25 @@ export interface GetBoardParams {
   board: 'players' | 'clans' | 'capital' | 'builder-base-players' | 'builder-base-clans';
 }
 
-export type GetBoardData = RankingBoardDto;
+export type GetRankingBoardData = RankingBoardDto;
 
-export type GetBoardError = ErrorResponseDto;
+export type GetRankingBoardError = ErrorResponseDto;
 
-export interface GetClanWarLeagueGroupsParams {
+export interface GetClanWarLeagueGroupParams {
   clanTag: string;
 }
 
-export type GetClanWarLeagueGroupsData = ClanWarLeaguesDto;
+export type GetClanWarLeagueGroupData = ClanWarLeaguesDto;
 
-export type GetClanWarLeagueGroupsError = ErrorResponseDto;
+export type GetClanWarLeagueGroupError = ErrorResponseDto;
 
-export interface GetClanWarLeagueForClanParams {
+export interface GetClanWarLeagueWarsParams {
   clanTag: string;
 }
 
-export type GetClanWarLeagueForClanData = ClanWarLeaguesDto;
+export type GetClanWarLeagueWarsData = ClanWarLeaguesDto;
 
-export type GetClanWarLeagueForClanError = ErrorResponseDto;
+export type GetClanWarLeagueWarsError = ErrorResponseDto;
 
 export interface GetClanWarLeagueSeasonsParams {
   /**
@@ -3688,7 +3747,7 @@ export type GetClanWarLeagueSeasonsData = ClanWarLeagueSeasonsDto;
 
 export type GetClanWarLeagueSeasonsError = ErrorResponseDto;
 
-export interface GetClanWarStatsParams {
+export interface GetClanMemberWarStatsParams {
   /**
    * Regular and CWL wars, regular only, or CWL only; friendly wars never count.
    * @default "all"
@@ -3711,9 +3770,9 @@ export interface GetClanWarStatsParams {
   clanTag: string;
 }
 
-export type GetClanWarStatsData = ClanWarStatsDto;
+export type GetClanMemberWarStatsData = ClanWarStatsDto;
 
-export type GetClanWarStatsError = ErrorResponseDto;
+export type GetClanMemberWarStatsError = ErrorResponseDto;
 
 export interface GetClanWarLeagueStandingsParams {
   clanTag: string;
@@ -3724,7 +3783,7 @@ export type GetClanWarLeagueStandingsData = ClanWarLeagueStandingsDto;
 
 export type GetClanWarLeagueStandingsError = ErrorResponseDto;
 
-export interface GetClanWarsParams {
+export interface ListClanWarsParams {
   /**
    * @min 1
    * @max 50
@@ -3739,9 +3798,9 @@ export interface GetClanWarsParams {
   clanTag: string;
 }
 
-export type GetClanWarsData = ClanWarListDto;
+export type ListClanWarsData = ClanWarListDto;
 
-export type GetClanWarsError = ErrorResponseDto;
+export type ListClanWarsError = ErrorResponseDto;
 
 export interface GetCurrentWarParams {
   clanTag: string;
@@ -3781,13 +3840,13 @@ export type GetUpcomingEventsData = UpcomingEventsDto;
 
 export type GetUpcomingEventsError = ErrorResponseDto;
 
-export interface GetRostersParams {
+export interface ListRostersParams {
   guildId: string;
 }
 
-export type GetRostersData = GetRostersDto;
+export type ListRostersData = GetRostersDto;
 
-export type GetRostersError = ErrorResponseDto;
+export type ListRostersError = ErrorResponseDto;
 
 export interface CreateRosterParams {
   guildId: string;
@@ -4053,14 +4112,6 @@ export type DeleteClanCategoryData = GuildClansDto;
 
 export type DeleteClanCategoryError = ErrorResponseDto;
 
-export interface GetGuildRemindersParams {
-  guildId: string;
-}
-
-export type GetGuildRemindersData = GuildRemindersDto;
-
-export type GetGuildRemindersError = ErrorResponseDto;
-
 export interface ListChannelsParams {
   guildId: string;
 }
@@ -4069,6 +4120,22 @@ export type ListChannelsData = GuildChannelDto[];
 
 export type ListChannelsError = ErrorResponseDto;
 
+export interface ListChannelCategoriesParams {
+  guildId: string;
+}
+
+export type ListChannelCategoriesData = GuildCategoryDto[];
+
+export type ListChannelCategoriesError = ErrorResponseDto;
+
+export interface ListMentionableChannelsParams {
+  guildId: string;
+}
+
+export type ListMentionableChannelsData = MentionChannelDto[];
+
+export type ListMentionableChannelsError = ErrorResponseDto;
+
 export interface ListRolesParams {
   guildId: string;
 }
@@ -4076,6 +4143,384 @@ export interface ListRolesParams {
 export type ListRolesData = GuildRoleDto[];
 
 export type ListRolesError = ErrorResponseDto;
+
+export interface ListEmojisParams {
+  guildId: string;
+}
+
+export type ListEmojisData = GuildEmojisDto;
+
+export type ListEmojisError = ErrorResponseDto;
+
+export interface ListGuildClanLogsParams {
+  guildId: string;
+}
+
+export type ListGuildClanLogsData = GuildClanLogDto[];
+
+export type ListGuildClanLogsError = ErrorResponseDto;
+
+export interface GetClanLogLimitParams {
+  guildId: string;
+}
+
+export type GetClanLogLimitData = ClanLogLimitDto;
+
+export type GetClanLogLimitError = ErrorResponseDto;
+
+export interface GetClanEmbedParams {
+  guildId: string;
+  clanTag: string;
+}
+
+export type GetClanEmbedData = ClanEmbedStateDto;
+
+export type GetClanEmbedError = ErrorResponseDto;
+
+export interface SaveClanEmbedParams {
+  guildId: string;
+  clanTag: string;
+}
+
+export type SaveClanEmbedData = ClanEmbedDto;
+
+export type SaveClanEmbedError = ErrorResponseDto;
+
+export interface DeleteClanEmbedParams {
+  guildId: string;
+  clanTag: string;
+}
+
+export type DeleteClanEmbedData = any;
+
+export type DeleteClanEmbedError = ErrorResponseDto;
+
+export interface ListClanLogsParams {
+  guildId: string;
+  clanTag: string;
+}
+
+export type ListClanLogsData = ClanLogDto[];
+
+export type ListClanLogsError = ErrorResponseDto;
+
+export interface SaveClanLogParams {
+  guildId: string;
+  clanTag: string;
+  logType: ClanLogType;
+}
+
+export type SaveClanLogData = ClanLogDto;
+
+export type SaveClanLogError = ErrorResponseDto;
+
+export interface DeleteClanLogParams {
+  guildId: string;
+  clanTag: string;
+  logType: ClanLogType;
+}
+
+export type DeleteClanLogData = any;
+
+export type DeleteClanLogError = ErrorResponseDto;
+
+export interface GetAutoRolesParams {
+  guildId: string;
+}
+
+export type GetAutoRolesData = AutoRolesDto;
+
+export type GetAutoRolesError = ErrorResponseDto;
+
+export interface UpdateAutoRolesParams {
+  guildId: string;
+}
+
+export type UpdateAutoRolesData = AutoRolesDto;
+
+export type UpdateAutoRolesError = ErrorResponseDto;
+
+export interface SaveClanAutoRolesParams {
+  guildId: string;
+  clanTag: string;
+}
+
+export type SaveClanAutoRolesData = AutoRolesDto;
+
+export type SaveClanAutoRolesError = ErrorResponseDto;
+
+export interface ListFlagsParams {
+  /** Only flags of this type */
+  flagType?: FlagType;
+  guildId: string;
+}
+
+export type ListFlagsData = FlagsDto;
+
+export type ListFlagsError = ErrorResponseDto;
+
+export interface CreateFlagsParams {
+  guildId: string;
+}
+
+export type CreateFlagsData = FlagDto[];
+
+export type CreateFlagsError = ErrorResponseDto;
+
+export interface DeleteFlagParams {
+  guildId: string;
+  flagId: string;
+}
+
+export type DeleteFlagData = any;
+
+export type DeleteFlagError = ErrorResponseDto;
+
+export interface SearchMembersParams {
+  query: string;
+  guildId: string;
+}
+
+export type SearchMembersData = ListMemberDto[];
+
+export type SearchMembersError = ErrorResponseDto;
+
+export interface GetServerLogsParams {
+  guildId: string;
+}
+
+export type GetServerLogsData = ServerLogsDto;
+
+export type GetServerLogsError = ErrorResponseDto;
+
+export interface SaveFlagAlertLogParams {
+  guildId: string;
+}
+
+export type SaveFlagAlertLogData = ServerLogsDto;
+
+export type SaveFlagAlertLogError = ErrorResponseDto;
+
+export interface DeleteFlagAlertLogParams {
+  guildId: string;
+}
+
+export type DeleteFlagAlertLogData = ServerLogsDto;
+
+export type DeleteFlagAlertLogError = ErrorResponseDto;
+
+export interface SaveRosterChangelogParams {
+  guildId: string;
+}
+
+export type SaveRosterChangelogData = ServerLogsDto;
+
+export type SaveRosterChangelogError = ErrorResponseDto;
+
+export interface DeleteRosterChangelogParams {
+  guildId: string;
+}
+
+export type DeleteRosterChangelogData = ServerLogsDto;
+
+export type DeleteRosterChangelogError = ErrorResponseDto;
+
+export interface SaveMaintenanceLogParams {
+  guildId: string;
+}
+
+export type SaveMaintenanceLogData = ServerLogsDto;
+
+export type SaveMaintenanceLogError = ErrorResponseDto;
+
+export interface DeleteMaintenanceLogParams {
+  guildId: string;
+}
+
+export type DeleteMaintenanceLogData = ServerLogsDto;
+
+export type DeleteMaintenanceLogError = ErrorResponseDto;
+
+export interface SaveWelcomeLogParams {
+  guildId: string;
+}
+
+export type SaveWelcomeLogData = ServerLogsDto;
+
+export type SaveWelcomeLogError = ErrorResponseDto;
+
+export interface DeleteWelcomeLogParams {
+  guildId: string;
+}
+
+export type DeleteWelcomeLogData = ServerLogsDto;
+
+export type DeleteWelcomeLogError = ErrorResponseDto;
+
+export interface GetButtonMessagesParams {
+  guildId: string;
+}
+
+export type GetButtonMessagesData = ButtonsDto;
+
+export type GetButtonMessagesError = ErrorResponseDto;
+
+export interface UpdateButtonMessageParams {
+  guildId: string;
+  buttonType: ButtonType;
+}
+
+export type UpdateButtonMessageData = ButtonsDto;
+
+export type UpdateButtonMessageError = ErrorResponseDto;
+
+export interface GetManagerRolesParams {
+  guildId: string;
+}
+
+export type GetManagerRolesData = ManagerRolesDto;
+
+export type GetManagerRolesError = ErrorResponseDto;
+
+export interface UpdateManagerRolesParams {
+  guildId: string;
+}
+
+export type UpdateManagerRolesData = ManagerRolesDto;
+
+export type UpdateManagerRolesError = ErrorResponseDto;
+
+export interface GetGuildConfigParams {
+  guildId: string;
+}
+
+export type GetGuildConfigData = ServerConfigDto;
+
+export type GetGuildConfigError = ErrorResponseDto;
+
+export interface UpdateGuildConfigParams {
+  guildId: string;
+}
+
+export type UpdateGuildConfigData = ServerConfigDto;
+
+export type UpdateGuildConfigError = ErrorResponseDto;
+
+export interface GetGuildBetaStatusParams {
+  guildId: string;
+}
+
+export type GetGuildBetaStatusData = GuildBetaDto;
+
+export type GetGuildBetaStatusError = ErrorResponseDto;
+
+export interface GetTicketSettingsParams {
+  guildId: string;
+}
+
+export type GetTicketSettingsData = TicketsDto;
+
+export type GetTicketSettingsError = ErrorResponseDto;
+
+export interface ListTicketsParams {
+  status?: TicketStatus;
+  /** The `nextCursor` of the page before, for the tickets opened before it. */
+  before?: string;
+  guildId: string;
+}
+
+export type ListTicketsData = TicketListDto;
+
+export type ListTicketsError = ErrorResponseDto;
+
+export interface CloseTicketParams {
+  guildId: string;
+  ticketId: string;
+}
+
+export type CloseTicketData = any;
+
+export type CloseTicketError = ErrorResponseDto;
+
+export interface CreateTicketPanelParams {
+  guildId: string;
+}
+
+export type CreateTicketPanelData = TicketsDto;
+
+export type CreateTicketPanelError = ErrorResponseDto;
+
+export interface UpdateTicketPanelParams {
+  guildId: string;
+  panelId: string;
+}
+
+export type UpdateTicketPanelData = TicketsDto;
+
+export type UpdateTicketPanelError = ErrorResponseDto;
+
+export interface DeleteTicketPanelParams {
+  guildId: string;
+  panelId: string;
+}
+
+export type DeleteTicketPanelData = TicketsDto;
+
+export type DeleteTicketPanelError = ErrorResponseDto;
+
+export interface AddTicketTypeParams {
+  guildId: string;
+  panelId: string;
+}
+
+export type AddTicketTypeData = TicketsDto;
+
+export type AddTicketTypeError = ErrorResponseDto;
+
+export interface ReorderTicketTypesParams {
+  guildId: string;
+  panelId: string;
+}
+
+export type ReorderTicketTypesData = TicketsDto;
+
+export type ReorderTicketTypesError = ErrorResponseDto;
+
+export interface UpdateTicketTypeParams {
+  guildId: string;
+  panelId: string;
+  typeId: string;
+}
+
+export type UpdateTicketTypeData = TicketsDto;
+
+export type UpdateTicketTypeError = ErrorResponseDto;
+
+export interface DeleteTicketTypeParams {
+  guildId: string;
+  panelId: string;
+  typeId: string;
+}
+
+export type DeleteTicketTypeData = TicketsDto;
+
+export type DeleteTicketTypeError = ErrorResponseDto;
+
+export interface ReplaceSavedRepliesParams {
+  guildId: string;
+}
+
+export type ReplaceSavedRepliesData = TicketsDto;
+
+export type ReplaceSavedRepliesError = ErrorResponseDto;
+
+export interface ListRemindersParams {
+  guildId: string;
+}
+
+export type ListRemindersData = GuildRemindersDto;
+
+export type ListRemindersError = ErrorResponseDto;
 
 export interface GetReminderPingsParams {
   guildId: string;
@@ -4171,375 +4616,6 @@ export type DeleteClanGamesReminderData = any;
 
 export type DeleteClanGamesReminderError = ErrorResponseDto;
 
-export interface ListGuildClanLogsParams {
-  guildId: string;
-}
-
-export type ListGuildClanLogsData = GuildClanLogDto[];
-
-export type ListGuildClanLogsError = ErrorResponseDto;
-
-export interface GetClanLogLimitParams {
-  guildId: string;
-}
-
-export type GetClanLogLimitData = ClanLogLimitDto;
-
-export type GetClanLogLimitError = ErrorResponseDto;
-
-export interface GetClanEmbedParams {
-  guildId: string;
-  clanTag: string;
-}
-
-export type GetClanEmbedData = ClanEmbedStateDto;
-
-export type GetClanEmbedError = ErrorResponseDto;
-
-export interface SaveClanEmbedParams {
-  guildId: string;
-  clanTag: string;
-}
-
-export type SaveClanEmbedData = ClanEmbedDto;
-
-export type SaveClanEmbedError = ErrorResponseDto;
-
-export interface DeleteClanEmbedParams {
-  guildId: string;
-  clanTag: string;
-}
-
-export type DeleteClanEmbedData = any;
-
-export type DeleteClanEmbedError = ErrorResponseDto;
-
-export interface ListClanLogsParams {
-  guildId: string;
-  clanTag: string;
-}
-
-export type ListClanLogsData = ClanLogDto[];
-
-export type ListClanLogsError = ErrorResponseDto;
-
-export interface SaveClanLogParams {
-  guildId: string;
-  clanTag: string;
-  logType: ClanLogType;
-}
-
-export type SaveClanLogData = ClanLogDto;
-
-export type SaveClanLogError = ErrorResponseDto;
-
-export interface DeleteClanLogParams {
-  guildId: string;
-  clanTag: string;
-  logType: ClanLogType;
-}
-
-export type DeleteClanLogData = any;
-
-export type DeleteClanLogError = ErrorResponseDto;
-
-export interface GetAutoRolesParams {
-  guildId: string;
-}
-
-export type GetAutoRolesData = AutoRolesDto;
-
-export type GetAutoRolesError = ErrorResponseDto;
-
-export interface SaveAutoRolesParams {
-  guildId: string;
-}
-
-export type SaveAutoRolesData = AutoRolesDto;
-
-export type SaveAutoRolesError = ErrorResponseDto;
-
-export interface SaveClanAutoRolesParams {
-  guildId: string;
-  clanTag: string;
-}
-
-export type SaveClanAutoRolesData = AutoRolesDto;
-
-export type SaveClanAutoRolesError = ErrorResponseDto;
-
-export interface ListFlagsParams {
-  flagType?: FlagType;
-  guildId: string;
-}
-
-export type ListFlagsData = FlagsDto;
-
-export type ListFlagsError = ErrorResponseDto;
-
-export interface CreateFlagsParams {
-  guildId: string;
-}
-
-export type CreateFlagsData = FlagDto[];
-
-export type CreateFlagsError = ErrorResponseDto;
-
-export interface DeleteFlagParams {
-  guildId: string;
-  flagId: string;
-}
-
-export type DeleteFlagData = any;
-
-export type DeleteFlagError = ErrorResponseDto;
-
-export interface ListMembersParams {
-  query: string;
-  guildId: string;
-}
-
-export type ListMembersData = ListMemberDto[];
-
-export type ListMembersError = ErrorResponseDto;
-
-export interface GetServerLogsParams {
-  guildId: string;
-}
-
-export type GetServerLogsData = ServerLogsDto;
-
-export type GetServerLogsError = ErrorResponseDto;
-
-export interface SaveFlagAlertLogParams {
-  guildId: string;
-}
-
-export type SaveFlagAlertLogData = ServerLogsDto;
-
-export type SaveFlagAlertLogError = ErrorResponseDto;
-
-export interface DeleteFlagAlertLogParams {
-  guildId: string;
-}
-
-export type DeleteFlagAlertLogData = ServerLogsDto;
-
-export type DeleteFlagAlertLogError = ErrorResponseDto;
-
-export interface SaveRosterChangelogParams {
-  guildId: string;
-}
-
-export type SaveRosterChangelogData = ServerLogsDto;
-
-export type SaveRosterChangelogError = ErrorResponseDto;
-
-export interface DeleteRosterChangelogParams {
-  guildId: string;
-}
-
-export type DeleteRosterChangelogData = ServerLogsDto;
-
-export type DeleteRosterChangelogError = ErrorResponseDto;
-
-export interface SaveMaintenanceLogParams {
-  guildId: string;
-}
-
-export type SaveMaintenanceLogData = ServerLogsDto;
-
-export type SaveMaintenanceLogError = ErrorResponseDto;
-
-export interface DeleteMaintenanceLogParams {
-  guildId: string;
-}
-
-export type DeleteMaintenanceLogData = ServerLogsDto;
-
-export type DeleteMaintenanceLogError = ErrorResponseDto;
-
-export interface SaveWelcomeLogParams {
-  guildId: string;
-}
-
-export type SaveWelcomeLogData = ServerLogsDto;
-
-export type SaveWelcomeLogError = ErrorResponseDto;
-
-export interface DeleteWelcomeLogParams {
-  guildId: string;
-}
-
-export type DeleteWelcomeLogData = ServerLogsDto;
-
-export type DeleteWelcomeLogError = ErrorResponseDto;
-
-export interface GetButtonsParams {
-  guildId: string;
-}
-
-export type GetButtonsData = ButtonsDto;
-
-export type GetButtonsError = ErrorResponseDto;
-
-export interface SaveButtonParams {
-  guildId: string;
-  buttonType: string;
-}
-
-export type SaveButtonData = ButtonsDto;
-
-export type SaveButtonError = ErrorResponseDto;
-
-export interface GetManagerRolesParams {
-  guildId: string;
-}
-
-export type GetManagerRolesData = ManagerRolesDto;
-
-export type GetManagerRolesError = ErrorResponseDto;
-
-export interface SaveManagerRolesParams {
-  guildId: string;
-}
-
-export type SaveManagerRolesData = ManagerRolesDto;
-
-export type SaveManagerRolesError = ErrorResponseDto;
-
-export interface GetConfigParams {
-  guildId: string;
-}
-
-export type GetConfigData = ServerConfigDto;
-
-export type GetConfigError = ErrorResponseDto;
-
-export interface SaveConfigParams {
-  guildId: string;
-}
-
-export type SaveConfigData = ServerConfigDto;
-
-export type SaveConfigError = ErrorResponseDto;
-
-export interface GetGuildBetaParams {
-  guildId: string;
-}
-
-export type GetGuildBetaData = GuildBetaDto;
-
-export type GetGuildBetaError = ErrorResponseDto;
-
-export interface ListCategoriesParams {
-  guildId: string;
-}
-
-export type ListCategoriesData = GuildCategoryDto[];
-
-export type ListCategoriesError = ErrorResponseDto;
-
-export interface GetTicketsParams {
-  guildId: string;
-}
-
-export type GetTicketsData = TicketsDto;
-
-export type GetTicketsError = ErrorResponseDto;
-
-export interface ListTicketsParams {
-  status?: TicketStatus;
-  /** The `nextCursor` of the page before, for the tickets opened before it. */
-  before?: string;
-  guildId: string;
-}
-
-export type ListTicketsData = TicketListDto;
-
-export type ListTicketsError = ErrorResponseDto;
-
-export interface CloseTicketParams {
-  guildId: string;
-  ticketId: string;
-}
-
-export type CloseTicketData = any;
-
-export type CloseTicketError = ErrorResponseDto;
-
-export interface CreateTicketPanelParams {
-  guildId: string;
-}
-
-export type CreateTicketPanelData = TicketsDto;
-
-export type CreateTicketPanelError = ErrorResponseDto;
-
-export interface UpdateTicketPanelParams {
-  guildId: string;
-  panelId: string;
-}
-
-export type UpdateTicketPanelData = TicketsDto;
-
-export type UpdateTicketPanelError = ErrorResponseDto;
-
-export interface DeleteTicketPanelParams {
-  guildId: string;
-  panelId: string;
-}
-
-export type DeleteTicketPanelData = TicketsDto;
-
-export type DeleteTicketPanelError = ErrorResponseDto;
-
-export interface AddTicketTypeParams {
-  guildId: string;
-  panelId: string;
-}
-
-export type AddTicketTypeData = TicketsDto;
-
-export type AddTicketTypeError = ErrorResponseDto;
-
-export interface ReorderTicketTypesParams {
-  guildId: string;
-  panelId: string;
-}
-
-export type ReorderTicketTypesData = TicketsDto;
-
-export type ReorderTicketTypesError = ErrorResponseDto;
-
-export interface UpdateTicketTypeParams {
-  guildId: string;
-  panelId: string;
-  typeId: string;
-}
-
-export type UpdateTicketTypeData = TicketsDto;
-
-export type UpdateTicketTypeError = ErrorResponseDto;
-
-export interface DeleteTicketTypeParams {
-  guildId: string;
-  panelId: string;
-  typeId: string;
-}
-
-export type DeleteTicketTypeData = TicketsDto;
-
-export type DeleteTicketTypeError = ErrorResponseDto;
-
-export interface SaveTicketRepliesParams {
-  guildId: string;
-}
-
-export type SaveTicketRepliesData = TicketsDto;
-
-export type SaveTicketRepliesError = ErrorResponseDto;
-
 export type ExportClanMembersData = ExportMembersOutputDto;
 
 export type ExportClanMembersError = ErrorResponseDto;
@@ -4568,6 +4644,18 @@ export type ListSubscribersData = SubscribersDto;
 
 export type ListSubscribersError = ErrorResponseDto;
 
+export type GrantSubscriptionData = SubscriberDto;
+
+export type GrantSubscriptionError = ErrorResponseDto;
+
+export interface UpdateSubscriptionParams {
+  id: string;
+}
+
+export type UpdateSubscriptionData = SubscriberDto;
+
+export type UpdateSubscriptionError = ErrorResponseDto;
+
 export type ListDevelopersData = DevelopersDto;
 
 export type ListDevelopersError = ErrorResponseDto;
@@ -4576,13 +4664,13 @@ export type AddDeveloperData = AddedDeveloperDto;
 
 export type AddDeveloperError = ErrorResponseDto;
 
-export interface EditDeveloperParams {
+export interface UpdateDeveloperRolesParams {
   userId: string;
 }
 
-export type EditDeveloperData = DeveloperDto;
+export type UpdateDeveloperRolesData = DeveloperDto;
 
-export type EditDeveloperError = ErrorResponseDto;
+export type UpdateDeveloperRolesError = ErrorResponseDto;
 
 export interface RevokeDeveloperParams {
   userId: string;
@@ -4594,10 +4682,10 @@ export type RevokeDeveloperError = ErrorResponseDto;
 
 export namespace Auth {
   /**
-   * @description Authenticates a user using a `passKey` and returns an `accessToken` with a limited validity period (2 hours). Once the token expires, a new token must be generated.<br/><br/>The `accessToken` must be included in all protected API requests using the following header `Authorization: Bearer <accessToken>`
+   * @description Returns an access token that works for 2 hours. After that, log in again to get a new one.<br/><br/>Send the token with every request in the `Authorization: Bearer <accessToken>` header.
    * @tags Auth
    * @name Login
-   * @summary Authenticate with your passKey to receive an accessToken required for authorized API requests.
+   * @summary Exchange a passKey for an access token
    * @request POST:/auth/login
    * @response `201` `LoginData`
    * @response `500` `ErrorResponseDto`
@@ -4613,25 +4701,8 @@ export namespace Auth {
   /**
    * No description
    * @tags Auth
-   * @name GeneratePasskey
-   * @summary Generate a passKey required for authentication.
-   * @request POST:/auth/generate-passkey
-   * @secure
-   * @response `201` `GeneratePasskeyData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace GeneratePasskey {
-    export type RequestParams = {};
-    export type RequestQuery = {};
-    export type RequestBody = GenerateTokenInputDto;
-    export type RequestHeaders = {};
-    export type ResponseBody = GeneratePasskeyData;
-  }
-
-  /**
-   * No description
-   * @tags Auth
    * @name GetAuthUser
+   * @summary Get a user's roles and display name
    * @request GET:/auth/users/{userId}
    * @secure
    * @response `200` `GetAuthUserData`
@@ -4648,28 +4719,30 @@ export namespace Auth {
   }
 
   /**
-   * No description
+   * @description The dashboard calls this to find out who is signing in from the bot. Tokens expire after an hour. The server is included only if the user can manage it.
    * @tags Auth
-   * @name DecodeHandoffToken
+   * @name GetHandoffUser
+   * @summary Read the Discord user behind a handoff token
    * @request GET:/auth/handoff/{token}
    * @secure
-   * @response `200` `DecodeHandoffTokenData`
+   * @response `200` `GetHandoffUserData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace DecodeHandoffToken {
+  export namespace GetHandoffUser {
     export type RequestParams = {
       token: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = DecodeHandoffTokenData;
+    export type ResponseBody = GetHandoffUserData;
   }
 
   /**
-   * No description
+   * @description The bot calls this when a user opens the dashboard from Discord, so they arrive already signed in. The token expires after an hour.
    * @tags Auth
    * @name CreateHandoffToken
+   * @summary Create a handoff token for the dashboard
    * @request POST:/auth/handoff
    * @secure
    * @response `201` `CreateHandoffTokenData`
@@ -4684,9 +4757,10 @@ export namespace Auth {
   }
 
   /**
-   * No description
+   * @description Send a list of server IDs and get back the ones ClashPerk is in, with each server's name, icon and number of clans.
    * @tags Auth
    * @name GetBotGuilds
+   * @summary Find which servers ClashPerk is in
    * @request QUERY:/auth/bot-guilds
    * @secure
    * @response `200` `GetBotGuildsData`
@@ -4701,9 +4775,10 @@ export namespace Auth {
   }
 
   /**
-   * No description
+   * @description Send a user and a list of server IDs to get back the servers where that user has the bot manager role. Discord permissions such as Manage Server aren't checked here.
    * @tags Auth
    * @name GetManagedGuilds
+   * @summary Find servers where a user has the manager role
    * @request QUERY:/auth/managed-guilds
    * @secure
    * @response `200` `GetManagedGuildsData`
@@ -4718,9 +4793,10 @@ export namespace Auth {
   }
 
   /**
-   * No description
+   * @description Tells you whether a bot is in the server and whether the user is allowed to manage it. If you don't name a bot, a running custom bot is checked first, then ClashPerk.
    * @tags Auth
    * @name GetGuildAccess
+   * @summary Check a user's access to a server
    * @request QUERY:/auth/guild-access
    * @secure
    * @response `200` `GetGuildAccessData`
@@ -4737,46 +4813,48 @@ export namespace Auth {
 
 export namespace Links {
   /**
-   * No description
+   * @description To link a player to someone else, you need to be a verified Leader or Co-Leader of the player's clan. If the player is already linked to another user, you also need the player's in-game API token.
    * @tags Links
-   * @name Link
+   * @name CreateLink
+   * @summary Link a player to a Discord user
    * @request POST:/links
    * @secure
-   * @response `201` `LinkData`
+   * @response `201` `CreateLinkData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace Link {
+  export namespace CreateLink {
     export type RequestParams = {};
     export type RequestQuery = {};
     export type RequestBody = CreateLinkInputDto;
     export type RequestHeaders = {};
-    export type ResponseBody = LinkData;
+    export type ResponseBody = CreateLinkData;
   }
 
   /**
-   * No description
+   * @description Only the owner can unlink a verified player. An unverified link can also be removed by the person who made it, or by a verified Leader or Co-Leader of the player's clan.
    * @tags Links
-   * @name Unlink
+   * @name DeleteLink
+   * @summary Unlink a player from its Discord user
    * @request DELETE:/links/{playerTag}
    * @secure
-   * @response `200` `UnlinkData`
+   * @response `200` `DeleteLinkData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace Unlink {
+  export namespace DeleteLink {
     export type RequestParams = {
       playerTag: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = UnlinkData;
+    export type ResponseBody = DeleteLinkData;
   }
 
   /**
    * No description
    * @tags Links
    * @name SetDefaultLink
-   * @summary Make one of your own linked accounts your default
+   * @summary Make one of your linked players your default
    * @request PUT:/links/{playerTag}/default
    * @secure
    * @response `200` `SetDefaultLinkData`
@@ -4793,10 +4871,30 @@ export namespace Links {
   }
 
   /**
-   * @description ``` You can send either "playerTags" or "userIds", not both or none. Max size is 100. ```
+   * No description
+   * @tags Links
+   * @name SetLinkHidden
+   * @summary Hide or show a linked player in your task lists
+   * @request PUT:/links/{playerTag}/hidden
+   * @secure
+   * @response `200` `SetLinkHiddenData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace SetLinkHidden {
+    export type RequestParams = {
+      playerTag: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = SetHiddenInputDto;
+    export type RequestHeaders = {};
+    export type ResponseBody = SetLinkHiddenData;
+  }
+
+  /**
+   * @description Send either `playerTags` or `userIds`, not both, with up to 100 values. Player tags must be exact, including the `#`.
    * @tags Links
    * @name GetLinks
-   * @summary Get links by playerTags or userIds
+   * @summary Get links by player tags or user IDs
    * @request QUERY:/links/query
    * @secure
    * @response `200` `GetLinksData`
@@ -4814,7 +4912,7 @@ export namespace Links {
    * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
    * @tags Links
    * @name GetLinksViaPost
-   * @summary Get links by playerTags or userIds
+   * @summary Get links by player tags or user IDs
    * @request POST:/links/query
    * @deprecated
    * @secure
@@ -4832,44 +4930,47 @@ export namespace Links {
 
 export namespace Clans {
   /**
-   * No description
+   * @description Shows Town Hall upgrades, members joining and leaving, and clan milestones, newest first.
    * @tags Clans
-   * @name GetActivity
+   * @name GetClanActivity
+   * @summary List recent activity in clans
    * @request QUERY:/clans/activity
    * @secure
-   * @response `200` `GetActivityData`
+   * @response `200` `GetClanActivityData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetActivity {
+  export namespace GetClanActivity {
     export type RequestParams = {};
     export type RequestQuery = {};
     export type RequestBody = ClanActivityInputDto;
     export type RequestHeaders = {};
-    export type ResponseBody = GetActivityData;
+    export type ResponseBody = GetClanActivityData;
   }
 
   /**
    * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
    * @tags Clans
-   * @name GetActivityViaPost
+   * @name GetClanActivityViaPost
+   * @summary List recent activity in clans
    * @request POST:/clans/activity
    * @deprecated
    * @secure
-   * @response `200` `GetActivityViaPostData`
+   * @response `200` `GetClanActivityViaPostData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetActivityViaPost {
+  export namespace GetClanActivityViaPost {
     export type RequestParams = {};
     export type RequestQuery = {};
     export type RequestBody = ClanActivityInputDto;
     export type RequestHeaders = {};
-    export type ResponseBody = GetActivityViaPostData;
+    export type ResponseBody = GetClanActivityViaPostData;
   }
 
   /**
    * No description
    * @tags Clans
    * @name GetClan
+   * @summary Get a clan's profile
    * @request GET:/clans/{clanTag}
    * @secure
    * @response `200` `GetClanData`
@@ -4886,34 +4987,36 @@ export namespace Clans {
   }
 
   /**
-   * No description
+   * @description Shows when each member was last active, and how active they've been over the last day and the last 30 days. Members ClashPerk hasn't seen yet are left out.
    * @tags Clans
-   * @name GetLastSeen
+   * @name GetClanLastSeen
+   * @summary Get last-seen times for a clan's members
    * @request GET:/clans/{clanTag}/lastseen
    * @secure
-   * @response `200` `GetLastSeenData`
+   * @response `200` `GetClanLastSeenData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetLastSeen {
+  export namespace GetClanLastSeen {
     export type RequestParams = {
       clanTag: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetLastSeenData;
+    export type ResponseBody = GetClanLastSeenData;
   }
 
   /**
-   * No description
+   * @description Pass a month such as `2026-10` to see that month. Without one, you get the last 10 days.
    * @tags Clans
-   * @name GetCapitalContribution
+   * @name GetClanCapitalContributions
+   * @summary List a clan's Capital Gold contributions
    * @request GET:/clans/{clanTag}/capital-contribution
    * @secure
-   * @response `200` `GetCapitalContributionData`
+   * @response `200` `GetClanCapitalContributionsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetCapitalContribution {
+  export namespace GetClanCapitalContributions {
     export type RequestParams = {
       clanTag: string;
     };
@@ -4926,19 +5029,20 @@ export namespace Clans {
     };
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetCapitalContributionData;
+    export type ResponseBody = GetClanCapitalContributionsData;
   }
 
   /**
    * No description
    * @tags Clans
-   * @name GetCapitalRaids
+   * @name GetClanCapitalRaids
+   * @summary List a clan's Capital raid weekends
    * @request GET:/clans/{clanTag}/capital-raids
    * @secure
-   * @response `200` `GetCapitalRaidsData`
+   * @response `200` `GetClanCapitalRaidsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetCapitalRaids {
+  export namespace GetClanCapitalRaids {
     export type RequestParams = {
       clanTag: string;
     };
@@ -4952,13 +5056,14 @@ export namespace Clans {
     };
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetCapitalRaidsData;
+    export type ResponseBody = GetClanCapitalRaidsData;
   }
 
   /**
    * No description
    * @tags Clans
    * @name GetClanGames
+   * @summary Get a clan's Clan Games points
    * @request GET:/clans/{clanTag}/clan-games
    * @secure
    * @response `200` `GetClanGamesData`
@@ -4982,9 +5087,10 @@ export namespace Clans {
   }
 
   /**
-   * No description
+   * @description Also tells you which of these links you're allowed to remove.
    * @tags Clans
    * @name GetClanLinks
+   * @summary List a clan's members with their Discord links
    * @request GET:/clans/{clanTag}/links
    * @secure
    * @response `200` `GetClanLinksData`
@@ -5006,6 +5112,7 @@ export namespace Players {
    * No description
    * @tags Players
    * @name GetPlayer
+   * @summary Get a player's profile
    * @request GET:/players/{playerTag}
    * @secure
    * @response `200` `GetPlayerData`
@@ -5022,34 +5129,36 @@ export namespace Players {
   }
 
   /**
-   * No description
+   * @description If the player was banned from tracking, the ban is lifted.
    * @tags Players
-   * @name AddPlayerAccount
+   * @name TrackLegendPlayer
+   * @summary Add a player to Legend League tracking
    * @request PUT:/players/{playerTag}
    * @secure
-   * @response `200` `AddPlayerAccountData`
+   * @response `200` `TrackLegendPlayerData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace AddPlayerAccount {
+  export namespace TrackLegendPlayer {
     export type RequestParams = {
       playerTag: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = AddPlayerAccountData;
+    export type ResponseBody = TrackLegendPlayerData;
   }
 
   /**
    * No description
    * @tags Players
-   * @name GetSeasonStats
+   * @name GetPlayerSeasons
+   * @summary Get a player's season stats
    * @request GET:/players/{playerTag}/seasons
    * @secure
-   * @response `200` `GetSeasonStatsData`
+   * @response `200` `GetPlayerSeasonsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetSeasonStats {
+  export namespace GetPlayerSeasons {
     export type RequestParams = {
       playerTag: string;
     };
@@ -5063,70 +5172,74 @@ export namespace Players {
     };
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetSeasonStatsData;
+    export type ResponseBody = GetPlayerSeasonsData;
   }
 
   /**
-   * No description
+   * @description If the player isn't in a league group right now, there's no current week in the response.
    * @tags Players
-   * @name GetRanked
+   * @name GetPlayerRankedWeeks
+   * @summary Get a player's ranked league weeks
    * @request GET:/players/{playerTag}/ranked
    * @secure
-   * @response `200` `GetRankedData`
+   * @response `200` `GetPlayerRankedWeeksData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetRanked {
+  export namespace GetPlayerRankedWeeks {
     export type RequestParams = {
       playerTag: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetRankedData;
+    export type ResponseBody = GetPlayerRankedWeeksData;
   }
 
   /**
-   * No description
+   * @description Only battles ClashPerk has tracked, up to 448.
    * @tags Players
-   * @name GetBattleLog
+   * @name GetPlayerBattleLog
+   * @summary Get a player's battle log
    * @request GET:/players/{playerTag}/battle-log
    * @secure
-   * @response `200` `GetBattleLogData`
+   * @response `200` `GetPlayerBattleLogData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetBattleLog {
+  export namespace GetPlayerBattleLog {
     export type RequestParams = {
       playerTag: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetBattleLogData;
+    export type ResponseBody = GetPlayerBattleLogData;
   }
 
   /**
-   * No description
+   * @description Trophies, attacks and defenses for each battle day, oldest first.
    * @tags Players
-   * @name GetBattleLogAggregate
+   * @name GetPlayerDailyBattles
+   * @summary Get a player's daily battle totals
    * @request GET:/players/{playerTag}/battle-log/aggregate
    * @secure
-   * @response `200` `GetBattleLogAggregateData`
+   * @response `200` `GetPlayerDailyBattlesData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetBattleLogAggregate {
+  export namespace GetPlayerDailyBattles {
     export type RequestParams = {
       playerTag: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetBattleLogAggregateData;
+    export type ResponseBody = GetPlayerDailyBattlesData;
   }
 
   /**
    * No description
    * @tags Players
    * @name GetBattleLogLeaderboard
+   * @summary Rank players by Legend League trophies
    * @request QUERY:/players/battle-log/leaderboard
    * @secure
    * @response `200` `GetBattleLogLeaderboardData`
@@ -5144,6 +5257,7 @@ export namespace Players {
    * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
    * @tags Players
    * @name GetBattleLogLeaderboardViaPost
+   * @summary Rank players by Legend League trophies
    * @request POST:/players/battle-log/leaderboard
    * @deprecated
    * @secure
@@ -5159,52 +5273,36 @@ export namespace Players {
   }
 
   /**
-   * @description Deprecated: use `GET /users/me/tasks/wars`, which reads your linked accounts.
+   * @description Newest first. For the clan the player is in now, the last-seen time is the current time.
    * @tags Players
-   * @name GetActiveWars
-   * @request QUERY:/players/wars/active
-   * @deprecated
-   * @secure
-   * @response `200` `GetActiveWarsData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace GetActiveWars {
-    export type RequestParams = {};
-    export type RequestQuery = {};
-    export type RequestBody = ActiveWarsInputDto;
-    export type RequestHeaders = {};
-    export type ResponseBody = GetActiveWarsData;
-  }
-
-  /**
-   * No description
-   * @tags Players
-   * @name GetClanHistory
+   * @name GetPlayerClanHistory
+   * @summary Get a player's clan history
    * @request GET:/players/{playerTag}/history
    * @secure
-   * @response `200` `GetClanHistoryData`
+   * @response `200` `GetPlayerClanHistoryData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetClanHistory {
+  export namespace GetPlayerClanHistory {
     export type RequestParams = {
       playerTag: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetClanHistoryData;
+    export type ResponseBody = GetPlayerClanHistoryData;
   }
 
   /**
    * No description
    * @tags Players
-   * @name GetAttackHistory
+   * @name GetPlayerWars
+   * @summary List a player's wars and attacks
    * @request GET:/players/{playerTag}/wars
    * @secure
-   * @response `200` `GetAttackHistoryData`
+   * @response `200` `GetPlayerWarsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetAttackHistory {
+  export namespace GetPlayerWars {
     export type RequestParams = {
       playerTag: string;
     };
@@ -5224,19 +5322,20 @@ export namespace Players {
     };
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetAttackHistoryData;
+    export type ResponseBody = GetPlayerWarsData;
   }
 
   /**
-   * No description
+   * @description Only counts wars that started on or after `startDate`.
    * @tags Players
-   * @name AggregateAttackHistory
+   * @name GetPlayerWarTotals
+   * @summary Get a player's war totals per season
    * @request GET:/players/{playerTag}/wars/aggregate
    * @secure
-   * @response `200` `AggregateAttackHistoryData`
+   * @response `200` `GetPlayerWarTotalsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace AggregateAttackHistory {
+  export namespace GetPlayerWarTotals {
     export type RequestParams = {
       playerTag: string;
     };
@@ -5249,19 +5348,20 @@ export namespace Players {
     };
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = AggregateAttackHistoryData;
+    export type ResponseBody = GetPlayerWarTotalsData;
   }
 
   /**
-   * No description
+   * @description Only counts rounds that started on or after `startDate`, newest group first. An attack counts as missed once its round ends.
    * @tags Players
-   * @name AggregateClanWarLeagueHistory
+   * @name GetPlayerClanWarLeagueTotals
+   * @summary Get a player's CWL totals per league group
    * @request GET:/players/{playerTag}/clan-war-leagues/aggregate
    * @secure
-   * @response `200` `AggregateClanWarLeagueHistoryData`
+   * @response `200` `GetPlayerClanWarLeagueTotalsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace AggregateClanWarLeagueHistory {
+  export namespace GetPlayerClanWarLeagueTotals {
     export type RequestParams = {
       playerTag: string;
     };
@@ -5274,15 +5374,16 @@ export namespace Players {
     };
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = AggregateClanWarLeagueHistoryData;
+    export type ResponseBody = GetPlayerClanWarLeagueTotalsData;
   }
 }
 
 export namespace Legends {
   /**
-   * No description
+   * @description Shows how many trophies it takes to reach certain ranks among the players ClashPerk tracks. Includes live numbers, the latest daily snapshot and up to 45 days of history.
    * @tags Legends
    * @name GetLegendRankingThresholds
+   * @summary Get Legend League rank thresholds
    * @request GET:/legends/ranking-thresholds
    * @secure
    * @response `200` `GetLegendRankingThresholdsData`
@@ -5297,9 +5398,10 @@ export namespace Legends {
   }
 
   /**
-   * No description
+   * @description Only covers the current season. Players with no attacks logged are left out.
    * @tags Legends
    * @name GetLegendAttacks
+   * @summary Get legend attack logs for players
    * @request QUERY:/legends/attacks/query
    * @secure
    * @response `200` `GetLegendAttacksData`
@@ -5317,6 +5419,7 @@ export namespace Legends {
    * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
    * @tags Legends
    * @name GetLegendAttacksViaPost
+   * @summary Get legend attack logs for players
    * @request POST:/legends/attacks/query
    * @deprecated
    * @secure
@@ -5332,15 +5435,16 @@ export namespace Legends {
   }
 
   /**
-   * No description
+   * @description Returns 404 if the player has no attacks logged in that season.
    * @tags Legends
-   * @name GetLegendAttacksByPlayerTag
+   * @name GetPlayerLegendAttacks
+   * @summary Get a player's legend attack log
    * @request GET:/legends/{playerTag}/attacks
    * @secure
-   * @response `200` `GetLegendAttacksByPlayerTagData`
+   * @response `200` `GetPlayerLegendAttacksData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetLegendAttacksByPlayerTag {
+  export namespace GetPlayerLegendAttacks {
     export type RequestParams = {
       playerTag: string;
     };
@@ -5354,14 +5458,14 @@ export namespace Legends {
     };
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetLegendAttacksByPlayerTagData;
+    export type ResponseBody = GetPlayerLegendAttacksData;
   }
 
   /**
-   * No description
+   * @description Shows each day's starting and ending trophies, the Monday reset and every battle.
    * @tags Legends
    * @name GetLegendDays
-   * @summary A season's game days: start and end trophies, the Monday reset, and the battles.
+   * @summary Get a player's legend days in a season
    * @request GET:/legends/{playerTag}/days
    * @secure
    * @response `200` `GetLegendDaysData`
@@ -5388,6 +5492,7 @@ export namespace Legends {
    * No description
    * @tags Legends
    * @name GetLegendSeasons
+   * @summary Get a player's recent legend seasons
    * @request GET:/legends/{playerTag}/seasons
    * @secure
    * @response `200` `GetLegendSeasonsData`
@@ -5404,22 +5509,23 @@ export namespace Legends {
   }
 
   /**
-   * No description
+   * @description The rank is worked out from the players ClashPerk tracks this season, so it may differ from the game. Returns 404 if the player isn't tracked.
    * @tags Legends
-   * @name EstimateRank
+   * @name EstimateLegendRank
+   * @summary Estimate a player's legend rank
    * @request GET:/legends/{playerTag}/estimate-rank
    * @secure
-   * @response `200` `EstimateRankData`
+   * @response `200` `EstimateLegendRankData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace EstimateRank {
+  export namespace EstimateLegendRank {
     export type RequestParams = {
       playerTag: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = EstimateRankData;
+    export type ResponseBody = EstimateLegendRankData;
   }
 }
 
@@ -5427,58 +5533,62 @@ export namespace Rankings {
   /**
    * No description
    * @tags Rankings
-   * @name GetLocations
+   * @name GetRankingLocations
+   * @summary List ranking locations
    * @request GET:/rankings/locations
    * @secure
-   * @response `200` `GetLocationsData`
+   * @response `200` `GetRankingLocationsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetLocations {
+  export namespace GetRankingLocations {
     export type RequestParams = {};
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetLocationsData;
+    export type ResponseBody = GetRankingLocationsData;
   }
 
   /**
    * No description
    * @tags Rankings
-   * @name GetSeasons
+   * @name GetRankingSeasons
+   * @summary List saved ranking seasons
    * @request GET:/rankings/seasons
    * @secure
-   * @response `200` `GetSeasonsData`
+   * @response `200` `GetRankingSeasonsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetSeasons {
+  export namespace GetRankingSeasons {
     export type RequestParams = {};
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetSeasonsData;
+    export type ResponseBody = GetRankingSeasonsData;
   }
 
   /**
-   * No description
+   * @description Looks through every saved board, in every country and worldwide.
    * @tags Rankings
-   * @name GetStandings
+   * @name FindRankings
+   * @summary Find where players and clans rank this season
    * @request QUERY:/rankings/standings
    * @secure
-   * @response `200` `GetStandingsData`
+   * @response `200` `FindRankingsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetStandings {
+  export namespace FindRankings {
     export type RequestParams = {};
     export type RequestQuery = {};
     export type RequestBody = RankingStandingsInputDto;
     export type RequestHeaders = {};
-    export type ResponseBody = GetStandingsData;
+    export type ResponseBody = FindRankingsData;
   }
 
   /**
-   * No description
+   * @description Shows where the clan sits on the clan and capital boards in its country and worldwide, and its country rank over the last 6 saved seasons.
    * @tags Rankings
    * @name GetClanRankings
+   * @summary Get a clan's rankings and rank history
    * @request GET:/rankings/clans/{clanTag}
    * @secure
    * @response `200` `GetClanRankingsData`
@@ -5495,9 +5605,10 @@ export namespace Rankings {
   }
 
   /**
-   * No description
+   * @description Only seasons where the player made a board, newest first. The current season isn't included.
    * @tags Rankings
    * @name GetPlayerRankings
+   * @summary List a player's past season-end ranks
    * @request GET:/rankings/players/{playerTag}
    * @secure
    * @response `200` `GetPlayerRankingsData`
@@ -5514,15 +5625,16 @@ export namespace Rankings {
   }
 
   /**
-   * No description
+   * @description Shows the live board, or pass `season` to see a saved one. Builder base boards are only available live.
    * @tags Rankings
-   * @name GetBoard
+   * @name GetRankingBoard
+   * @summary Get a ranking board
    * @request GET:/rankings/{countryCode}/{board}
    * @secure
-   * @response `200` `GetBoardData`
+   * @response `200` `GetRankingBoardData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetBoard {
+  export namespace GetRankingBoard {
     export type RequestParams = {
       /**
        * @pattern ^(global|[A-Z]{2})$
@@ -5541,53 +5653,56 @@ export namespace Rankings {
     };
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetBoardData;
+    export type ResponseBody = GetRankingBoardData;
   }
 }
 
 export namespace Wars {
   /**
-   * No description
+   * @description Comes straight from the game and includes every war in the group. Returns 404 if the clan isn't in CWL.
    * @tags Wars
-   * @name GetClanWarLeagueGroups
+   * @name GetClanWarLeagueGroup
+   * @summary Get a clan's current CWL group
    * @request GET:/wars/{clanTag}/clan-war-leagues/groups
    * @secure
-   * @response `200` `GetClanWarLeagueGroupsData`
+   * @response `200` `GetClanWarLeagueGroupData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetClanWarLeagueGroups {
+  export namespace GetClanWarLeagueGroup {
     export type RequestParams = {
       clanTag: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetClanWarLeagueGroupsData;
+    export type ResponseBody = GetClanWarLeagueGroupData;
   }
 
   /**
-   * No description
+   * @description Uses the clan's most recent saved CWL group and returns only the clan's own wars.
    * @tags Wars
-   * @name GetClanWarLeagueForClan
+   * @name GetClanWarLeagueWars
+   * @summary Get a clan's wars in its latest CWL group
    * @request GET:/wars/{clanTag}/clan-war-leagues/clan
    * @secure
-   * @response `200` `GetClanWarLeagueForClanData`
+   * @response `200` `GetClanWarLeagueWarsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetClanWarLeagueForClan {
+  export namespace GetClanWarLeagueWars {
     export type RequestParams = {
       clanTag: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetClanWarLeagueForClanData;
+    export type ResponseBody = GetClanWarLeagueWarsData;
   }
 
   /**
-   * No description
+   * @description Built from the wars ClashPerk tracked, newest first. Use the standings endpoint to see a group's table.
    * @tags Wars
    * @name GetClanWarLeagueSeasons
+   * @summary List a clan's CWL seasons with member totals
    * @request GET:/wars/{clanTag}/clan-war-leagues/seasons
    * @secure
    * @response `200` `GetClanWarLeagueSeasonsData`
@@ -5613,13 +5728,14 @@ export namespace Wars {
   /**
    * No description
    * @tags Wars
-   * @name GetClanWarStats
+   * @name GetClanMemberWarStats
+   * @summary Get war stats for a clan's members
    * @request GET:/wars/{clanTag}/members/stats
    * @secure
-   * @response `200` `GetClanWarStatsData`
+   * @response `200` `GetClanMemberWarStatsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetClanWarStats {
+  export namespace GetClanMemberWarStats {
     export type RequestParams = {
       clanTag: string;
     };
@@ -5646,13 +5762,14 @@ export namespace Wars {
     };
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetClanWarStatsData;
+    export type ResponseBody = GetClanMemberWarStatsData;
   }
 
   /**
-   * No description
+   * @description Get the `groupId` from the CWL seasons endpoint. Each war win adds 10 bonus stars, as in the game.
    * @tags Wars
    * @name GetClanWarLeagueStandings
+   * @summary Get a CWL group's standings
    * @request GET:/wars/{clanTag}/clan-war-leagues/groups/{groupId}/standings
    * @secure
    * @response `200` `GetClanWarLeagueStandingsData`
@@ -5672,13 +5789,14 @@ export namespace Wars {
   /**
    * No description
    * @tags Wars
-   * @name GetClanWars
+   * @name ListClanWars
+   * @summary List a clan's tracked wars
    * @request GET:/wars/{clanTag}
    * @secure
-   * @response `200` `GetClanWarsData`
+   * @response `200` `ListClanWarsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetClanWars {
+  export namespace ListClanWars {
     export type RequestParams = {
       clanTag: string;
     };
@@ -5697,13 +5815,14 @@ export namespace Wars {
     };
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetClanWarsData;
+    export type ResponseBody = ListClanWarsData;
   }
 
   /**
-   * No description
+   * @description During CWL, this is the clan's current round. The war is empty if the clan isn't in one, or if its war log is private outside CWL.
    * @tags Wars
    * @name GetCurrentWar
+   * @summary Get a clan's current war
    * @request GET:/wars/{clanTag}/current
    * @secure
    * @response `200` `GetCurrentWarData`
@@ -5720,9 +5839,10 @@ export namespace Wars {
   }
 
   /**
-   * No description
+   * @description Use a war ID from the clan's war list.
    * @tags Wars
    * @name GetClanWar
+   * @summary Get a tracked war
    * @request GET:/wars/{clanTag}/{warId}
    * @secure
    * @response `200` `GetClanWarData`
@@ -5745,6 +5865,7 @@ export namespace Events {
    * No description
    * @tags Events
    * @name GetEvents
+   * @summary List game events in a date range
    * @request GET:/events
    * @secure
    * @response `200` `GetEventsData`
@@ -5773,6 +5894,7 @@ export namespace Events {
    * No description
    * @tags Events
    * @name GetUpcomingEvents
+   * @summary List current and next game events
    * @request GET:/events/upcoming
    * @secure
    * @response `200` `GetUpcomingEventsData`
@@ -5789,28 +5911,30 @@ export namespace Events {
 
 export namespace Rosters {
   /**
-   * No description
+   * @description API tokens with the `fetch:rosters` role can use this too.
    * @tags Rosters
-   * @name GetRosters
+   * @name ListRosters
+   * @summary List the server's rosters and groups
    * @request GET:/rosters/{guildId}/list
    * @secure
-   * @response `200` `GetRostersData`
+   * @response `200` `ListRostersData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetRosters {
+  export namespace ListRosters {
     export type RequestParams = {
       guildId: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetRostersData;
+    export type ResponseBody = ListRostersData;
   }
 
   /**
-   * No description
+   * @description Its settings are saved as the server's defaults for the next roster. Set `importMembers` with a clan to sign up the clan's members right away.
    * @tags Rosters
    * @name CreateRoster
+   * @summary Create a roster
    * @request POST:/rosters/{guildId}/create
    * @secure
    * @response `201` `CreateRosterData`
@@ -5830,6 +5954,7 @@ export namespace Rosters {
    * No description
    * @tags Rosters
    * @name CreateRosterGroup
+   * @summary Create a roster group
    * @request POST:/rosters/{guildId}/groups
    * @secure
    * @response `201` `CreateRosterGroupData`
@@ -5846,9 +5971,10 @@ export namespace Rosters {
   }
 
   /**
-   * No description
+   * @description You only need to send the fields you want to change.
    * @tags Rosters
    * @name UpdateRosterGroup
+   * @summary Update a roster group
    * @request PATCH:/rosters/{guildId}/groups/{groupId}
    * @secure
    * @response `200` `UpdateRosterGroupData`
@@ -5866,9 +5992,10 @@ export namespace Rosters {
   }
 
   /**
-   * No description
+   * @description Its members stay on the roster without a group.
    * @tags Rosters
    * @name DeleteRosterGroup
+   * @summary Delete a roster group
    * @request DELETE:/rosters/{guildId}/groups/{groupId}
    * @secure
    * @response `200` `DeleteRosterGroupData`
@@ -5889,6 +6016,7 @@ export namespace Rosters {
    * No description
    * @tags Rosters
    * @name GetRoster
+   * @summary Get a roster
    * @request GET:/rosters/{guildId}/{rosterId}
    * @secure
    * @response `200` `GetRosterData`
@@ -5906,9 +6034,10 @@ export namespace Rosters {
   }
 
   /**
-   * No description
+   * @description You only need to send the fields you want to change. The roster's settings are saved as the server's defaults for the next roster.
    * @tags Rosters
    * @name UpdateRoster
+   * @summary Update a roster
    * @request PATCH:/rosters/{guildId}/{rosterId}
    * @secure
    * @response `200` `UpdateRosterData`
@@ -5926,9 +6055,10 @@ export namespace Rosters {
   }
 
   /**
-   * No description
+   * @description Members keep their roster and group roles until the bot next refreshes roles.
    * @tags Rosters
    * @name DeleteRoster
+   * @summary Delete a roster
    * @request DELETE:/rosters/{guildId}/{rosterId}
    * @secure
    * @response `204` `DeleteRosterData`
@@ -5946,9 +6076,10 @@ export namespace Rosters {
   }
 
   /**
-   * No description
+   * @description Copies most settings, except the role, image and color. Members are copied over only if they still pass the sign-up checks.
    * @tags Rosters
    * @name CloneRoster
+   * @summary Clone a roster
    * @request POST:/rosters/{guildId}/{rosterId}/clone
    * @secure
    * @response `201` `CloneRosterData`
@@ -5966,9 +6097,10 @@ export namespace Rosters {
   }
 
   /**
-   * No description
+   * @description Runs the sign-up checks for up to 100 players without adding anyone.
    * @tags Rosters
    * @name CheckRosterMembers
+   * @summary Check which players can join a roster
    * @request QUERY:/rosters/{guildId}/{rosterId}/members/check
    * @secure
    * @response `200` `CheckRosterMembersData`
@@ -5989,6 +6121,7 @@ export namespace Rosters {
    * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
    * @tags Rosters
    * @name CheckRosterMembersViaPost
+   * @summary Check which players can join a roster
    * @request POST:/rosters/{guildId}/{rosterId}/members/check
    * @deprecated
    * @secure
@@ -6007,9 +6140,10 @@ export namespace Rosters {
   }
 
   /**
-   * No description
+   * @description Players who fail a sign-up check are skipped, and the response says why for each one.
    * @tags Rosters
    * @name AddRosterMembers
+   * @summary Add players to a roster
    * @request PUT:/rosters/{guildId}/{rosterId}/members
    * @secure
    * @response `200` `AddRosterMembersData`
@@ -6030,6 +6164,7 @@ export namespace Rosters {
    * No description
    * @tags Rosters
    * @name DeleteRosterMembers
+   * @summary Remove players from a roster
    * @request DELETE:/rosters/{guildId}/{rosterId}/members
    * @secure
    * @response `200` `DeleteRosterMembersData`
@@ -6047,9 +6182,10 @@ export namespace Rosters {
   }
 
   /**
-   * No description
+   * @description Updates each member's game data and Discord link, and the roster's clan details.
    * @tags Rosters
    * @name RefreshRosterMembers
+   * @summary Refresh a roster's members from the game
    * @request POST:/rosters/{guildId}/{rosterId}/members/refresh
    * @secure
    * @response `201` `RefreshRosterMembersData`
@@ -6067,9 +6203,10 @@ export namespace Rosters {
   }
 
   /**
-   * No description
+   * @description To move players to another group on the same roster, send only `newGroupId`. Players who fail the other roster's sign-up checks stay where they are.
    * @tags Rosters
    * @name TransferRosterMembers
+   * @summary Move players to another roster or group
    * @request PUT:/rosters/{guildId}/{rosterId}/members/transfer
    * @secure
    * @response `200` `TransferRosterMembersData`
@@ -6092,6 +6229,7 @@ export namespace Users {
    * No description
    * @tags Users
    * @name GetUserSettings
+   * @summary Get your default clan, bookmarks and timezone
    * @request GET:/users/me
    * @secure
    * @response `200` `GetUserSettingsData`
@@ -6106,9 +6244,10 @@ export namespace Users {
   }
 
   /**
-   * No description
+   * @description Covers your linked accounts that you haven't hidden. CWL rounds still show even if the account has left the clan.
    * @tags Users
    * @name GetWarTasks
+   * @summary List your accounts' current wars
    * @request GET:/users/me/tasks/wars
    * @secure
    * @response `200` `GetWarTasksData`
@@ -6123,9 +6262,10 @@ export namespace Users {
   }
 
   /**
-   * No description
+   * @description Empty outside raid weekends.
    * @tags Users
    * @name GetCapitalRaidTasks
+   * @summary List your accounts' capital raid attacks
    * @request GET:/users/me/tasks/capital-raids
    * @secure
    * @response `200` `GetCapitalRaidTasksData`
@@ -6140,9 +6280,10 @@ export namespace Users {
   }
 
   /**
-   * No description
+   * @description Empty outside Clan Games.
    * @tags Users
    * @name GetClanGamesTasks
+   * @summary List your accounts' Clan Games points
    * @request GET:/users/me/tasks/clan-games
    * @secure
    * @response `200` `GetClanGamesTasksData`
@@ -6160,6 +6301,7 @@ export namespace Users {
    * No description
    * @tags Users
    * @name GetLegendTasks
+   * @summary List your accounts' Legend League attacks today
    * @request GET:/users/me/tasks/legends
    * @secure
    * @response `200` `GetLegendTasksData`
@@ -6177,6 +6319,7 @@ export namespace Users {
    * No description
    * @tags Users
    * @name GetRankedTasks
+   * @summary List your accounts' ranked attacks this week
    * @request GET:/users/me/tasks/ranked
    * @secure
    * @response `200` `GetRankedTasksData`
@@ -6194,6 +6337,7 @@ export namespace Users {
    * No description
    * @tags Users
    * @name SetDefaultClan
+   * @summary Set your default clan
    * @request PUT:/users/me/clan
    * @secure
    * @response `200` `SetDefaultClanData`
@@ -6211,6 +6355,7 @@ export namespace Users {
    * No description
    * @tags Users
    * @name ClearDefaultClan
+   * @summary Clear your default clan
    * @request DELETE:/users/me/clan
    * @secure
    * @response `200` `ClearDefaultClanData`
@@ -6225,9 +6370,10 @@ export namespace Users {
   }
 
   /**
-   * No description
+   * @description You can bookmark up to 50 clans. Bookmarking a clan again updates its saved name.
    * @tags Users
    * @name AddBookmark
+   * @summary Bookmark a clan
    * @request POST:/users/me/bookmarks
    * @secure
    * @response `201` `AddBookmarkData`
@@ -6245,6 +6391,7 @@ export namespace Users {
    * No description
    * @tags Users
    * @name RemoveBookmark
+   * @summary Remove a clan bookmark
    * @request DELETE:/users/me/bookmarks/{clanTag}
    * @secure
    * @response `200` `RemoveBookmarkData`
@@ -6264,6 +6411,7 @@ export namespace Users {
    * No description
    * @tags Users
    * @name SetTimezone
+   * @summary Set your timezone
    * @request PUT:/users/me/timezone
    * @secure
    * @response `200` `SetTimezoneData`
@@ -6281,6 +6429,7 @@ export namespace Users {
    * No description
    * @tags Users
    * @name ClearTimezone
+   * @summary Clear your timezone
    * @request DELETE:/users/me/timezone
    * @secure
    * @response `200` `ClearTimezoneData`
@@ -6295,10 +6444,10 @@ export namespace Users {
   }
 
   /**
-   * No description
+   * @description Only the exports you saved, even if someone else has linked the same account.
    * @tags Users
    * @name GetGameExports
-   * @summary Game data exports this user saved for their accounts; nobody else's copies are included.
+   * @summary List your saved game data exports
    * @request GET:/users/me/game-exports
    * @secure
    * @response `200` `GetGameExportsData`
@@ -6313,9 +6462,10 @@ export namespace Users {
   }
 
   /**
-   * No description
+   * @description The account must be linked to you, and the export must be for the same player tag.
    * @tags Users
    * @name SaveGameExport
+   * @summary Save a game data export for an account
    * @request PUT:/users/me/game-exports/{playerTag}
    * @secure
    * @response `200` `SaveGameExportData`
@@ -6335,6 +6485,7 @@ export namespace Users {
    * No description
    * @tags Users
    * @name RemoveGameExport
+   * @summary Delete a saved game data export
    * @request DELETE:/users/me/game-exports/{playerTag}
    * @secure
    * @response `200` `RemoveGameExportData`
@@ -6356,6 +6507,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name GetGuildClans
+   * @summary List the server's clans by category
    * @request GET:/guilds/{guildId}/clans
    * @secure
    * @response `200` `GetGuildClansData`
@@ -6372,9 +6524,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description Servers can add 5, 20 or 100 clans depending on their member count. Going past that, or adding a clan that's already in more than 10 other servers, needs proof that you lead the clan. Supporter servers skip this check.
    * @tags Guilds
    * @name AddGuildClan
+   * @summary Add a clan to the server
    * @request POST:/guilds/{guildId}/clans
    * @secure
    * @response `201` `AddGuildClanData`
@@ -6391,9 +6544,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description Send every category with its clans, in the order you want. Clans you put under `uncategorized` are taken out of their category.
    * @tags Guilds
    * @name ReorderGuildClans
+   * @summary Reorder the server's clans and categories
    * @request PATCH:/guilds/{guildId}/clans/reorder
    * @secure
    * @response `200` `ReorderGuildClansData`
@@ -6410,9 +6564,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description This also deletes the clan's logs and removes it from reminders. Any reminder left with no clans is deleted.
    * @tags Guilds
    * @name RemoveGuildClan
+   * @summary Remove a clan from the server
    * @request DELETE:/guilds/{guildId}/clans/{clanTag}
    * @secure
    * @response `200` `RemoveGuildClanData`
@@ -6430,9 +6585,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description You only need to send the fields you want to change. Each alias must be unique in the server, and a channel can only belong to one clan.
    * @tags Guilds
    * @name UpdateGuildClan
+   * @summary Update a clan's alias, short name and channels
    * @request PATCH:/guilds/{guildId}/clans/{clanTag}
    * @secure
    * @response `200` `UpdateGuildClanData`
@@ -6453,6 +6609,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name CreateClanCategory
+   * @summary Create a clan category
    * @request POST:/guilds/{guildId}/categories
    * @secure
    * @response `201` `CreateClanCategoryData`
@@ -6472,6 +6629,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name RenameClanCategory
+   * @summary Rename a clan category
    * @request PATCH:/guilds/{guildId}/categories/{categoryId}
    * @secure
    * @response `200` `RenameClanCategoryData`
@@ -6489,9 +6647,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description Its clans aren't removed. They move to Uncategorized.
    * @tags Guilds
    * @name DeleteClanCategory
+   * @summary Delete a clan category
    * @request DELETE:/guilds/{guildId}/categories/{categoryId}
    * @secure
    * @response `200` `DeleteClanCategoryData`
@@ -6509,28 +6668,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
-   * @tags Guilds
-   * @name GetGuildReminders
-   * @request GET:/guilds/{guildId}/reminders
-   * @secure
-   * @response `200` `GetGuildRemindersData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace GetGuildReminders {
-    export type RequestParams = {
-      guildId: string;
-    };
-    export type RequestQuery = {};
-    export type RequestBody = never;
-    export type RequestHeaders = {};
-    export type ResponseBody = GetGuildRemindersData;
-  }
-
-  /**
-   * No description
+   * @description A channel the bot can't post in still shows up if it has threads the bot can use, but the channel itself can't be picked.
    * @tags Guilds
    * @name ListChannels
+   * @summary List channels and threads the bot can post in
    * @request GET:/guilds/{guildId}/channels
    * @secure
    * @response `200` `ListChannelsData`
@@ -6549,7 +6690,48 @@ export namespace Guilds {
   /**
    * No description
    * @tags Guilds
+   * @name ListChannelCategories
+   * @summary List the server's channel categories
+   * @request GET:/guilds/{guildId}/channel-categories
+   * @secure
+   * @response `200` `ListChannelCategoriesData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace ListChannelCategories {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = ListChannelCategoriesData;
+  }
+
+  /**
+   * No description
+   * @tags Guilds
+   * @name ListMentionableChannels
+   * @summary List channels a message can mention
+   * @request GET:/guilds/{guildId}/channels/mentionable
+   * @secure
+   * @response `200` `ListMentionableChannelsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace ListMentionableChannels {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = ListMentionableChannelsData;
+  }
+
+  /**
+   * @description Sorted from highest to lowest. @everyone and roles owned by bots or integrations are left out.
+   * @tags Guilds
    * @name ListRoles
+   * @summary List the server's roles
    * @request GET:/guilds/{guildId}/roles
    * @secure
    * @response `200` `ListRolesData`
@@ -6566,224 +6748,30 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description Includes the server's own emojis and the bot's emojis.
    * @tags Guilds
-   * @name GetReminderPings
-   * @request GET:/guilds/{guildId}/reminders/pings
+   * @name ListEmojis
+   * @summary List custom emojis the bot can use
+   * @request GET:/guilds/{guildId}/emojis
    * @secure
-   * @response `200` `GetReminderPingsData`
+   * @response `200` `ListEmojisData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetReminderPings {
+  export namespace ListEmojis {
     export type RequestParams = {
       guildId: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetReminderPingsData;
-  }
-
-  /**
-   * No description
-   * @tags Guilds
-   * @name SaveReminderPings
-   * @request PUT:/guilds/{guildId}/reminders/pings
-   * @secure
-   * @response `200` `SaveReminderPingsData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace SaveReminderPings {
-    export type RequestParams = {
-      guildId: string;
-    };
-    export type RequestQuery = {};
-    export type RequestBody = ReminderPingsInput;
-    export type RequestHeaders = {};
-    export type ResponseBody = SaveReminderPingsData;
-  }
-
-  /**
-   * No description
-   * @tags Guilds
-   * @name CreateClanWarReminder
-   * @request POST:/guilds/{guildId}/reminders/clan-wars
-   * @secure
-   * @response `201` `CreateClanWarReminderData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace CreateClanWarReminder {
-    export type RequestParams = {
-      guildId: string;
-    };
-    export type RequestQuery = {};
-    export type RequestBody = ClanWarReminderInput;
-    export type RequestHeaders = {};
-    export type ResponseBody = CreateClanWarReminderData;
-  }
-
-  /**
-   * No description
-   * @tags Guilds
-   * @name UpdateClanWarReminder
-   * @request PUT:/guilds/{guildId}/reminders/clan-wars/{reminderId}
-   * @secure
-   * @response `200` `UpdateClanWarReminderData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace UpdateClanWarReminder {
-    export type RequestParams = {
-      guildId: string;
-      reminderId: string;
-    };
-    export type RequestQuery = {};
-    export type RequestBody = ClanWarReminderInput;
-    export type RequestHeaders = {};
-    export type ResponseBody = UpdateClanWarReminderData;
-  }
-
-  /**
-   * No description
-   * @tags Guilds
-   * @name DeleteClanWarReminder
-   * @request DELETE:/guilds/{guildId}/reminders/clan-wars/{reminderId}
-   * @secure
-   * @response `204` `DeleteClanWarReminderData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace DeleteClanWarReminder {
-    export type RequestParams = {
-      guildId: string;
-      reminderId: string;
-    };
-    export type RequestQuery = {};
-    export type RequestBody = never;
-    export type RequestHeaders = {};
-    export type ResponseBody = DeleteClanWarReminderData;
-  }
-
-  /**
-   * No description
-   * @tags Guilds
-   * @name CreateCapitalRaidReminder
-   * @request POST:/guilds/{guildId}/reminders/capital-raids
-   * @secure
-   * @response `201` `CreateCapitalRaidReminderData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace CreateCapitalRaidReminder {
-    export type RequestParams = {
-      guildId: string;
-    };
-    export type RequestQuery = {};
-    export type RequestBody = CapitalRaidReminderInput;
-    export type RequestHeaders = {};
-    export type ResponseBody = CreateCapitalRaidReminderData;
-  }
-
-  /**
-   * No description
-   * @tags Guilds
-   * @name UpdateCapitalRaidReminder
-   * @request PUT:/guilds/{guildId}/reminders/capital-raids/{reminderId}
-   * @secure
-   * @response `200` `UpdateCapitalRaidReminderData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace UpdateCapitalRaidReminder {
-    export type RequestParams = {
-      guildId: string;
-      reminderId: string;
-    };
-    export type RequestQuery = {};
-    export type RequestBody = CapitalRaidReminderInput;
-    export type RequestHeaders = {};
-    export type ResponseBody = UpdateCapitalRaidReminderData;
-  }
-
-  /**
-   * No description
-   * @tags Guilds
-   * @name DeleteCapitalRaidReminder
-   * @request DELETE:/guilds/{guildId}/reminders/capital-raids/{reminderId}
-   * @secure
-   * @response `204` `DeleteCapitalRaidReminderData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace DeleteCapitalRaidReminder {
-    export type RequestParams = {
-      guildId: string;
-      reminderId: string;
-    };
-    export type RequestQuery = {};
-    export type RequestBody = never;
-    export type RequestHeaders = {};
-    export type ResponseBody = DeleteCapitalRaidReminderData;
-  }
-
-  /**
-   * No description
-   * @tags Guilds
-   * @name CreateClanGamesReminder
-   * @request POST:/guilds/{guildId}/reminders/clan-games
-   * @secure
-   * @response `201` `CreateClanGamesReminderData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace CreateClanGamesReminder {
-    export type RequestParams = {
-      guildId: string;
-    };
-    export type RequestQuery = {};
-    export type RequestBody = ClanGamesReminderInput;
-    export type RequestHeaders = {};
-    export type ResponseBody = CreateClanGamesReminderData;
-  }
-
-  /**
-   * No description
-   * @tags Guilds
-   * @name UpdateClanGamesReminder
-   * @request PUT:/guilds/{guildId}/reminders/clan-games/{reminderId}
-   * @secure
-   * @response `200` `UpdateClanGamesReminderData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace UpdateClanGamesReminder {
-    export type RequestParams = {
-      guildId: string;
-      reminderId: string;
-    };
-    export type RequestQuery = {};
-    export type RequestBody = ClanGamesReminderInput;
-    export type RequestHeaders = {};
-    export type ResponseBody = UpdateClanGamesReminderData;
-  }
-
-  /**
-   * No description
-   * @tags Guilds
-   * @name DeleteClanGamesReminder
-   * @request DELETE:/guilds/{guildId}/reminders/clan-games/{reminderId}
-   * @secure
-   * @response `204` `DeleteClanGamesReminderData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace DeleteClanGamesReminder {
-    export type RequestParams = {
-      guildId: string;
-      reminderId: string;
-    };
-    export type RequestQuery = {};
-    export type RequestBody = never;
-    export type RequestHeaders = {};
-    export type ResponseBody = DeleteClanGamesReminderData;
+    export type ResponseBody = ListEmojisData;
   }
 
   /**
    * No description
    * @tags Guilds
    * @name ListGuildClanLogs
+   * @summary List every clan log in the server
    * @request GET:/guilds/{guildId}/clan-logs
    * @secure
    * @response `200` `ListGuildClanLogsData`
@@ -6800,9 +6788,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description Shows how many clans can have logs in this server, and which clans already count toward that limit.
    * @tags Guilds
    * @name GetClanLogLimit
+   * @summary Get the server's clan log limit
    * @request GET:/guilds/{guildId}/clan-logs/limit
    * @secure
    * @response `200` `GetClanLogLimitData`
@@ -6822,6 +6811,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name GetClanEmbed
+   * @summary Get a clan's embed
    * @request GET:/guilds/{guildId}/clans/{clanTag}/embed
    * @secure
    * @response `200` `GetClanEmbedData`
@@ -6839,9 +6829,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description The bot posts or updates the message the next time it refreshes. A clan's first log or embed counts toward the server's clan log limit.
    * @tags Guilds
    * @name SaveClanEmbed
+   * @summary Create or update a clan's embed
    * @request PUT:/guilds/{guildId}/clans/{clanTag}/embed
    * @secure
    * @response `200` `SaveClanEmbedData`
@@ -6859,9 +6850,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description The message already posted stays in the channel, but the bot stops updating it.
    * @tags Guilds
    * @name DeleteClanEmbed
+   * @summary Delete a clan's embed
    * @request DELETE:/guilds/{guildId}/clans/{clanTag}/embed
    * @secure
    * @response `204` `DeleteClanEmbedData`
@@ -6882,6 +6874,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name ListClanLogs
+   * @summary List a clan's logs
    * @request GET:/guilds/{guildId}/clans/{clanTag}/logs
    * @secure
    * @response `200` `ListClanLogsData`
@@ -6899,9 +6892,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description A clan's first log counts toward the server's clan log limit. A new log starts by posting the last 30 minutes of activity.
    * @tags Guilds
    * @name SaveClanLog
+   * @summary Create or update a clan log
    * @request PUT:/guilds/{guildId}/clans/{clanTag}/logs/{logType}
    * @secure
    * @response `200` `SaveClanLogData`
@@ -6923,6 +6917,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name DeleteClanLog
+   * @summary Delete a clan log
    * @request DELETE:/guilds/{guildId}/clans/{clanTag}/logs/{logType}
    * @secure
    * @response `204` `DeleteClanLogData`
@@ -6944,6 +6939,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name GetAutoRoles
+   * @summary Get the server's auto-role settings
    * @request GET:/guilds/{guildId}/auto-roles
    * @secure
    * @response `200` `GetAutoRolesData`
@@ -6960,28 +6956,30 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description You only need to send the fields you want to change. Roles must be below the bot's highest role, and the server needs at least one clan first.
    * @tags Guilds
-   * @name SaveAutoRoles
+   * @name UpdateAutoRoles
+   * @summary Update the server-wide auto-role settings
    * @request PATCH:/guilds/{guildId}/auto-roles
    * @secure
-   * @response `200` `SaveAutoRolesData`
+   * @response `200` `UpdateAutoRolesData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace SaveAutoRoles {
+  export namespace UpdateAutoRoles {
     export type RequestParams = {
       guildId: string;
     };
     export type RequestQuery = {};
     export type RequestBody = AutoRolesInput;
     export type RequestHeaders = {};
-    export type ResponseBody = SaveAutoRolesData;
+    export type ResponseBody = UpdateAutoRolesData;
   }
 
   /**
-   * No description
+   * @description This replaces all of the clan's roles, so any role you leave out is cleared. An in-war role can only be used by one clan.
    * @tags Guilds
    * @name SaveClanAutoRoles
+   * @summary Set a clan's auto-roles
    * @request PUT:/guilds/{guildId}/auto-roles/clans/{clanTag}
    * @secure
    * @response `200` `SaveClanAutoRolesData`
@@ -6999,9 +6997,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description Also shows how many active flags the server has and how many it's allowed. Supporter servers have no limit.
    * @tags Guilds
    * @name ListFlags
+   * @summary List the server's active flags
    * @request GET:/guilds/{guildId}/flags
    * @secure
    * @response `200` `ListFlagsData`
@@ -7012,6 +7011,7 @@ export namespace Guilds {
       guildId: string;
     };
     export type RequestQuery = {
+      /** Only flags of this type */
       flagType?: FlagType;
     };
     export type RequestBody = never;
@@ -7020,9 +7020,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description Each player found gets their own flag. Servers without a subscription can have up to 1,000 active flags.
    * @tags Guilds
    * @name CreateFlags
+   * @summary Flag one or more players
    * @request POST:/guilds/{guildId}/flags
    * @secure
    * @response `201` `CreateFlagsData`
@@ -7042,6 +7043,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name DeleteFlag
+   * @summary Delete an active flag
    * @request DELETE:/guilds/{guildId}/flags/{flagId}
    * @secure
    * @response `204` `DeleteFlagData`
@@ -7059,15 +7061,16 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description Finds members whose username or server nickname starts with what you type. Returns up to 50.
    * @tags Guilds
-   * @name ListMembers
+   * @name SearchMembers
+   * @summary Search the server's members
    * @request GET:/guilds/{guildId}/members/list
    * @secure
-   * @response `200` `ListMembersData`
+   * @response `200` `SearchMembersData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace ListMembers {
+  export namespace SearchMembers {
     export type RequestParams = {
       guildId: string;
     };
@@ -7076,13 +7079,14 @@ export namespace Guilds {
     };
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = ListMembersData;
+    export type ResponseBody = SearchMembersData;
   }
 
   /**
    * No description
    * @tags Guilds
    * @name GetServerLogs
+   * @summary Get the server-wide log settings
    * @request GET:/guilds/{guildId}/server-logs
    * @secure
    * @response `200` `GetServerLogsData`
@@ -7102,6 +7106,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name SaveFlagAlertLog
+   * @summary Set up the flag alert log
    * @request PUT:/guilds/{guildId}/server-logs/flag-alert
    * @secure
    * @response `200` `SaveFlagAlertLogData`
@@ -7121,6 +7126,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name DeleteFlagAlertLog
+   * @summary Turn off the flag alert log
    * @request DELETE:/guilds/{guildId}/server-logs/flag-alert
    * @secure
    * @response `200` `DeleteFlagAlertLogData`
@@ -7140,6 +7146,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name SaveRosterChangelog
+   * @summary Set up the roster changelog
    * @request PUT:/guilds/{guildId}/server-logs/roster-changelog
    * @secure
    * @response `200` `SaveRosterChangelogData`
@@ -7159,6 +7166,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name DeleteRosterChangelog
+   * @summary Turn off the roster changelog
    * @request DELETE:/guilds/{guildId}/server-logs/roster-changelog
    * @secure
    * @response `200` `DeleteRosterChangelogData`
@@ -7178,6 +7186,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name SaveMaintenanceLog
+   * @summary Set up the maintenance log
    * @request PUT:/guilds/{guildId}/server-logs/maintenance
    * @secure
    * @response `200` `SaveMaintenanceLogData`
@@ -7197,6 +7206,7 @@ export namespace Guilds {
    * No description
    * @tags Guilds
    * @name DeleteMaintenanceLog
+   * @summary Turn off the maintenance log
    * @request DELETE:/guilds/{guildId}/server-logs/maintenance
    * @secure
    * @response `200` `DeleteMaintenanceLogData`
@@ -7213,9 +7223,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description Saves the message and turns it on.
    * @tags Guilds
    * @name SaveWelcomeLog
+   * @summary Set up the welcome message
    * @request PUT:/guilds/{guildId}/server-logs/welcome
    * @secure
    * @response `200` `SaveWelcomeLogData`
@@ -7232,10 +7243,10 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description The message is saved, so you can turn it back on later.
    * @tags Guilds
    * @name DeleteWelcomeLog
-   * @summary Turns the welcome message off but keeps it, as `/setup server-logs disable` does.
+   * @summary Turn off the welcome message
    * @request DELETE:/guilds/{guildId}/server-logs/welcome
    * @secure
    * @response `200` `DeleteWelcomeLogData`
@@ -7254,47 +7265,49 @@ export namespace Guilds {
   /**
    * No description
    * @tags Guilds
-   * @name GetButtons
+   * @name GetButtonMessages
+   * @summary Get the server's button messages
    * @request GET:/guilds/{guildId}/buttons
    * @secure
-   * @response `200` `GetButtonsData`
+   * @response `200` `GetButtonMessagesData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetButtons {
+  export namespace GetButtonMessages {
     export type RequestParams = {
       guildId: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetButtonsData;
+    export type ResponseBody = GetButtonMessagesData;
   }
 
   /**
-   * No description
+   * @description Changes what `/setup buttons` posts. Messages that were already posted keep their old look.
    * @tags Guilds
-   * @name SaveButton
-   * @summary Saves what `/setup buttons` posts; messages already posted keep their old look.
+   * @name UpdateButtonMessage
+   * @summary Update a button message
    * @request PUT:/guilds/{guildId}/buttons/{buttonType}
    * @secure
-   * @response `200` `SaveButtonData`
+   * @response `200` `UpdateButtonMessageData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace SaveButton {
+  export namespace UpdateButtonMessage {
     export type RequestParams = {
       guildId: string;
-      buttonType: string;
+      buttonType: ButtonType;
     };
     export type RequestQuery = {};
     export type RequestBody = ButtonMessageInput;
     export type RequestHeaders = {};
-    export type ResponseBody = SaveButtonData;
+    export type ResponseBody = UpdateButtonMessageData;
   }
 
   /**
    * No description
    * @tags Guilds
    * @name GetManagerRoles
+   * @summary Get the server's manager roles
    * @request GET:/guilds/{guildId}/managers
    * @secure
    * @response `200` `GetManagerRolesData`
@@ -7311,125 +7324,113 @@ export namespace Guilds {
   }
 
   /**
-   * No description
+   * @description You only need to send the lists you want to change. Sending an empty list clears it.
    * @tags Guilds
-   * @name SaveManagerRoles
+   * @name UpdateManagerRoles
+   * @summary Update the server's manager roles
    * @request PATCH:/guilds/{guildId}/managers
    * @secure
-   * @response `200` `SaveManagerRolesData`
+   * @response `200` `UpdateManagerRolesData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace SaveManagerRoles {
+  export namespace UpdateManagerRoles {
     export type RequestParams = {
       guildId: string;
     };
     export type RequestQuery = {};
     export type RequestBody = ManagerRolesInput;
     export type RequestHeaders = {};
-    export type ResponseBody = SaveManagerRolesData;
+    export type ResponseBody = UpdateManagerRolesData;
   }
 
   /**
    * No description
    * @tags Guilds
-   * @name GetConfig
+   * @name GetGuildConfig
+   * @summary Get the server's embed color, webhook limit and subscription
    * @request GET:/guilds/{guildId}/config
    * @secure
-   * @response `200` `GetConfigData`
+   * @response `200` `GetGuildConfigData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetConfig {
+  export namespace GetGuildConfig {
     export type RequestParams = {
       guildId: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetConfigData;
+    export type ResponseBody = GetGuildConfigData;
   }
 
   /**
-   * No description
+   * @description You only need to send the fields you want to change. Set the color to null to go back to the default.
    * @tags Guilds
-   * @name SaveConfig
+   * @name UpdateGuildConfig
+   * @summary Update the server's embed color or webhook limit
    * @request PATCH:/guilds/{guildId}/config
    * @secure
-   * @response `200` `SaveConfigData`
+   * @response `200` `UpdateGuildConfigData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace SaveConfig {
+  export namespace UpdateGuildConfig {
     export type RequestParams = {
       guildId: string;
     };
     export type RequestQuery = {};
     export type RequestBody = ServerConfigInput;
     export type RequestHeaders = {};
-    export type ResponseBody = SaveConfigData;
+    export type ResponseBody = UpdateGuildConfigData;
   }
 
   /**
    * No description
    * @tags Guilds
-   * @name GetGuildBeta
+   * @name GetGuildBetaStatus
+   * @summary Check whether the server is in the beta
    * @request GET:/guilds/{guildId}/beta
    * @secure
-   * @response `200` `GetGuildBetaData`
+   * @response `200` `GetGuildBetaStatusData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace GetGuildBeta {
+  export namespace GetGuildBetaStatus {
     export type RequestParams = {
       guildId: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = GetGuildBetaData;
+    export type ResponseBody = GetGuildBetaStatusData;
   }
+}
 
+export namespace Tickets {
   /**
    * No description
-   * @tags Guilds
-   * @name ListCategories
-   * @request GET:/guilds/{guildId}/channel-categories
+   * @tags Tickets
+   * @name GetTicketSettings
+   * @summary Get the server's ticket panels and saved replies
+   * @request GET:/tickets/{guildId}
    * @secure
-   * @response `200` `ListCategoriesData`
+   * @response `200` `GetTicketSettingsData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace ListCategories {
+  export namespace GetTicketSettings {
     export type RequestParams = {
       guildId: string;
     };
     export type RequestQuery = {};
     export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = ListCategoriesData;
+    export type ResponseBody = GetTicketSettingsData;
   }
 
   /**
-   * No description
-   * @tags Guilds
-   * @name GetTickets
-   * @request GET:/guilds/{guildId}/tickets
-   * @secure
-   * @response `200` `GetTicketsData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace GetTickets {
-    export type RequestParams = {
-      guildId: string;
-    };
-    export type RequestQuery = {};
-    export type RequestBody = never;
-    export type RequestHeaders = {};
-    export type ResponseBody = GetTicketsData;
-  }
-
-  /**
-   * No description
-   * @tags Guilds
+   * @description Newest first, 25 per page. To get the next page, pass the `nextCursor` from the response as `before`.
+   * @tags Tickets
    * @name ListTickets
-   * @summary Tickets members opened, newest first, 25 a page.
-   * @request GET:/guilds/{guildId}/tickets/list
+   * @summary List tickets opened in the server
+   * @request GET:/tickets/{guildId}/list
    * @secure
    * @response `200` `ListTicketsData`
    * @response `500` `ErrorResponseDto`
@@ -7449,11 +7450,11 @@ export namespace Guilds {
   }
 
   /**
-   * No description
-   * @tags Guilds
+   * @description Does the same as the Close button in Discord. The last 100 messages are saved to the ticket log, and the channel is deleted.
+   * @tags Tickets
    * @name CloseTicket
-   * @summary Closes a ticket as the bot's Close button does: transcript to the log, channel deleted.
-   * @request POST:/guilds/{guildId}/tickets/{ticketId}/close
+   * @summary Close an opened ticket
+   * @request POST:/tickets/{guildId}/{ticketId}/close
    * @secure
    * @response `204` `CloseTicketData`
    * @response `500` `ErrorResponseDto`
@@ -7470,10 +7471,11 @@ export namespace Guilds {
   }
 
   /**
-   * No description
-   * @tags Guilds
+   * @description The panel starts with default settings and one General ticket type. Each panel in a server needs a different name.
+   * @tags Tickets
    * @name CreateTicketPanel
-   * @request POST:/guilds/{guildId}/tickets/panels
+   * @summary Create a ticket panel
+   * @request POST:/tickets/{guildId}/panels
    * @secure
    * @response `201` `CreateTicketPanelData`
    * @response `500` `ErrorResponseDto`
@@ -7489,10 +7491,11 @@ export namespace Guilds {
   }
 
   /**
-   * No description
-   * @tags Guilds
+   * @description You only need to send the fields you want to change. If the panel is already posted in Discord, post it again to show the changes.
+   * @tags Tickets
    * @name UpdateTicketPanel
-   * @request PATCH:/guilds/{guildId}/tickets/panels/{panelId}
+   * @summary Update a ticket panel
+   * @request PATCH:/tickets/{guildId}/panels/{panelId}
    * @secure
    * @response `200` `UpdateTicketPanelData`
    * @response `500` `ErrorResponseDto`
@@ -7509,10 +7512,11 @@ export namespace Guilds {
   }
 
   /**
-   * No description
-   * @tags Guilds
+   * @description Tickets already opened from it aren't affected. Its message in Discord stops opening new tickets.
+   * @tags Tickets
    * @name DeleteTicketPanel
-   * @request DELETE:/guilds/{guildId}/tickets/panels/{panelId}
+   * @summary Delete a ticket panel
+   * @request DELETE:/tickets/{guildId}/panels/{panelId}
    * @secure
    * @response `200` `DeleteTicketPanelData`
    * @response `500` `ErrorResponseDto`
@@ -7529,10 +7533,11 @@ export namespace Guilds {
   }
 
   /**
-   * No description
-   * @tags Guilds
+   * @description A panel can have up to 25 ticket types.
+   * @tags Tickets
    * @name AddTicketType
-   * @request POST:/guilds/{guildId}/tickets/panels/{panelId}/types
+   * @summary Add a ticket type to a panel
+   * @request POST:/tickets/{guildId}/panels/{panelId}/types
    * @secure
    * @response `201` `AddTicketTypeData`
    * @response `500` `ErrorResponseDto`
@@ -7549,10 +7554,11 @@ export namespace Guilds {
   }
 
   /**
-   * No description
-   * @tags Guilds
+   * @description Send all of the panel's ticket type IDs, each once, in the order you want.
+   * @tags Tickets
    * @name ReorderTicketTypes
-   * @request PUT:/guilds/{guildId}/tickets/panels/{panelId}/types/order
+   * @summary Reorder a panel's ticket types
+   * @request PUT:/tickets/{guildId}/panels/{panelId}/types/order
    * @secure
    * @response `200` `ReorderTicketTypesData`
    * @response `500` `ErrorResponseDto`
@@ -7569,10 +7575,11 @@ export namespace Guilds {
   }
 
   /**
-   * No description
-   * @tags Guilds
+   * @description You only need to send the fields you want to change.
+   * @tags Tickets
    * @name UpdateTicketType
-   * @request PATCH:/guilds/{guildId}/tickets/panels/{panelId}/types/{typeId}
+   * @summary Update a ticket type
+   * @request PATCH:/tickets/{guildId}/panels/{panelId}/types/{typeId}
    * @secure
    * @response `200` `UpdateTicketTypeData`
    * @response `500` `ErrorResponseDto`
@@ -7590,10 +7597,11 @@ export namespace Guilds {
   }
 
   /**
-   * No description
-   * @tags Guilds
+   * @description Tickets already opened with this type stay open.
+   * @tags Tickets
    * @name DeleteTicketType
-   * @request DELETE:/guilds/{guildId}/tickets/panels/{panelId}/types/{typeId}
+   * @summary Delete a ticket type
+   * @request DELETE:/tickets/{guildId}/panels/{panelId}/types/{typeId}
    * @secure
    * @response `200` `DeleteTicketTypeData`
    * @response `500` `ErrorResponseDto`
@@ -7611,30 +7619,280 @@ export namespace Guilds {
   }
 
   /**
-   * No description
-   * @tags Guilds
-   * @name SaveTicketReplies
-   * @request PUT:/guilds/{guildId}/tickets/saved-replies
+   * @description Staff can use these replies in any ticket in the server. You can save up to 25, and each needs a different name.
+   * @tags Tickets
+   * @name ReplaceSavedReplies
+   * @summary Replace the server's saved ticket replies
+   * @request PUT:/tickets/{guildId}/saved-replies
    * @secure
-   * @response `200` `SaveTicketRepliesData`
+   * @response `200` `ReplaceSavedRepliesData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace SaveTicketReplies {
+  export namespace ReplaceSavedReplies {
     export type RequestParams = {
       guildId: string;
     };
     export type RequestQuery = {};
     export type RequestBody = TicketSavedRepliesInput;
     export type RequestHeaders = {};
-    export type ResponseBody = SaveTicketRepliesData;
+    export type ResponseBody = ReplaceSavedRepliesData;
+  }
+}
+
+export namespace Reminders {
+  /**
+   * @description Includes clan war, capital raid and Clan Games reminders, with when each one will go off next.
+   * @tags Reminders
+   * @name ListReminders
+   * @summary List the server's reminders
+   * @request GET:/reminders/{guildId}
+   * @secure
+   * @response `200` `ListRemindersData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace ListReminders {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = ListRemindersData;
+  }
+
+  /**
+   * No description
+   * @tags Reminders
+   * @name GetReminderPings
+   * @summary Get the roles that control reminder pings
+   * @request GET:/reminders/{guildId}/pings
+   * @secure
+   * @response `200` `GetReminderPingsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetReminderPings {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetReminderPingsData;
+  }
+
+  /**
+   * @description Sending an empty list clears the setting. Members with these roles are saved right away, and the bot keeps the list up to date.
+   * @tags Reminders
+   * @name SaveReminderPings
+   * @summary Set the roles that control reminder pings
+   * @request PUT:/reminders/{guildId}/pings
+   * @secure
+   * @response `200` `SaveReminderPingsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace SaveReminderPings {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = ReminderPingsInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = SaveReminderPingsData;
+  }
+
+  /**
+   * @description Set `duration` to how long before the war ends the reminder should go off, in milliseconds. It can be up to 48 hours, in 15-minute steps. A server can have 25 reminders of each type, or 5 per clan if that's more. Supporter servers have no limit.
+   * @tags Reminders
+   * @name CreateClanWarReminder
+   * @summary Create a clan war reminder
+   * @request POST:/reminders/{guildId}/clan-wars
+   * @secure
+   * @response `201` `CreateClanWarReminderData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace CreateClanWarReminder {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = ClanWarReminderInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = CreateClanWarReminderData;
+  }
+
+  /**
+   * @description Send the whole reminder, the same as when you created it. Moving it to another channel removes its thread.
+   * @tags Reminders
+   * @name UpdateClanWarReminder
+   * @summary Update a clan war reminder
+   * @request PUT:/reminders/{guildId}/clan-wars/{reminderId}
+   * @secure
+   * @response `200` `UpdateClanWarReminderData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace UpdateClanWarReminder {
+    export type RequestParams = {
+      guildId: string;
+      reminderId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = ClanWarReminderInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = UpdateClanWarReminderData;
+  }
+
+  /**
+   * No description
+   * @tags Reminders
+   * @name DeleteClanWarReminder
+   * @summary Delete a clan war reminder
+   * @request DELETE:/reminders/{guildId}/clan-wars/{reminderId}
+   * @secure
+   * @response `204` `DeleteClanWarReminderData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace DeleteClanWarReminder {
+    export type RequestParams = {
+      guildId: string;
+      reminderId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = DeleteClanWarReminderData;
+  }
+
+  /**
+   * @description Set `duration` to how long before the raid weekend ends the reminder should go off, in milliseconds. It can be up to 3 days, in 15-minute steps. A server can have 25 reminders of each type, or 5 per clan if that's more. Supporter servers have no limit.
+   * @tags Reminders
+   * @name CreateCapitalRaidReminder
+   * @summary Create a capital raid reminder
+   * @request POST:/reminders/{guildId}/capital-raids
+   * @secure
+   * @response `201` `CreateCapitalRaidReminderData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace CreateCapitalRaidReminder {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = CapitalRaidReminderInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = CreateCapitalRaidReminderData;
+  }
+
+  /**
+   * @description Send the whole reminder, the same as when you created it. Moving it to another channel removes its thread.
+   * @tags Reminders
+   * @name UpdateCapitalRaidReminder
+   * @summary Update a capital raid reminder
+   * @request PUT:/reminders/{guildId}/capital-raids/{reminderId}
+   * @secure
+   * @response `200` `UpdateCapitalRaidReminderData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace UpdateCapitalRaidReminder {
+    export type RequestParams = {
+      guildId: string;
+      reminderId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = CapitalRaidReminderInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = UpdateCapitalRaidReminderData;
+  }
+
+  /**
+   * No description
+   * @tags Reminders
+   * @name DeleteCapitalRaidReminder
+   * @summary Delete a capital raid reminder
+   * @request DELETE:/reminders/{guildId}/capital-raids/{reminderId}
+   * @secure
+   * @response `204` `DeleteCapitalRaidReminderData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace DeleteCapitalRaidReminder {
+    export type RequestParams = {
+      guildId: string;
+      reminderId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = DeleteCapitalRaidReminderData;
+  }
+
+  /**
+   * @description Set `duration` to how long before Clan Games end the reminder should go off, in milliseconds. It can be up to 6 days, in 15-minute steps. A server can have 25 reminders of each type, or 5 per clan if that's more. Supporter servers have no limit.
+   * @tags Reminders
+   * @name CreateClanGamesReminder
+   * @summary Create a Clan Games reminder
+   * @request POST:/reminders/{guildId}/clan-games
+   * @secure
+   * @response `201` `CreateClanGamesReminderData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace CreateClanGamesReminder {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = ClanGamesReminderInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = CreateClanGamesReminderData;
+  }
+
+  /**
+   * @description Send the whole reminder, the same as when you created it. Moving it to another channel removes its thread.
+   * @tags Reminders
+   * @name UpdateClanGamesReminder
+   * @summary Update a Clan Games reminder
+   * @request PUT:/reminders/{guildId}/clan-games/{reminderId}
+   * @secure
+   * @response `200` `UpdateClanGamesReminderData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace UpdateClanGamesReminder {
+    export type RequestParams = {
+      guildId: string;
+      reminderId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = ClanGamesReminderInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = UpdateClanGamesReminderData;
+  }
+
+  /**
+   * No description
+   * @tags Reminders
+   * @name DeleteClanGamesReminder
+   * @summary Delete a Clan Games reminder
+   * @request DELETE:/reminders/{guildId}/clan-games/{reminderId}
+   * @secure
+   * @response `204` `DeleteClanGamesReminderData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace DeleteClanGamesReminder {
+    export type RequestParams = {
+      guildId: string;
+      reminderId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = DeleteClanGamesReminderData;
   }
 }
 
 export namespace Exports {
   /**
-   * No description
+   * @description For a scheduled export, the sheet already made for the same server and clans is returned instead of a new one.
    * @tags Internal
    * @name ExportClanMembers
+   * @summary Export clan members to a Google Sheet
    * @request POST:/exports/members
    * @response `201` `ExportClanMembersData`
    * @response `500` `ErrorResponseDto`
@@ -7653,6 +7911,7 @@ export namespace Admin {
    * No description
    * @tags Admin
    * @name ListBetaGuilds
+   * @summary List beta servers
    * @request GET:/admin/beta-guilds
    * @secure
    * @response `200` `ListBetaGuildsData`
@@ -7667,9 +7926,10 @@ export namespace Admin {
   }
 
   /**
-   * No description
+   * @description Servers that are already in the beta are left as they are, with their original note.
    * @tags Admin
    * @name AddBetaGuilds
+   * @summary Add servers to the beta
    * @request POST:/admin/beta-guilds
    * @secure
    * @response `201` `AddBetaGuildsData`
@@ -7687,6 +7947,7 @@ export namespace Admin {
    * No description
    * @tags Admin
    * @name RemoveBetaGuild
+   * @summary Remove a server from the beta
    * @request DELETE:/admin/beta-guilds/{guildId}
    * @secure
    * @response `200` `RemoveBetaGuildData`
@@ -7706,6 +7967,7 @@ export namespace Admin {
    * No description
    * @tags Admin
    * @name ListSubscribers
+   * @summary List Patreon and manual subscriptions
    * @request GET:/admin/subscribers
    * @secure
    * @response `200` `ListSubscribersData`
@@ -7720,9 +7982,48 @@ export namespace Admin {
   }
 
   /**
+   * @description For payments an admin has checked by hand, such as Ko-fi or PayPal. A user can only have one active manual subscription.
+   * @tags Admin
+   * @name GrantSubscription
+   * @summary Grant a subscription by hand
+   * @request POST:/admin/subscribers
+   * @secure
+   * @response `201` `GrantSubscriptionData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GrantSubscription {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = GrantSubscriptionInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = GrantSubscriptionData;
+  }
+
+  /**
+   * @description Use it to extend, renew, change the plan of or add servers to a manual subscription. Patreon subscriptions can't be changed here.
+   * @tags Admin
+   * @name UpdateSubscription
+   * @summary Update a manual subscription
+   * @request PATCH:/admin/subscribers/{id}
+   * @secure
+   * @response `200` `UpdateSubscriptionData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace UpdateSubscription {
+    export type RequestParams = {
+      id: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = UpdateSubscriptionInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = UpdateSubscriptionData;
+  }
+
+  /**
    * No description
    * @tags Admin
    * @name ListDevelopers
+   * @summary List developer accounts
    * @request GET:/admin/developers
    * @secure
    * @response `200` `ListDevelopersData`
@@ -7737,9 +8038,10 @@ export namespace Admin {
   }
 
   /**
-   * No description
+   * @description The response includes the new account's passkey. Save it, because it's only shown once. Admin accounts can't be created here.
    * @tags Admin
    * @name AddDeveloper
+   * @summary Add a developer account
    * @request POST:/admin/developers
    * @secure
    * @response `201` `AddDeveloperData`
@@ -7754,28 +8056,30 @@ export namespace Admin {
   }
 
   /**
-   * No description
+   * @description The new roles take effect the next time the developer logs in. Admin accounts can't be changed.
    * @tags Admin
-   * @name EditDeveloper
+   * @name UpdateDeveloperRoles
+   * @summary Change a developer's roles
    * @request PATCH:/admin/developers/{userId}
    * @secure
-   * @response `200` `EditDeveloperData`
+   * @response `200` `UpdateDeveloperRolesData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace EditDeveloper {
+  export namespace UpdateDeveloperRoles {
     export type RequestParams = {
       userId: string;
     };
     export type RequestQuery = {};
     export type RequestBody = EditDeveloperInput;
     export type RequestHeaders = {};
-    export type ResponseBody = EditDeveloperData;
+    export type ResponseBody = UpdateDeveloperRolesData;
   }
 
   /**
-   * No description
+   * @description The passkey stops working right away. Tokens already issued keep working until they expire, which takes up to 2 hours. Admin accounts can't be revoked.
    * @tags Admin
    * @name RevokeDeveloper
+   * @summary Revoke a developer account
    * @request DELETE:/admin/developers/{userId}
    * @secure
    * @response `200` `RevokeDeveloperData`
@@ -7797,6 +8101,7 @@ export namespace BetaGuilds {
    * No description
    * @tags Internal
    * @name ListBetaGuildIds
+   * @summary List beta server IDs, oldest first
    * @request GET:/beta-guilds/ids
    * @secure
    * @response `200` `ListBetaGuildIdsData`
@@ -7973,7 +8278,7 @@ export class HttpClient<SecurityDataType = unknown> {
 
 /**
  * @title ClashPerk Discord Bot API
- * @version v2.0.115
+ * @version v2.0.130
  * @baseUrl /v1
  * @contact
  *
@@ -7990,11 +8295,11 @@ export class Api<SecurityDataType extends unknown> {
 
   auth = {
     /**
-     * @description Authenticates a user using a `passKey` and returns an `accessToken` with a limited validity period (2 hours). Once the token expires, a new token must be generated.<br/><br/>The `accessToken` must be included in all protected API requests using the following header `Authorization: Bearer <accessToken>`
+     * @description Returns an access token that works for 2 hours. After that, log in again to get a new one.<br/><br/>Send the token with every request in the `Authorization: Bearer <accessToken>` header.
      *
      * @tags Auth
      * @name Login
-     * @summary Authenticate with your passKey to receive an accessToken required for authorized API requests.
+     * @summary Exchange a passKey for an access token
      * @request POST:/auth/login
      * @response `201` `LoginData`
      * @response `500` `ErrorResponseDto`
@@ -8013,29 +8318,8 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Auth
-     * @name GeneratePasskey
-     * @summary Generate a passKey required for authentication.
-     * @request POST:/auth/generate-passkey
-     * @secure
-     * @response `201` `GeneratePasskeyData`
-     * @response `500` `ErrorResponseDto`
-     */
-    generatePasskey: (data: GenerateTokenInputDto, params: RequestParams = {}) =>
-      this.http.request<GeneratePasskeyData, GeneratePasskeyError>({
-        path: `/auth/generate-passkey`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Auth
      * @name GetAuthUser
+     * @summary Get a user's roles and display name
      * @request GET:/auth/users/{userId}
      * @secure
      * @response `200` `GetAuthUserData`
@@ -8051,17 +8335,18 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description The dashboard calls this to find out who is signing in from the bot. Tokens expire after an hour. The server is included only if the user can manage it.
      *
      * @tags Auth
-     * @name DecodeHandoffToken
+     * @name GetHandoffUser
+     * @summary Read the Discord user behind a handoff token
      * @request GET:/auth/handoff/{token}
      * @secure
-     * @response `200` `DecodeHandoffTokenData`
+     * @response `200` `GetHandoffUserData`
      * @response `500` `ErrorResponseDto`
      */
-    decodeHandoffToken: ({ token }: DecodeHandoffTokenParams, params: RequestParams = {}) =>
-      this.http.request<DecodeHandoffTokenData, DecodeHandoffTokenError>({
+    getHandoffUser: ({ token }: GetHandoffUserParams, params: RequestParams = {}) =>
+      this.http.request<GetHandoffUserData, GetHandoffUserError>({
         path: `/auth/handoff/${token}`,
         method: 'GET',
         secure: true,
@@ -8070,10 +8355,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description The bot calls this when a user opens the dashboard from Discord, so they arrive already signed in. The token expires after an hour.
      *
      * @tags Auth
      * @name CreateHandoffToken
+     * @summary Create a handoff token for the dashboard
      * @request POST:/auth/handoff
      * @secure
      * @response `201` `CreateHandoffTokenData`
@@ -8091,10 +8377,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Send a list of server IDs and get back the ones ClashPerk is in, with each server's name, icon and number of clans.
      *
      * @tags Auth
      * @name GetBotGuilds
+     * @summary Find which servers ClashPerk is in
      * @request QUERY:/auth/bot-guilds
      * @secure
      * @response `200` `GetBotGuildsData`
@@ -8112,10 +8399,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Send a user and a list of server IDs to get back the servers where that user has the bot manager role. Discord permissions such as Manage Server aren't checked here.
      *
      * @tags Auth
      * @name GetManagedGuilds
+     * @summary Find servers where a user has the manager role
      * @request QUERY:/auth/managed-guilds
      * @secure
      * @response `200` `GetManagedGuildsData`
@@ -8133,10 +8421,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Tells you whether a bot is in the server and whether the user is allowed to manage it. If you don't name a bot, a running custom bot is checked first, then ClashPerk.
      *
      * @tags Auth
      * @name GetGuildAccess
+     * @summary Check a user's access to a server
      * @request QUERY:/auth/guild-access
      * @secure
      * @response `200` `GetGuildAccessData`
@@ -8155,17 +8444,18 @@ export class Api<SecurityDataType extends unknown> {
   };
   links = {
     /**
-     * No description
+     * @description To link a player to someone else, you need to be a verified Leader or Co-Leader of the player's clan. If the player is already linked to another user, you also need the player's in-game API token.
      *
      * @tags Links
-     * @name Link
+     * @name CreateLink
+     * @summary Link a player to a Discord user
      * @request POST:/links
      * @secure
-     * @response `201` `LinkData`
+     * @response `201` `CreateLinkData`
      * @response `500` `ErrorResponseDto`
      */
-    link: (data: CreateLinkInputDto, params: RequestParams = {}) =>
-      this.http.request<LinkData, LinkError>({
+    createLink: (data: CreateLinkInputDto, params: RequestParams = {}) =>
+      this.http.request<CreateLinkData, CreateLinkError>({
         path: `/links`,
         method: 'POST',
         body: data,
@@ -8176,17 +8466,18 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Only the owner can unlink a verified player. An unverified link can also be removed by the person who made it, or by a verified Leader or Co-Leader of the player's clan.
      *
      * @tags Links
-     * @name Unlink
+     * @name DeleteLink
+     * @summary Unlink a player from its Discord user
      * @request DELETE:/links/{playerTag}
      * @secure
-     * @response `200` `UnlinkData`
+     * @response `200` `DeleteLinkData`
      * @response `500` `ErrorResponseDto`
      */
-    unlink: ({ playerTag }: UnlinkParams, params: RequestParams = {}) =>
-      this.http.request<UnlinkData, UnlinkError>({
+    deleteLink: ({ playerTag }: DeleteLinkParams, params: RequestParams = {}) =>
+      this.http.request<DeleteLinkData, DeleteLinkError>({
         path: `/links/${playerTag}`,
         method: 'DELETE',
         secure: true,
@@ -8199,7 +8490,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Links
      * @name SetDefaultLink
-     * @summary Make one of your own linked accounts your default
+     * @summary Make one of your linked players your default
      * @request PUT:/links/{playerTag}/default
      * @secure
      * @response `200` `SetDefaultLinkData`
@@ -8215,11 +8506,37 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description ``` You can send either "playerTags" or "userIds", not both or none. Max size is 100. ```
+     * No description
+     *
+     * @tags Links
+     * @name SetLinkHidden
+     * @summary Hide or show a linked player in your task lists
+     * @request PUT:/links/{playerTag}/hidden
+     * @secure
+     * @response `200` `SetLinkHiddenData`
+     * @response `500` `ErrorResponseDto`
+     */
+    setLinkHidden: (
+      { playerTag }: SetLinkHiddenParams,
+      data: SetHiddenInputDto,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<SetLinkHiddenData, SetLinkHiddenError>({
+        path: `/links/${playerTag}/hidden`,
+        method: 'PUT',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Send either `playerTags` or `userIds`, not both, with up to 100 values. Player tags must be exact, including the `#`.
      *
      * @tags Links
      * @name GetLinks
-     * @summary Get links by playerTags or userIds
+     * @summary Get links by player tags or user IDs
      * @request QUERY:/links/query
      * @secure
      * @response `200` `GetLinksData`
@@ -8241,7 +8558,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Links
      * @name GetLinksViaPost
-     * @summary Get links by playerTags or userIds
+     * @summary Get links by player tags or user IDs
      * @request POST:/links/query
      * @deprecated
      * @secure
@@ -8261,17 +8578,18 @@ export class Api<SecurityDataType extends unknown> {
   };
   clans = {
     /**
-     * No description
+     * @description Shows Town Hall upgrades, members joining and leaving, and clan milestones, newest first.
      *
      * @tags Clans
-     * @name GetActivity
+     * @name GetClanActivity
+     * @summary List recent activity in clans
      * @request QUERY:/clans/activity
      * @secure
-     * @response `200` `GetActivityData`
+     * @response `200` `GetClanActivityData`
      * @response `500` `ErrorResponseDto`
      */
-    getActivity: (data: ClanActivityInputDto, params: RequestParams = {}) =>
-      this.http.request<GetActivityData, GetActivityError>({
+    getClanActivity: (data: ClanActivityInputDto, params: RequestParams = {}) =>
+      this.http.request<GetClanActivityData, GetClanActivityError>({
         path: `/clans/activity`,
         method: 'QUERY',
         body: data,
@@ -8285,15 +8603,16 @@ export class Api<SecurityDataType extends unknown> {
      * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
      *
      * @tags Clans
-     * @name GetActivityViaPost
+     * @name GetClanActivityViaPost
+     * @summary List recent activity in clans
      * @request POST:/clans/activity
      * @deprecated
      * @secure
-     * @response `200` `GetActivityViaPostData`
+     * @response `200` `GetClanActivityViaPostData`
      * @response `500` `ErrorResponseDto`
      */
-    getActivityViaPost: (data: ClanActivityInputDto, params: RequestParams = {}) =>
-      this.http.request<GetActivityViaPostData, GetActivityViaPostError>({
+    getClanActivityViaPost: (data: ClanActivityInputDto, params: RequestParams = {}) =>
+      this.http.request<GetClanActivityViaPostData, GetClanActivityViaPostError>({
         path: `/clans/activity`,
         method: 'POST',
         body: data,
@@ -8308,6 +8627,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Clans
      * @name GetClan
+     * @summary Get a clan's profile
      * @request GET:/clans/{clanTag}
      * @secure
      * @response `200` `GetClanData`
@@ -8323,17 +8643,18 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Shows when each member was last active, and how active they've been over the last day and the last 30 days. Members ClashPerk hasn't seen yet are left out.
      *
      * @tags Clans
-     * @name GetLastSeen
+     * @name GetClanLastSeen
+     * @summary Get last-seen times for a clan's members
      * @request GET:/clans/{clanTag}/lastseen
      * @secure
-     * @response `200` `GetLastSeenData`
+     * @response `200` `GetClanLastSeenData`
      * @response `500` `ErrorResponseDto`
      */
-    getLastSeen: ({ clanTag }: GetLastSeenParams, params: RequestParams = {}) =>
-      this.http.request<GetLastSeenData, GetLastSeenError>({
+    getClanLastSeen: ({ clanTag }: GetClanLastSeenParams, params: RequestParams = {}) =>
+      this.http.request<GetClanLastSeenData, GetClanLastSeenError>({
         path: `/clans/${clanTag}/lastseen`,
         method: 'GET',
         secure: true,
@@ -8342,20 +8663,21 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Pass a month such as `2026-10` to see that month. Without one, you get the last 10 days.
      *
      * @tags Clans
-     * @name GetCapitalContribution
+     * @name GetClanCapitalContributions
+     * @summary List a clan's Capital Gold contributions
      * @request GET:/clans/{clanTag}/capital-contribution
      * @secure
-     * @response `200` `GetCapitalContributionData`
+     * @response `200` `GetClanCapitalContributionsData`
      * @response `500` `ErrorResponseDto`
      */
-    getCapitalContribution: (
-      { clanTag, ...query }: GetCapitalContributionParams,
+    getClanCapitalContributions: (
+      { clanTag, ...query }: GetClanCapitalContributionsParams,
       params: RequestParams = {}
     ) =>
-      this.http.request<GetCapitalContributionData, GetCapitalContributionError>({
+      this.http.request<GetClanCapitalContributionsData, GetClanCapitalContributionsError>({
         path: `/clans/${clanTag}/capital-contribution`,
         method: 'GET',
         query: query,
@@ -8368,14 +8690,18 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Clans
-     * @name GetCapitalRaids
+     * @name GetClanCapitalRaids
+     * @summary List a clan's Capital raid weekends
      * @request GET:/clans/{clanTag}/capital-raids
      * @secure
-     * @response `200` `GetCapitalRaidsData`
+     * @response `200` `GetClanCapitalRaidsData`
      * @response `500` `ErrorResponseDto`
      */
-    getCapitalRaids: ({ clanTag, ...query }: GetCapitalRaidsParams, params: RequestParams = {}) =>
-      this.http.request<GetCapitalRaidsData, GetCapitalRaidsError>({
+    getClanCapitalRaids: (
+      { clanTag, ...query }: GetClanCapitalRaidsParams,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<GetClanCapitalRaidsData, GetClanCapitalRaidsError>({
         path: `/clans/${clanTag}/capital-raids`,
         method: 'GET',
         query: query,
@@ -8389,6 +8715,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Clans
      * @name GetClanGames
+     * @summary Get a clan's Clan Games points
      * @request GET:/clans/{clanTag}/clan-games
      * @secure
      * @response `200` `GetClanGamesData`
@@ -8405,10 +8732,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Also tells you which of these links you're allowed to remove.
      *
      * @tags Clans
      * @name GetClanLinks
+     * @summary List a clan's members with their Discord links
      * @request GET:/clans/{clanTag}/links
      * @secure
      * @response `200` `GetClanLinksData`
@@ -8429,6 +8757,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetPlayer
+     * @summary Get a player's profile
      * @request GET:/players/{playerTag}
      * @secure
      * @response `200` `GetPlayerData`
@@ -8444,17 +8773,18 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description If the player was banned from tracking, the ban is lifted.
      *
      * @tags Players
-     * @name AddPlayerAccount
+     * @name TrackLegendPlayer
+     * @summary Add a player to Legend League tracking
      * @request PUT:/players/{playerTag}
      * @secure
-     * @response `200` `AddPlayerAccountData`
+     * @response `200` `TrackLegendPlayerData`
      * @response `500` `ErrorResponseDto`
      */
-    addPlayerAccount: ({ playerTag }: AddPlayerAccountParams, params: RequestParams = {}) =>
-      this.http.request<AddPlayerAccountData, AddPlayerAccountError>({
+    trackLegendPlayer: ({ playerTag }: TrackLegendPlayerParams, params: RequestParams = {}) =>
+      this.http.request<TrackLegendPlayerData, TrackLegendPlayerError>({
         path: `/players/${playerTag}`,
         method: 'PUT',
         secure: true,
@@ -8466,14 +8796,18 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Players
-     * @name GetSeasonStats
+     * @name GetPlayerSeasons
+     * @summary Get a player's season stats
      * @request GET:/players/{playerTag}/seasons
      * @secure
-     * @response `200` `GetSeasonStatsData`
+     * @response `200` `GetPlayerSeasonsData`
      * @response `500` `ErrorResponseDto`
      */
-    getSeasonStats: ({ playerTag, ...query }: GetSeasonStatsParams, params: RequestParams = {}) =>
-      this.http.request<GetSeasonStatsData, GetSeasonStatsError>({
+    getPlayerSeasons: (
+      { playerTag, ...query }: GetPlayerSeasonsParams,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<GetPlayerSeasonsData, GetPlayerSeasonsError>({
         path: `/players/${playerTag}/seasons`,
         method: 'GET',
         query: query,
@@ -8483,17 +8817,18 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description If the player isn't in a league group right now, there's no current week in the response.
      *
      * @tags Players
-     * @name GetRanked
+     * @name GetPlayerRankedWeeks
+     * @summary Get a player's ranked league weeks
      * @request GET:/players/{playerTag}/ranked
      * @secure
-     * @response `200` `GetRankedData`
+     * @response `200` `GetPlayerRankedWeeksData`
      * @response `500` `ErrorResponseDto`
      */
-    getRanked: ({ playerTag }: GetRankedParams, params: RequestParams = {}) =>
-      this.http.request<GetRankedData, GetRankedError>({
+    getPlayerRankedWeeks: ({ playerTag }: GetPlayerRankedWeeksParams, params: RequestParams = {}) =>
+      this.http.request<GetPlayerRankedWeeksData, GetPlayerRankedWeeksError>({
         path: `/players/${playerTag}/ranked`,
         method: 'GET',
         secure: true,
@@ -8502,17 +8837,18 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Only battles ClashPerk has tracked, up to 448.
      *
      * @tags Players
-     * @name GetBattleLog
+     * @name GetPlayerBattleLog
+     * @summary Get a player's battle log
      * @request GET:/players/{playerTag}/battle-log
      * @secure
-     * @response `200` `GetBattleLogData`
+     * @response `200` `GetPlayerBattleLogData`
      * @response `500` `ErrorResponseDto`
      */
-    getBattleLog: ({ playerTag }: GetBattleLogParams, params: RequestParams = {}) =>
-      this.http.request<GetBattleLogData, GetBattleLogError>({
+    getPlayerBattleLog: ({ playerTag }: GetPlayerBattleLogParams, params: RequestParams = {}) =>
+      this.http.request<GetPlayerBattleLogData, GetPlayerBattleLogError>({
         path: `/players/${playerTag}/battle-log`,
         method: 'GET',
         secure: true,
@@ -8521,20 +8857,21 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Trophies, attacks and defenses for each battle day, oldest first.
      *
      * @tags Players
-     * @name GetBattleLogAggregate
+     * @name GetPlayerDailyBattles
+     * @summary Get a player's daily battle totals
      * @request GET:/players/{playerTag}/battle-log/aggregate
      * @secure
-     * @response `200` `GetBattleLogAggregateData`
+     * @response `200` `GetPlayerDailyBattlesData`
      * @response `500` `ErrorResponseDto`
      */
-    getBattleLogAggregate: (
-      { playerTag }: GetBattleLogAggregateParams,
+    getPlayerDailyBattles: (
+      { playerTag }: GetPlayerDailyBattlesParams,
       params: RequestParams = {}
     ) =>
-      this.http.request<GetBattleLogAggregateData, GetBattleLogAggregateError>({
+      this.http.request<GetPlayerDailyBattlesData, GetPlayerDailyBattlesError>({
         path: `/players/${playerTag}/battle-log/aggregate`,
         method: 'GET',
         secure: true,
@@ -8547,6 +8884,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetBattleLogLeaderboard
+     * @summary Rank players by Legend League trophies
      * @request QUERY:/players/battle-log/leaderboard
      * @secure
      * @response `200` `GetBattleLogLeaderboardData`
@@ -8568,6 +8906,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetBattleLogLeaderboardViaPost
+     * @summary Rank players by Legend League trophies
      * @request POST:/players/battle-log/leaderboard
      * @deprecated
      * @secure
@@ -8589,39 +8928,18 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description Deprecated: use `GET /users/me/tasks/wars`, which reads your linked accounts.
+     * @description Newest first. For the clan the player is in now, the last-seen time is the current time.
      *
      * @tags Players
-     * @name GetActiveWars
-     * @request QUERY:/players/wars/active
-     * @deprecated
-     * @secure
-     * @response `200` `GetActiveWarsData`
-     * @response `500` `ErrorResponseDto`
-     */
-    getActiveWars: (data: ActiveWarsInputDto, params: RequestParams = {}) =>
-      this.http.request<GetActiveWarsData, GetActiveWarsError>({
-        path: `/players/wars/active`,
-        method: 'QUERY',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Players
-     * @name GetClanHistory
+     * @name GetPlayerClanHistory
+     * @summary Get a player's clan history
      * @request GET:/players/{playerTag}/history
      * @secure
-     * @response `200` `GetClanHistoryData`
+     * @response `200` `GetPlayerClanHistoryData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanHistory: ({ playerTag }: GetClanHistoryParams, params: RequestParams = {}) =>
-      this.http.request<GetClanHistoryData, GetClanHistoryError>({
+    getPlayerClanHistory: ({ playerTag }: GetPlayerClanHistoryParams, params: RequestParams = {}) =>
+      this.http.request<GetPlayerClanHistoryData, GetPlayerClanHistoryError>({
         path: `/players/${playerTag}/history`,
         method: 'GET',
         secure: true,
@@ -8633,17 +8951,15 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Players
-     * @name GetAttackHistory
+     * @name GetPlayerWars
+     * @summary List a player's wars and attacks
      * @request GET:/players/{playerTag}/wars
      * @secure
-     * @response `200` `GetAttackHistoryData`
+     * @response `200` `GetPlayerWarsData`
      * @response `500` `ErrorResponseDto`
      */
-    getAttackHistory: (
-      { playerTag, ...query }: GetAttackHistoryParams,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<GetAttackHistoryData, GetAttackHistoryError>({
+    getPlayerWars: ({ playerTag, ...query }: GetPlayerWarsParams, params: RequestParams = {}) =>
+      this.http.request<GetPlayerWarsData, GetPlayerWarsError>({
         path: `/players/${playerTag}/wars`,
         method: 'GET',
         query: query,
@@ -8653,20 +8969,21 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Only counts wars that started on or after `startDate`.
      *
      * @tags Players
-     * @name AggregateAttackHistory
+     * @name GetPlayerWarTotals
+     * @summary Get a player's war totals per season
      * @request GET:/players/{playerTag}/wars/aggregate
      * @secure
-     * @response `200` `AggregateAttackHistoryData`
+     * @response `200` `GetPlayerWarTotalsData`
      * @response `500` `ErrorResponseDto`
      */
-    aggregateAttackHistory: (
-      { playerTag, ...query }: AggregateAttackHistoryParams,
+    getPlayerWarTotals: (
+      { playerTag, ...query }: GetPlayerWarTotalsParams,
       params: RequestParams = {}
     ) =>
-      this.http.request<AggregateAttackHistoryData, AggregateAttackHistoryError>({
+      this.http.request<GetPlayerWarTotalsData, GetPlayerWarTotalsError>({
         path: `/players/${playerTag}/wars/aggregate`,
         method: 'GET',
         query: query,
@@ -8676,20 +8993,21 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Only counts rounds that started on or after `startDate`, newest group first. An attack counts as missed once its round ends.
      *
      * @tags Players
-     * @name AggregateClanWarLeagueHistory
+     * @name GetPlayerClanWarLeagueTotals
+     * @summary Get a player's CWL totals per league group
      * @request GET:/players/{playerTag}/clan-war-leagues/aggregate
      * @secure
-     * @response `200` `AggregateClanWarLeagueHistoryData`
+     * @response `200` `GetPlayerClanWarLeagueTotalsData`
      * @response `500` `ErrorResponseDto`
      */
-    aggregateClanWarLeagueHistory: (
-      { playerTag, ...query }: AggregateClanWarLeagueHistoryParams,
+    getPlayerClanWarLeagueTotals: (
+      { playerTag, ...query }: GetPlayerClanWarLeagueTotalsParams,
       params: RequestParams = {}
     ) =>
-      this.http.request<AggregateClanWarLeagueHistoryData, AggregateClanWarLeagueHistoryError>({
+      this.http.request<GetPlayerClanWarLeagueTotalsData, GetPlayerClanWarLeagueTotalsError>({
         path: `/players/${playerTag}/clan-war-leagues/aggregate`,
         method: 'GET',
         query: query,
@@ -8700,10 +9018,11 @@ export class Api<SecurityDataType extends unknown> {
   };
   legends = {
     /**
-     * No description
+     * @description Shows how many trophies it takes to reach certain ranks among the players ClashPerk tracks. Includes live numbers, the latest daily snapshot and up to 45 days of history.
      *
      * @tags Legends
      * @name GetLegendRankingThresholds
+     * @summary Get Legend League rank thresholds
      * @request GET:/legends/ranking-thresholds
      * @secure
      * @response `200` `GetLegendRankingThresholdsData`
@@ -8719,10 +9038,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Only covers the current season. Players with no attacks logged are left out.
      *
      * @tags Legends
      * @name GetLegendAttacks
+     * @summary Get legend attack logs for players
      * @request QUERY:/legends/attacks/query
      * @secure
      * @response `200` `GetLegendAttacksData`
@@ -8744,6 +9064,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Legends
      * @name GetLegendAttacksViaPost
+     * @summary Get legend attack logs for players
      * @request POST:/legends/attacks/query
      * @deprecated
      * @secure
@@ -8762,20 +9083,21 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Returns 404 if the player has no attacks logged in that season.
      *
      * @tags Legends
-     * @name GetLegendAttacksByPlayerTag
+     * @name GetPlayerLegendAttacks
+     * @summary Get a player's legend attack log
      * @request GET:/legends/{playerTag}/attacks
      * @secure
-     * @response `200` `GetLegendAttacksByPlayerTagData`
+     * @response `200` `GetPlayerLegendAttacksData`
      * @response `500` `ErrorResponseDto`
      */
-    getLegendAttacksByPlayerTag: (
-      { playerTag, ...query }: GetLegendAttacksByPlayerTagParams,
+    getPlayerLegendAttacks: (
+      { playerTag, ...query }: GetPlayerLegendAttacksParams,
       params: RequestParams = {}
     ) =>
-      this.http.request<GetLegendAttacksByPlayerTagData, GetLegendAttacksByPlayerTagError>({
+      this.http.request<GetPlayerLegendAttacksData, GetPlayerLegendAttacksError>({
         path: `/legends/${playerTag}/attacks`,
         method: 'GET',
         query: query,
@@ -8785,11 +9107,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Shows each day's starting and ending trophies, the Monday reset and every battle.
      *
      * @tags Legends
      * @name GetLegendDays
-     * @summary A season's game days: start and end trophies, the Monday reset, and the battles.
+     * @summary Get a player's legend days in a season
      * @request GET:/legends/{playerTag}/days
      * @secure
      * @response `200` `GetLegendDaysData`
@@ -8810,6 +9132,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Legends
      * @name GetLegendSeasons
+     * @summary Get a player's recent legend seasons
      * @request GET:/legends/{playerTag}/seasons
      * @secure
      * @response `200` `GetLegendSeasonsData`
@@ -8825,17 +9148,18 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description The rank is worked out from the players ClashPerk tracks this season, so it may differ from the game. Returns 404 if the player isn't tracked.
      *
      * @tags Legends
-     * @name EstimateRank
+     * @name EstimateLegendRank
+     * @summary Estimate a player's legend rank
      * @request GET:/legends/{playerTag}/estimate-rank
      * @secure
-     * @response `200` `EstimateRankData`
+     * @response `200` `EstimateLegendRankData`
      * @response `500` `ErrorResponseDto`
      */
-    estimateRank: ({ playerTag }: EstimateRankParams, params: RequestParams = {}) =>
-      this.http.request<EstimateRankData, EstimateRankError>({
+    estimateLegendRank: ({ playerTag }: EstimateLegendRankParams, params: RequestParams = {}) =>
+      this.http.request<EstimateLegendRankData, EstimateLegendRankError>({
         path: `/legends/${playerTag}/estimate-rank`,
         method: 'GET',
         secure: true,
@@ -8848,14 +9172,15 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Rankings
-     * @name GetLocations
+     * @name GetRankingLocations
+     * @summary List ranking locations
      * @request GET:/rankings/locations
      * @secure
-     * @response `200` `GetLocationsData`
+     * @response `200` `GetRankingLocationsData`
      * @response `500` `ErrorResponseDto`
      */
-    getLocations: (params: RequestParams = {}) =>
-      this.http.request<GetLocationsData, GetLocationsError>({
+    getRankingLocations: (params: RequestParams = {}) =>
+      this.http.request<GetRankingLocationsData, GetRankingLocationsError>({
         path: `/rankings/locations`,
         method: 'GET',
         secure: true,
@@ -8867,14 +9192,15 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Rankings
-     * @name GetSeasons
+     * @name GetRankingSeasons
+     * @summary List saved ranking seasons
      * @request GET:/rankings/seasons
      * @secure
-     * @response `200` `GetSeasonsData`
+     * @response `200` `GetRankingSeasonsData`
      * @response `500` `ErrorResponseDto`
      */
-    getSeasons: (params: RequestParams = {}) =>
-      this.http.request<GetSeasonsData, GetSeasonsError>({
+    getRankingSeasons: (params: RequestParams = {}) =>
+      this.http.request<GetRankingSeasonsData, GetRankingSeasonsError>({
         path: `/rankings/seasons`,
         method: 'GET',
         secure: true,
@@ -8883,17 +9209,18 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Looks through every saved board, in every country and worldwide.
      *
      * @tags Rankings
-     * @name GetStandings
+     * @name FindRankings
+     * @summary Find where players and clans rank this season
      * @request QUERY:/rankings/standings
      * @secure
-     * @response `200` `GetStandingsData`
+     * @response `200` `FindRankingsData`
      * @response `500` `ErrorResponseDto`
      */
-    getStandings: (data: RankingStandingsInputDto, params: RequestParams = {}) =>
-      this.http.request<GetStandingsData, GetStandingsError>({
+    findRankings: (data: RankingStandingsInputDto, params: RequestParams = {}) =>
+      this.http.request<FindRankingsData, FindRankingsError>({
         path: `/rankings/standings`,
         method: 'QUERY',
         body: data,
@@ -8904,10 +9231,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Shows where the clan sits on the clan and capital boards in its country and worldwide, and its country rank over the last 6 saved seasons.
      *
      * @tags Rankings
      * @name GetClanRankings
+     * @summary Get a clan's rankings and rank history
      * @request GET:/rankings/clans/{clanTag}
      * @secure
      * @response `200` `GetClanRankingsData`
@@ -8923,10 +9251,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Only seasons where the player made a board, newest first. The current season isn't included.
      *
      * @tags Rankings
      * @name GetPlayerRankings
+     * @summary List a player's past season-end ranks
      * @request GET:/rankings/players/{playerTag}
      * @secure
      * @response `200` `GetPlayerRankingsData`
@@ -8942,17 +9271,21 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Shows the live board, or pass `season` to see a saved one. Builder base boards are only available live.
      *
      * @tags Rankings
-     * @name GetBoard
+     * @name GetRankingBoard
+     * @summary Get a ranking board
      * @request GET:/rankings/{countryCode}/{board}
      * @secure
-     * @response `200` `GetBoardData`
+     * @response `200` `GetRankingBoardData`
      * @response `500` `ErrorResponseDto`
      */
-    getBoard: ({ countryCode, board, ...query }: GetBoardParams, params: RequestParams = {}) =>
-      this.http.request<GetBoardData, GetBoardError>({
+    getRankingBoard: (
+      { countryCode, board, ...query }: GetRankingBoardParams,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<GetRankingBoardData, GetRankingBoardError>({
         path: `/rankings/${countryCode}/${board}`,
         method: 'GET',
         query: query,
@@ -8963,20 +9296,18 @@ export class Api<SecurityDataType extends unknown> {
   };
   wars = {
     /**
-     * No description
+     * @description Comes straight from the game and includes every war in the group. Returns 404 if the clan isn't in CWL.
      *
      * @tags Wars
-     * @name GetClanWarLeagueGroups
+     * @name GetClanWarLeagueGroup
+     * @summary Get a clan's current CWL group
      * @request GET:/wars/{clanTag}/clan-war-leagues/groups
      * @secure
-     * @response `200` `GetClanWarLeagueGroupsData`
+     * @response `200` `GetClanWarLeagueGroupData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanWarLeagueGroups: (
-      { clanTag }: GetClanWarLeagueGroupsParams,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<GetClanWarLeagueGroupsData, GetClanWarLeagueGroupsError>({
+    getClanWarLeagueGroup: ({ clanTag }: GetClanWarLeagueGroupParams, params: RequestParams = {}) =>
+      this.http.request<GetClanWarLeagueGroupData, GetClanWarLeagueGroupError>({
         path: `/wars/${clanTag}/clan-war-leagues/groups`,
         method: 'GET',
         secure: true,
@@ -8985,20 +9316,18 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Uses the clan's most recent saved CWL group and returns only the clan's own wars.
      *
      * @tags Wars
-     * @name GetClanWarLeagueForClan
+     * @name GetClanWarLeagueWars
+     * @summary Get a clan's wars in its latest CWL group
      * @request GET:/wars/{clanTag}/clan-war-leagues/clan
      * @secure
-     * @response `200` `GetClanWarLeagueForClanData`
+     * @response `200` `GetClanWarLeagueWarsData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanWarLeagueForClan: (
-      { clanTag }: GetClanWarLeagueForClanParams,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<GetClanWarLeagueForClanData, GetClanWarLeagueForClanError>({
+    getClanWarLeagueWars: ({ clanTag }: GetClanWarLeagueWarsParams, params: RequestParams = {}) =>
+      this.http.request<GetClanWarLeagueWarsData, GetClanWarLeagueWarsError>({
         path: `/wars/${clanTag}/clan-war-leagues/clan`,
         method: 'GET',
         secure: true,
@@ -9007,10 +9336,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Built from the wars ClashPerk tracked, newest first. Use the standings endpoint to see a group's table.
      *
      * @tags Wars
      * @name GetClanWarLeagueSeasons
+     * @summary List a clan's CWL seasons with member totals
      * @request GET:/wars/{clanTag}/clan-war-leagues/seasons
      * @secure
      * @response `200` `GetClanWarLeagueSeasonsData`
@@ -9033,14 +9363,18 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Wars
-     * @name GetClanWarStats
+     * @name GetClanMemberWarStats
+     * @summary Get war stats for a clan's members
      * @request GET:/wars/{clanTag}/members/stats
      * @secure
-     * @response `200` `GetClanWarStatsData`
+     * @response `200` `GetClanMemberWarStatsData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanWarStats: ({ clanTag, ...query }: GetClanWarStatsParams, params: RequestParams = {}) =>
-      this.http.request<GetClanWarStatsData, GetClanWarStatsError>({
+    getClanMemberWarStats: (
+      { clanTag, ...query }: GetClanMemberWarStatsParams,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<GetClanMemberWarStatsData, GetClanMemberWarStatsError>({
         path: `/wars/${clanTag}/members/stats`,
         method: 'GET',
         query: query,
@@ -9050,10 +9384,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Get the `groupId` from the CWL seasons endpoint. Each war win adds 10 bonus stars, as in the game.
      *
      * @tags Wars
      * @name GetClanWarLeagueStandings
+     * @summary Get a CWL group's standings
      * @request GET:/wars/{clanTag}/clan-war-leagues/groups/{groupId}/standings
      * @secure
      * @response `200` `GetClanWarLeagueStandingsData`
@@ -9075,14 +9410,15 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Wars
-     * @name GetClanWars
+     * @name ListClanWars
+     * @summary List a clan's tracked wars
      * @request GET:/wars/{clanTag}
      * @secure
-     * @response `200` `GetClanWarsData`
+     * @response `200` `ListClanWarsData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanWars: ({ clanTag, ...query }: GetClanWarsParams, params: RequestParams = {}) =>
-      this.http.request<GetClanWarsData, GetClanWarsError>({
+    listClanWars: ({ clanTag, ...query }: ListClanWarsParams, params: RequestParams = {}) =>
+      this.http.request<ListClanWarsData, ListClanWarsError>({
         path: `/wars/${clanTag}`,
         method: 'GET',
         query: query,
@@ -9092,10 +9428,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description During CWL, this is the clan's current round. The war is empty if the clan isn't in one, or if its war log is private outside CWL.
      *
      * @tags Wars
      * @name GetCurrentWar
+     * @summary Get a clan's current war
      * @request GET:/wars/{clanTag}/current
      * @secure
      * @response `200` `GetCurrentWarData`
@@ -9111,10 +9448,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Use a war ID from the clan's war list.
      *
      * @tags Wars
      * @name GetClanWar
+     * @summary Get a tracked war
      * @request GET:/wars/{clanTag}/{warId}
      * @secure
      * @response `200` `GetClanWarData`
@@ -9135,6 +9473,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Events
      * @name GetEvents
+     * @summary List game events in a date range
      * @request GET:/events
      * @secure
      * @response `200` `GetEventsData`
@@ -9155,6 +9494,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Events
      * @name GetUpcomingEvents
+     * @summary List current and next game events
      * @request GET:/events/upcoming
      * @secure
      * @response `200` `GetUpcomingEventsData`
@@ -9171,17 +9511,18 @@ export class Api<SecurityDataType extends unknown> {
   };
   rosters = {
     /**
-     * No description
+     * @description API tokens with the `fetch:rosters` role can use this too.
      *
      * @tags Rosters
-     * @name GetRosters
+     * @name ListRosters
+     * @summary List the server's rosters and groups
      * @request GET:/rosters/{guildId}/list
      * @secure
-     * @response `200` `GetRostersData`
+     * @response `200` `ListRostersData`
      * @response `500` `ErrorResponseDto`
      */
-    getRosters: ({ guildId }: GetRostersParams, params: RequestParams = {}) =>
-      this.http.request<GetRostersData, GetRostersError>({
+    listRosters: ({ guildId }: ListRostersParams, params: RequestParams = {}) =>
+      this.http.request<ListRostersData, ListRostersError>({
         path: `/rosters/${guildId}/list`,
         method: 'GET',
         secure: true,
@@ -9190,10 +9531,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Its settings are saved as the server's defaults for the next roster. Set `importMembers` with a clan to sign up the clan's members right away.
      *
      * @tags Rosters
      * @name CreateRoster
+     * @summary Create a roster
      * @request POST:/rosters/{guildId}/create
      * @secure
      * @response `201` `CreateRosterData`
@@ -9219,6 +9561,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Rosters
      * @name CreateRosterGroup
+     * @summary Create a roster group
      * @request POST:/rosters/{guildId}/groups
      * @secure
      * @response `201` `CreateRosterGroupData`
@@ -9240,10 +9583,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description You only need to send the fields you want to change.
      *
      * @tags Rosters
      * @name UpdateRosterGroup
+     * @summary Update a roster group
      * @request PATCH:/rosters/{guildId}/groups/{groupId}
      * @secure
      * @response `200` `UpdateRosterGroupData`
@@ -9265,10 +9609,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Its members stay on the roster without a group.
      *
      * @tags Rosters
      * @name DeleteRosterGroup
+     * @summary Delete a roster group
      * @request DELETE:/rosters/{guildId}/groups/{groupId}
      * @secure
      * @response `200` `DeleteRosterGroupData`
@@ -9291,6 +9636,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Rosters
      * @name GetRoster
+     * @summary Get a roster
      * @request GET:/rosters/{guildId}/{rosterId}
      * @secure
      * @response `200` `GetRosterData`
@@ -9306,10 +9652,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description You only need to send the fields you want to change. The roster's settings are saved as the server's defaults for the next roster.
      *
      * @tags Rosters
      * @name UpdateRoster
+     * @summary Update a roster
      * @request PATCH:/rosters/{guildId}/{rosterId}
      * @secure
      * @response `200` `UpdateRosterData`
@@ -9331,10 +9678,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Members keep their roster and group roles until the bot next refreshes roles.
      *
      * @tags Rosters
      * @name DeleteRoster
+     * @summary Delete a roster
      * @request DELETE:/rosters/{guildId}/{rosterId}
      * @secure
      * @response `204` `DeleteRosterData`
@@ -9349,10 +9697,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Copies most settings, except the role, image and color. Members are copied over only if they still pass the sign-up checks.
      *
      * @tags Rosters
      * @name CloneRoster
+     * @summary Clone a roster
      * @request POST:/rosters/{guildId}/{rosterId}/clone
      * @secure
      * @response `201` `CloneRosterData`
@@ -9374,10 +9723,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Runs the sign-up checks for up to 100 players without adding anyone.
      *
      * @tags Rosters
      * @name CheckRosterMembers
+     * @summary Check which players can join a roster
      * @request QUERY:/rosters/{guildId}/{rosterId}/members/check
      * @secure
      * @response `200` `CheckRosterMembersData`
@@ -9403,6 +9753,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Rosters
      * @name CheckRosterMembersViaPost
+     * @summary Check which players can join a roster
      * @request POST:/rosters/{guildId}/{rosterId}/members/check
      * @deprecated
      * @secure
@@ -9425,10 +9776,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Players who fail a sign-up check are skipped, and the response says why for each one.
      *
      * @tags Rosters
      * @name AddRosterMembers
+     * @summary Add players to a roster
      * @request PUT:/rosters/{guildId}/{rosterId}/members
      * @secure
      * @response `200` `AddRosterMembersData`
@@ -9454,6 +9806,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Rosters
      * @name DeleteRosterMembers
+     * @summary Remove players from a roster
      * @request DELETE:/rosters/{guildId}/{rosterId}/members
      * @secure
      * @response `200` `DeleteRosterMembersData`
@@ -9475,10 +9828,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Updates each member's game data and Discord link, and the roster's clan details.
      *
      * @tags Rosters
      * @name RefreshRosterMembers
+     * @summary Refresh a roster's members from the game
      * @request POST:/rosters/{guildId}/{rosterId}/members/refresh
      * @secure
      * @response `201` `RefreshRosterMembersData`
@@ -9497,10 +9851,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description To move players to another group on the same roster, send only `newGroupId`. Players who fail the other roster's sign-up checks stay where they are.
      *
      * @tags Rosters
      * @name TransferRosterMembers
+     * @summary Move players to another roster or group
      * @request PUT:/rosters/{guildId}/{rosterId}/members/transfer
      * @secure
      * @response `200` `TransferRosterMembersData`
@@ -9527,6 +9882,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name GetUserSettings
+     * @summary Get your default clan, bookmarks and timezone
      * @request GET:/users/me
      * @secure
      * @response `200` `GetUserSettingsData`
@@ -9542,10 +9898,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Covers your linked accounts that you haven't hidden. CWL rounds still show even if the account has left the clan.
      *
      * @tags Users
      * @name GetWarTasks
+     * @summary List your accounts' current wars
      * @request GET:/users/me/tasks/wars
      * @secure
      * @response `200` `GetWarTasksData`
@@ -9561,10 +9918,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Empty outside raid weekends.
      *
      * @tags Users
      * @name GetCapitalRaidTasks
+     * @summary List your accounts' capital raid attacks
      * @request GET:/users/me/tasks/capital-raids
      * @secure
      * @response `200` `GetCapitalRaidTasksData`
@@ -9580,10 +9938,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Empty outside Clan Games.
      *
      * @tags Users
      * @name GetClanGamesTasks
+     * @summary List your accounts' Clan Games points
      * @request GET:/users/me/tasks/clan-games
      * @secure
      * @response `200` `GetClanGamesTasksData`
@@ -9603,6 +9962,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name GetLegendTasks
+     * @summary List your accounts' Legend League attacks today
      * @request GET:/users/me/tasks/legends
      * @secure
      * @response `200` `GetLegendTasksData`
@@ -9622,6 +9982,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name GetRankedTasks
+     * @summary List your accounts' ranked attacks this week
      * @request GET:/users/me/tasks/ranked
      * @secure
      * @response `200` `GetRankedTasksData`
@@ -9641,6 +10002,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name SetDefaultClan
+     * @summary Set your default clan
      * @request PUT:/users/me/clan
      * @secure
      * @response `200` `SetDefaultClanData`
@@ -9662,6 +10024,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name ClearDefaultClan
+     * @summary Clear your default clan
      * @request DELETE:/users/me/clan
      * @secure
      * @response `200` `ClearDefaultClanData`
@@ -9677,10 +10040,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description You can bookmark up to 50 clans. Bookmarking a clan again updates its saved name.
      *
      * @tags Users
      * @name AddBookmark
+     * @summary Bookmark a clan
      * @request POST:/users/me/bookmarks
      * @secure
      * @response `201` `AddBookmarkData`
@@ -9702,6 +10066,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name RemoveBookmark
+     * @summary Remove a clan bookmark
      * @request DELETE:/users/me/bookmarks/{clanTag}
      * @secure
      * @response `200` `RemoveBookmarkData`
@@ -9721,6 +10086,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name SetTimezone
+     * @summary Set your timezone
      * @request PUT:/users/me/timezone
      * @secure
      * @response `200` `SetTimezoneData`
@@ -9742,6 +10108,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name ClearTimezone
+     * @summary Clear your timezone
      * @request DELETE:/users/me/timezone
      * @secure
      * @response `200` `ClearTimezoneData`
@@ -9757,11 +10124,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Only the exports you saved, even if someone else has linked the same account.
      *
      * @tags Users
      * @name GetGameExports
-     * @summary Game data exports this user saved for their accounts; nobody else's copies are included.
+     * @summary List your saved game data exports
      * @request GET:/users/me/game-exports
      * @secure
      * @response `200` `GetGameExportsData`
@@ -9777,10 +10144,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description The account must be linked to you, and the export must be for the same player tag.
      *
      * @tags Users
      * @name SaveGameExport
+     * @summary Save a game data export for an account
      * @request PUT:/users/me/game-exports/{playerTag}
      * @secure
      * @response `200` `SaveGameExportData`
@@ -9806,6 +10174,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name RemoveGameExport
+     * @summary Delete a saved game data export
      * @request DELETE:/users/me/game-exports/{playerTag}
      * @secure
      * @response `200` `RemoveGameExportData`
@@ -9826,6 +10195,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name GetGuildClans
+     * @summary List the server's clans by category
      * @request GET:/guilds/{guildId}/clans
      * @secure
      * @response `200` `GetGuildClansData`
@@ -9841,10 +10211,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Servers can add 5, 20 or 100 clans depending on their member count. Going past that, or adding a clan that's already in more than 10 other servers, needs proof that you lead the clan. Supporter servers skip this check.
      *
      * @tags Guilds
      * @name AddGuildClan
+     * @summary Add a clan to the server
      * @request POST:/guilds/{guildId}/clans
      * @secure
      * @response `201` `AddGuildClanData`
@@ -9866,10 +10237,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Send every category with its clans, in the order you want. Clans you put under `uncategorized` are taken out of their category.
      *
      * @tags Guilds
      * @name ReorderGuildClans
+     * @summary Reorder the server's clans and categories
      * @request PATCH:/guilds/{guildId}/clans/reorder
      * @secure
      * @response `200` `ReorderGuildClansData`
@@ -9891,10 +10263,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description This also deletes the clan's logs and removes it from reminders. Any reminder left with no clans is deleted.
      *
      * @tags Guilds
      * @name RemoveGuildClan
+     * @summary Remove a clan from the server
      * @request DELETE:/guilds/{guildId}/clans/{clanTag}
      * @secure
      * @response `200` `RemoveGuildClanData`
@@ -9910,10 +10283,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description You only need to send the fields you want to change. Each alias must be unique in the server, and a channel can only belong to one clan.
      *
      * @tags Guilds
      * @name UpdateGuildClan
+     * @summary Update a clan's alias, short name and channels
      * @request PATCH:/guilds/{guildId}/clans/{clanTag}
      * @secure
      * @response `200` `UpdateGuildClanData`
@@ -9939,6 +10313,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name CreateClanCategory
+     * @summary Create a clan category
      * @request POST:/guilds/{guildId}/categories
      * @secure
      * @response `201` `CreateClanCategoryData`
@@ -9964,6 +10339,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name RenameClanCategory
+     * @summary Rename a clan category
      * @request PATCH:/guilds/{guildId}/categories/{categoryId}
      * @secure
      * @response `200` `RenameClanCategoryData`
@@ -9985,10 +10361,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Its clans aren't removed. They move to Uncategorized.
      *
      * @tags Guilds
      * @name DeleteClanCategory
+     * @summary Delete a clan category
      * @request DELETE:/guilds/{guildId}/categories/{categoryId}
      * @secure
      * @response `200` `DeleteClanCategoryData`
@@ -10007,29 +10384,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
-     *
-     * @tags Guilds
-     * @name GetGuildReminders
-     * @request GET:/guilds/{guildId}/reminders
-     * @secure
-     * @response `200` `GetGuildRemindersData`
-     * @response `500` `ErrorResponseDto`
-     */
-    getGuildReminders: ({ guildId }: GetGuildRemindersParams, params: RequestParams = {}) =>
-      this.http.request<GetGuildRemindersData, GetGuildRemindersError>({
-        path: `/guilds/${guildId}/reminders`,
-        method: 'GET',
-        secure: true,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * No description
+     * @description A channel the bot can't post in still shows up if it has threads the bot can use, but the channel itself can't be picked.
      *
      * @tags Guilds
      * @name ListChannels
+     * @summary List channels and threads the bot can post in
      * @request GET:/guilds/{guildId}/channels
      * @secure
      * @response `200` `ListChannelsData`
@@ -10048,7 +10407,51 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Guilds
+     * @name ListChannelCategories
+     * @summary List the server's channel categories
+     * @request GET:/guilds/{guildId}/channel-categories
+     * @secure
+     * @response `200` `ListChannelCategoriesData`
+     * @response `500` `ErrorResponseDto`
+     */
+    listChannelCategories: ({ guildId }: ListChannelCategoriesParams, params: RequestParams = {}) =>
+      this.http.request<ListChannelCategoriesData, ListChannelCategoriesError>({
+        path: `/guilds/${guildId}/channel-categories`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Guilds
+     * @name ListMentionableChannels
+     * @summary List channels a message can mention
+     * @request GET:/guilds/{guildId}/channels/mentionable
+     * @secure
+     * @response `200` `ListMentionableChannelsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    listMentionableChannels: (
+      { guildId }: ListMentionableChannelsParams,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<ListMentionableChannelsData, ListMentionableChannelsError>({
+        path: `/guilds/${guildId}/channels/mentionable`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Sorted from highest to lowest. @everyone and roles owned by bots or integrations are left out.
+     *
+     * @tags Guilds
      * @name ListRoles
+     * @summary List the server's roles
      * @request GET:/guilds/{guildId}/roles
      * @secure
      * @response `200` `ListRolesData`
@@ -10064,18 +10467,19 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Includes the server's own emojis and the bot's emojis.
      *
      * @tags Guilds
-     * @name GetReminderPings
-     * @request GET:/guilds/{guildId}/reminders/pings
+     * @name ListEmojis
+     * @summary List custom emojis the bot can use
+     * @request GET:/guilds/{guildId}/emojis
      * @secure
-     * @response `200` `GetReminderPingsData`
+     * @response `200` `ListEmojisData`
      * @response `500` `ErrorResponseDto`
      */
-    getReminderPings: ({ guildId }: GetReminderPingsParams, params: RequestParams = {}) =>
-      this.http.request<GetReminderPingsData, GetReminderPingsError>({
-        path: `/guilds/${guildId}/reminders/pings`,
+    listEmojis: ({ guildId }: ListEmojisParams, params: RequestParams = {}) =>
+      this.http.request<ListEmojisData, ListEmojisError>({
+        path: `/guilds/${guildId}/emojis`,
         method: 'GET',
         secure: true,
         format: 'json',
@@ -10086,245 +10490,8 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Guilds
-     * @name SaveReminderPings
-     * @request PUT:/guilds/{guildId}/reminders/pings
-     * @secure
-     * @response `200` `SaveReminderPingsData`
-     * @response `500` `ErrorResponseDto`
-     */
-    saveReminderPings: (
-      { guildId }: SaveReminderPingsParams,
-      data: ReminderPingsInput,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<SaveReminderPingsData, SaveReminderPingsError>({
-        path: `/guilds/${guildId}/reminders/pings`,
-        method: 'PUT',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Guilds
-     * @name CreateClanWarReminder
-     * @request POST:/guilds/{guildId}/reminders/clan-wars
-     * @secure
-     * @response `201` `CreateClanWarReminderData`
-     * @response `500` `ErrorResponseDto`
-     */
-    createClanWarReminder: (
-      { guildId }: CreateClanWarReminderParams,
-      data: ClanWarReminderInput,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<CreateClanWarReminderData, CreateClanWarReminderError>({
-        path: `/guilds/${guildId}/reminders/clan-wars`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Guilds
-     * @name UpdateClanWarReminder
-     * @request PUT:/guilds/{guildId}/reminders/clan-wars/{reminderId}
-     * @secure
-     * @response `200` `UpdateClanWarReminderData`
-     * @response `500` `ErrorResponseDto`
-     */
-    updateClanWarReminder: (
-      { guildId, reminderId }: UpdateClanWarReminderParams,
-      data: ClanWarReminderInput,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<UpdateClanWarReminderData, UpdateClanWarReminderError>({
-        path: `/guilds/${guildId}/reminders/clan-wars/${reminderId}`,
-        method: 'PUT',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Guilds
-     * @name DeleteClanWarReminder
-     * @request DELETE:/guilds/{guildId}/reminders/clan-wars/{reminderId}
-     * @secure
-     * @response `204` `DeleteClanWarReminderData`
-     * @response `500` `ErrorResponseDto`
-     */
-    deleteClanWarReminder: (
-      { guildId, reminderId }: DeleteClanWarReminderParams,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<DeleteClanWarReminderData, DeleteClanWarReminderError>({
-        path: `/guilds/${guildId}/reminders/clan-wars/${reminderId}`,
-        method: 'DELETE',
-        secure: true,
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Guilds
-     * @name CreateCapitalRaidReminder
-     * @request POST:/guilds/{guildId}/reminders/capital-raids
-     * @secure
-     * @response `201` `CreateCapitalRaidReminderData`
-     * @response `500` `ErrorResponseDto`
-     */
-    createCapitalRaidReminder: (
-      { guildId }: CreateCapitalRaidReminderParams,
-      data: CapitalRaidReminderInput,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<CreateCapitalRaidReminderData, CreateCapitalRaidReminderError>({
-        path: `/guilds/${guildId}/reminders/capital-raids`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Guilds
-     * @name UpdateCapitalRaidReminder
-     * @request PUT:/guilds/{guildId}/reminders/capital-raids/{reminderId}
-     * @secure
-     * @response `200` `UpdateCapitalRaidReminderData`
-     * @response `500` `ErrorResponseDto`
-     */
-    updateCapitalRaidReminder: (
-      { guildId, reminderId }: UpdateCapitalRaidReminderParams,
-      data: CapitalRaidReminderInput,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<UpdateCapitalRaidReminderData, UpdateCapitalRaidReminderError>({
-        path: `/guilds/${guildId}/reminders/capital-raids/${reminderId}`,
-        method: 'PUT',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Guilds
-     * @name DeleteCapitalRaidReminder
-     * @request DELETE:/guilds/{guildId}/reminders/capital-raids/{reminderId}
-     * @secure
-     * @response `204` `DeleteCapitalRaidReminderData`
-     * @response `500` `ErrorResponseDto`
-     */
-    deleteCapitalRaidReminder: (
-      { guildId, reminderId }: DeleteCapitalRaidReminderParams,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<DeleteCapitalRaidReminderData, DeleteCapitalRaidReminderError>({
-        path: `/guilds/${guildId}/reminders/capital-raids/${reminderId}`,
-        method: 'DELETE',
-        secure: true,
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Guilds
-     * @name CreateClanGamesReminder
-     * @request POST:/guilds/{guildId}/reminders/clan-games
-     * @secure
-     * @response `201` `CreateClanGamesReminderData`
-     * @response `500` `ErrorResponseDto`
-     */
-    createClanGamesReminder: (
-      { guildId }: CreateClanGamesReminderParams,
-      data: ClanGamesReminderInput,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<CreateClanGamesReminderData, CreateClanGamesReminderError>({
-        path: `/guilds/${guildId}/reminders/clan-games`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Guilds
-     * @name UpdateClanGamesReminder
-     * @request PUT:/guilds/{guildId}/reminders/clan-games/{reminderId}
-     * @secure
-     * @response `200` `UpdateClanGamesReminderData`
-     * @response `500` `ErrorResponseDto`
-     */
-    updateClanGamesReminder: (
-      { guildId, reminderId }: UpdateClanGamesReminderParams,
-      data: ClanGamesReminderInput,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<UpdateClanGamesReminderData, UpdateClanGamesReminderError>({
-        path: `/guilds/${guildId}/reminders/clan-games/${reminderId}`,
-        method: 'PUT',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Guilds
-     * @name DeleteClanGamesReminder
-     * @request DELETE:/guilds/{guildId}/reminders/clan-games/{reminderId}
-     * @secure
-     * @response `204` `DeleteClanGamesReminderData`
-     * @response `500` `ErrorResponseDto`
-     */
-    deleteClanGamesReminder: (
-      { guildId, reminderId }: DeleteClanGamesReminderParams,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<DeleteClanGamesReminderData, DeleteClanGamesReminderError>({
-        path: `/guilds/${guildId}/reminders/clan-games/${reminderId}`,
-        method: 'DELETE',
-        secure: true,
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Guilds
      * @name ListGuildClanLogs
+     * @summary List every clan log in the server
      * @request GET:/guilds/{guildId}/clan-logs
      * @secure
      * @response `200` `ListGuildClanLogsData`
@@ -10340,10 +10507,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Shows how many clans can have logs in this server, and which clans already count toward that limit.
      *
      * @tags Guilds
      * @name GetClanLogLimit
+     * @summary Get the server's clan log limit
      * @request GET:/guilds/{guildId}/clan-logs/limit
      * @secure
      * @response `200` `GetClanLogLimitData`
@@ -10363,6 +10531,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name GetClanEmbed
+     * @summary Get a clan's embed
      * @request GET:/guilds/{guildId}/clans/{clanTag}/embed
      * @secure
      * @response `200` `GetClanEmbedData`
@@ -10378,10 +10547,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description The bot posts or updates the message the next time it refreshes. A clan's first log or embed counts toward the server's clan log limit.
      *
      * @tags Guilds
      * @name SaveClanEmbed
+     * @summary Create or update a clan's embed
      * @request PUT:/guilds/{guildId}/clans/{clanTag}/embed
      * @secure
      * @response `200` `SaveClanEmbedData`
@@ -10403,10 +10573,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description The message already posted stays in the channel, but the bot stops updating it.
      *
      * @tags Guilds
      * @name DeleteClanEmbed
+     * @summary Delete a clan's embed
      * @request DELETE:/guilds/{guildId}/clans/{clanTag}/embed
      * @secure
      * @response `204` `DeleteClanEmbedData`
@@ -10425,6 +10596,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name ListClanLogs
+     * @summary List a clan's logs
      * @request GET:/guilds/{guildId}/clans/{clanTag}/logs
      * @secure
      * @response `200` `ListClanLogsData`
@@ -10440,10 +10612,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description A clan's first log counts toward the server's clan log limit. A new log starts by posting the last 30 minutes of activity.
      *
      * @tags Guilds
      * @name SaveClanLog
+     * @summary Create or update a clan log
      * @request PUT:/guilds/{guildId}/clans/{clanTag}/logs/{logType}
      * @secure
      * @response `200` `SaveClanLogData`
@@ -10469,6 +10642,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name DeleteClanLog
+     * @summary Delete a clan log
      * @request DELETE:/guilds/{guildId}/clans/{clanTag}/logs/{logType}
      * @secure
      * @response `204` `DeleteClanLogData`
@@ -10490,6 +10664,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name GetAutoRoles
+     * @summary Get the server's auto-role settings
      * @request GET:/guilds/{guildId}/auto-roles
      * @secure
      * @response `200` `GetAutoRolesData`
@@ -10505,21 +10680,22 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description You only need to send the fields you want to change. Roles must be below the bot's highest role, and the server needs at least one clan first.
      *
      * @tags Guilds
-     * @name SaveAutoRoles
+     * @name UpdateAutoRoles
+     * @summary Update the server-wide auto-role settings
      * @request PATCH:/guilds/{guildId}/auto-roles
      * @secure
-     * @response `200` `SaveAutoRolesData`
+     * @response `200` `UpdateAutoRolesData`
      * @response `500` `ErrorResponseDto`
      */
-    saveAutoRoles: (
-      { guildId }: SaveAutoRolesParams,
+    updateAutoRoles: (
+      { guildId }: UpdateAutoRolesParams,
       data: AutoRolesInput,
       params: RequestParams = {}
     ) =>
-      this.http.request<SaveAutoRolesData, SaveAutoRolesError>({
+      this.http.request<UpdateAutoRolesData, UpdateAutoRolesError>({
         path: `/guilds/${guildId}/auto-roles`,
         method: 'PATCH',
         body: data,
@@ -10530,10 +10706,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description This replaces all of the clan's roles, so any role you leave out is cleared. An in-war role can only be used by one clan.
      *
      * @tags Guilds
      * @name SaveClanAutoRoles
+     * @summary Set a clan's auto-roles
      * @request PUT:/guilds/{guildId}/auto-roles/clans/{clanTag}
      * @secure
      * @response `200` `SaveClanAutoRolesData`
@@ -10555,10 +10732,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Also shows how many active flags the server has and how many it's allowed. Supporter servers have no limit.
      *
      * @tags Guilds
      * @name ListFlags
+     * @summary List the server's active flags
      * @request GET:/guilds/{guildId}/flags
      * @secure
      * @response `200` `ListFlagsData`
@@ -10575,10 +10753,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Each player found gets their own flag. Servers without a subscription can have up to 1,000 active flags.
      *
      * @tags Guilds
      * @name CreateFlags
+     * @summary Flag one or more players
      * @request POST:/guilds/{guildId}/flags
      * @secure
      * @response `201` `CreateFlagsData`
@@ -10600,6 +10779,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name DeleteFlag
+     * @summary Delete an active flag
      * @request DELETE:/guilds/{guildId}/flags/{flagId}
      * @secure
      * @response `204` `DeleteFlagData`
@@ -10614,17 +10794,18 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Finds members whose username or server nickname starts with what you type. Returns up to 50.
      *
      * @tags Guilds
-     * @name ListMembers
+     * @name SearchMembers
+     * @summary Search the server's members
      * @request GET:/guilds/{guildId}/members/list
      * @secure
-     * @response `200` `ListMembersData`
+     * @response `200` `SearchMembersData`
      * @response `500` `ErrorResponseDto`
      */
-    listMembers: ({ guildId, ...query }: ListMembersParams, params: RequestParams = {}) =>
-      this.http.request<ListMembersData, ListMembersError>({
+    searchMembers: ({ guildId, ...query }: SearchMembersParams, params: RequestParams = {}) =>
+      this.http.request<SearchMembersData, SearchMembersError>({
         path: `/guilds/${guildId}/members/list`,
         method: 'GET',
         query: query,
@@ -10638,6 +10819,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name GetServerLogs
+     * @summary Get the server-wide log settings
      * @request GET:/guilds/{guildId}/server-logs
      * @secure
      * @response `200` `GetServerLogsData`
@@ -10657,6 +10839,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name SaveFlagAlertLog
+     * @summary Set up the flag alert log
      * @request PUT:/guilds/{guildId}/server-logs/flag-alert
      * @secure
      * @response `200` `SaveFlagAlertLogData`
@@ -10682,6 +10865,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name DeleteFlagAlertLog
+     * @summary Turn off the flag alert log
      * @request DELETE:/guilds/{guildId}/server-logs/flag-alert
      * @secure
      * @response `200` `DeleteFlagAlertLogData`
@@ -10701,6 +10885,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name SaveRosterChangelog
+     * @summary Set up the roster changelog
      * @request PUT:/guilds/{guildId}/server-logs/roster-changelog
      * @secure
      * @response `200` `SaveRosterChangelogData`
@@ -10726,6 +10911,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name DeleteRosterChangelog
+     * @summary Turn off the roster changelog
      * @request DELETE:/guilds/{guildId}/server-logs/roster-changelog
      * @secure
      * @response `200` `DeleteRosterChangelogData`
@@ -10745,6 +10931,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name SaveMaintenanceLog
+     * @summary Set up the maintenance log
      * @request PUT:/guilds/{guildId}/server-logs/maintenance
      * @secure
      * @response `200` `SaveMaintenanceLogData`
@@ -10770,6 +10957,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name DeleteMaintenanceLog
+     * @summary Turn off the maintenance log
      * @request DELETE:/guilds/{guildId}/server-logs/maintenance
      * @secure
      * @response `200` `DeleteMaintenanceLogData`
@@ -10785,10 +10973,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Saves the message and turns it on.
      *
      * @tags Guilds
      * @name SaveWelcomeLog
+     * @summary Set up the welcome message
      * @request PUT:/guilds/{guildId}/server-logs/welcome
      * @secure
      * @response `200` `SaveWelcomeLogData`
@@ -10810,11 +10999,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description The message is saved, so you can turn it back on later.
      *
      * @tags Guilds
      * @name DeleteWelcomeLog
-     * @summary Turns the welcome message off but keeps it, as `/setup server-logs disable` does.
+     * @summary Turn off the welcome message
      * @request DELETE:/guilds/{guildId}/server-logs/welcome
      * @secure
      * @response `200` `DeleteWelcomeLogData`
@@ -10833,14 +11022,15 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Guilds
-     * @name GetButtons
+     * @name GetButtonMessages
+     * @summary Get the server's button messages
      * @request GET:/guilds/{guildId}/buttons
      * @secure
-     * @response `200` `GetButtonsData`
+     * @response `200` `GetButtonMessagesData`
      * @response `500` `ErrorResponseDto`
      */
-    getButtons: ({ guildId }: GetButtonsParams, params: RequestParams = {}) =>
-      this.http.request<GetButtonsData, GetButtonsError>({
+    getButtonMessages: ({ guildId }: GetButtonMessagesParams, params: RequestParams = {}) =>
+      this.http.request<GetButtonMessagesData, GetButtonMessagesError>({
         path: `/guilds/${guildId}/buttons`,
         method: 'GET',
         secure: true,
@@ -10849,22 +11039,22 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Changes what `/setup buttons` posts. Messages that were already posted keep their old look.
      *
      * @tags Guilds
-     * @name SaveButton
-     * @summary Saves what `/setup buttons` posts; messages already posted keep their old look.
+     * @name UpdateButtonMessage
+     * @summary Update a button message
      * @request PUT:/guilds/{guildId}/buttons/{buttonType}
      * @secure
-     * @response `200` `SaveButtonData`
+     * @response `200` `UpdateButtonMessageData`
      * @response `500` `ErrorResponseDto`
      */
-    saveButton: (
-      { guildId, buttonType }: SaveButtonParams,
+    updateButtonMessage: (
+      { guildId, buttonType }: UpdateButtonMessageParams,
       data: ButtonMessageInput,
       params: RequestParams = {}
     ) =>
-      this.http.request<SaveButtonData, SaveButtonError>({
+      this.http.request<UpdateButtonMessageData, UpdateButtonMessageError>({
         path: `/guilds/${guildId}/buttons/${buttonType}`,
         method: 'PUT',
         body: data,
@@ -10879,6 +11069,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Guilds
      * @name GetManagerRoles
+     * @summary Get the server's manager roles
      * @request GET:/guilds/{guildId}/managers
      * @secure
      * @response `200` `GetManagerRolesData`
@@ -10894,21 +11085,22 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description You only need to send the lists you want to change. Sending an empty list clears it.
      *
      * @tags Guilds
-     * @name SaveManagerRoles
+     * @name UpdateManagerRoles
+     * @summary Update the server's manager roles
      * @request PATCH:/guilds/{guildId}/managers
      * @secure
-     * @response `200` `SaveManagerRolesData`
+     * @response `200` `UpdateManagerRolesData`
      * @response `500` `ErrorResponseDto`
      */
-    saveManagerRoles: (
-      { guildId }: SaveManagerRolesParams,
+    updateManagerRoles: (
+      { guildId }: UpdateManagerRolesParams,
       data: ManagerRolesInput,
       params: RequestParams = {}
     ) =>
-      this.http.request<SaveManagerRolesData, SaveManagerRolesError>({
+      this.http.request<UpdateManagerRolesData, UpdateManagerRolesError>({
         path: `/guilds/${guildId}/managers`,
         method: 'PATCH',
         body: data,
@@ -10922,14 +11114,15 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Guilds
-     * @name GetConfig
+     * @name GetGuildConfig
+     * @summary Get the server's embed color, webhook limit and subscription
      * @request GET:/guilds/{guildId}/config
      * @secure
-     * @response `200` `GetConfigData`
+     * @response `200` `GetGuildConfigData`
      * @response `500` `ErrorResponseDto`
      */
-    getConfig: ({ guildId }: GetConfigParams, params: RequestParams = {}) =>
-      this.http.request<GetConfigData, GetConfigError>({
+    getGuildConfig: ({ guildId }: GetGuildConfigParams, params: RequestParams = {}) =>
+      this.http.request<GetGuildConfigData, GetGuildConfigError>({
         path: `/guilds/${guildId}/config`,
         method: 'GET',
         secure: true,
@@ -10938,21 +11131,22 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description You only need to send the fields you want to change. Set the color to null to go back to the default.
      *
      * @tags Guilds
-     * @name SaveConfig
+     * @name UpdateGuildConfig
+     * @summary Update the server's embed color or webhook limit
      * @request PATCH:/guilds/{guildId}/config
      * @secure
-     * @response `200` `SaveConfigData`
+     * @response `200` `UpdateGuildConfigData`
      * @response `500` `ErrorResponseDto`
      */
-    saveConfig: (
-      { guildId }: SaveConfigParams,
+    updateGuildConfig: (
+      { guildId }: UpdateGuildConfigParams,
       data: ServerConfigInput,
       params: RequestParams = {}
     ) =>
-      this.http.request<SaveConfigData, SaveConfigError>({
+      this.http.request<UpdateGuildConfigData, UpdateGuildConfigError>({
         path: `/guilds/${guildId}/config`,
         method: 'PATCH',
         body: data,
@@ -10966,34 +11160,37 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Guilds
-     * @name GetGuildBeta
+     * @name GetGuildBetaStatus
+     * @summary Check whether the server is in the beta
      * @request GET:/guilds/{guildId}/beta
      * @secure
-     * @response `200` `GetGuildBetaData`
+     * @response `200` `GetGuildBetaStatusData`
      * @response `500` `ErrorResponseDto`
      */
-    getGuildBeta: ({ guildId }: GetGuildBetaParams, params: RequestParams = {}) =>
-      this.http.request<GetGuildBetaData, GetGuildBetaError>({
+    getGuildBetaStatus: ({ guildId }: GetGuildBetaStatusParams, params: RequestParams = {}) =>
+      this.http.request<GetGuildBetaStatusData, GetGuildBetaStatusError>({
         path: `/guilds/${guildId}/beta`,
         method: 'GET',
         secure: true,
         format: 'json',
         ...params
-      }),
-
+      })
+  };
+  tickets = {
     /**
      * No description
      *
-     * @tags Guilds
-     * @name ListCategories
-     * @request GET:/guilds/{guildId}/channel-categories
+     * @tags Tickets
+     * @name GetTicketSettings
+     * @summary Get the server's ticket panels and saved replies
+     * @request GET:/tickets/{guildId}
      * @secure
-     * @response `200` `ListCategoriesData`
+     * @response `200` `GetTicketSettingsData`
      * @response `500` `ErrorResponseDto`
      */
-    listCategories: ({ guildId }: ListCategoriesParams, params: RequestParams = {}) =>
-      this.http.request<ListCategoriesData, ListCategoriesError>({
-        path: `/guilds/${guildId}/channel-categories`,
+    getTicketSettings: ({ guildId }: GetTicketSettingsParams, params: RequestParams = {}) =>
+      this.http.request<GetTicketSettingsData, GetTicketSettingsError>({
+        path: `/tickets/${guildId}`,
         method: 'GET',
         secure: true,
         format: 'json',
@@ -11001,38 +11198,19 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Newest first, 25 per page. To get the next page, pass the `nextCursor` from the response as `before`.
      *
-     * @tags Guilds
-     * @name GetTickets
-     * @request GET:/guilds/{guildId}/tickets
-     * @secure
-     * @response `200` `GetTicketsData`
-     * @response `500` `ErrorResponseDto`
-     */
-    getTickets: ({ guildId }: GetTicketsParams, params: RequestParams = {}) =>
-      this.http.request<GetTicketsData, GetTicketsError>({
-        path: `/guilds/${guildId}/tickets`,
-        method: 'GET',
-        secure: true,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * No description
-     *
-     * @tags Guilds
+     * @tags Tickets
      * @name ListTickets
-     * @summary Tickets members opened, newest first, 25 a page.
-     * @request GET:/guilds/{guildId}/tickets/list
+     * @summary List tickets opened in the server
+     * @request GET:/tickets/{guildId}/list
      * @secure
      * @response `200` `ListTicketsData`
      * @response `500` `ErrorResponseDto`
      */
     listTickets: ({ guildId, ...query }: ListTicketsParams, params: RequestParams = {}) =>
       this.http.request<ListTicketsData, ListTicketsError>({
-        path: `/guilds/${guildId}/tickets/list`,
+        path: `/tickets/${guildId}/list`,
         method: 'GET',
         query: query,
         secure: true,
@@ -11041,30 +11219,31 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Does the same as the Close button in Discord. The last 100 messages are saved to the ticket log, and the channel is deleted.
      *
-     * @tags Guilds
+     * @tags Tickets
      * @name CloseTicket
-     * @summary Closes a ticket as the bot's Close button does: transcript to the log, channel deleted.
-     * @request POST:/guilds/{guildId}/tickets/{ticketId}/close
+     * @summary Close an opened ticket
+     * @request POST:/tickets/{guildId}/{ticketId}/close
      * @secure
      * @response `204` `CloseTicketData`
      * @response `500` `ErrorResponseDto`
      */
     closeTicket: ({ guildId, ticketId }: CloseTicketParams, params: RequestParams = {}) =>
       this.http.request<CloseTicketData, CloseTicketError>({
-        path: `/guilds/${guildId}/tickets/${ticketId}/close`,
+        path: `/tickets/${guildId}/${ticketId}/close`,
         method: 'POST',
         secure: true,
         ...params
       }),
 
     /**
-     * No description
+     * @description The panel starts with default settings and one General ticket type. Each panel in a server needs a different name.
      *
-     * @tags Guilds
+     * @tags Tickets
      * @name CreateTicketPanel
-     * @request POST:/guilds/{guildId}/tickets/panels
+     * @summary Create a ticket panel
+     * @request POST:/tickets/{guildId}/panels
      * @secure
      * @response `201` `CreateTicketPanelData`
      * @response `500` `ErrorResponseDto`
@@ -11075,7 +11254,7 @@ export class Api<SecurityDataType extends unknown> {
       params: RequestParams = {}
     ) =>
       this.http.request<CreateTicketPanelData, CreateTicketPanelError>({
-        path: `/guilds/${guildId}/tickets/panels`,
+        path: `/tickets/${guildId}/panels`,
         method: 'POST',
         body: data,
         secure: true,
@@ -11085,11 +11264,12 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description You only need to send the fields you want to change. If the panel is already posted in Discord, post it again to show the changes.
      *
-     * @tags Guilds
+     * @tags Tickets
      * @name UpdateTicketPanel
-     * @request PATCH:/guilds/{guildId}/tickets/panels/{panelId}
+     * @summary Update a ticket panel
+     * @request PATCH:/tickets/{guildId}/panels/{panelId}
      * @secure
      * @response `200` `UpdateTicketPanelData`
      * @response `500` `ErrorResponseDto`
@@ -11100,7 +11280,7 @@ export class Api<SecurityDataType extends unknown> {
       params: RequestParams = {}
     ) =>
       this.http.request<UpdateTicketPanelData, UpdateTicketPanelError>({
-        path: `/guilds/${guildId}/tickets/panels/${panelId}`,
+        path: `/tickets/${guildId}/panels/${panelId}`,
         method: 'PATCH',
         body: data,
         secure: true,
@@ -11110,11 +11290,12 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Tickets already opened from it aren't affected. Its message in Discord stops opening new tickets.
      *
-     * @tags Guilds
+     * @tags Tickets
      * @name DeleteTicketPanel
-     * @request DELETE:/guilds/{guildId}/tickets/panels/{panelId}
+     * @summary Delete a ticket panel
+     * @request DELETE:/tickets/{guildId}/panels/{panelId}
      * @secure
      * @response `200` `DeleteTicketPanelData`
      * @response `500` `ErrorResponseDto`
@@ -11124,7 +11305,7 @@ export class Api<SecurityDataType extends unknown> {
       params: RequestParams = {}
     ) =>
       this.http.request<DeleteTicketPanelData, DeleteTicketPanelError>({
-        path: `/guilds/${guildId}/tickets/panels/${panelId}`,
+        path: `/tickets/${guildId}/panels/${panelId}`,
         method: 'DELETE',
         secure: true,
         format: 'json',
@@ -11132,11 +11313,12 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description A panel can have up to 25 ticket types.
      *
-     * @tags Guilds
+     * @tags Tickets
      * @name AddTicketType
-     * @request POST:/guilds/{guildId}/tickets/panels/{panelId}/types
+     * @summary Add a ticket type to a panel
+     * @request POST:/tickets/{guildId}/panels/{panelId}/types
      * @secure
      * @response `201` `AddTicketTypeData`
      * @response `500` `ErrorResponseDto`
@@ -11147,7 +11329,7 @@ export class Api<SecurityDataType extends unknown> {
       params: RequestParams = {}
     ) =>
       this.http.request<AddTicketTypeData, AddTicketTypeError>({
-        path: `/guilds/${guildId}/tickets/panels/${panelId}/types`,
+        path: `/tickets/${guildId}/panels/${panelId}/types`,
         method: 'POST',
         body: data,
         secure: true,
@@ -11157,11 +11339,12 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Send all of the panel's ticket type IDs, each once, in the order you want.
      *
-     * @tags Guilds
+     * @tags Tickets
      * @name ReorderTicketTypes
-     * @request PUT:/guilds/{guildId}/tickets/panels/{panelId}/types/order
+     * @summary Reorder a panel's ticket types
+     * @request PUT:/tickets/{guildId}/panels/{panelId}/types/order
      * @secure
      * @response `200` `ReorderTicketTypesData`
      * @response `500` `ErrorResponseDto`
@@ -11172,7 +11355,7 @@ export class Api<SecurityDataType extends unknown> {
       params: RequestParams = {}
     ) =>
       this.http.request<ReorderTicketTypesData, ReorderTicketTypesError>({
-        path: `/guilds/${guildId}/tickets/panels/${panelId}/types/order`,
+        path: `/tickets/${guildId}/panels/${panelId}/types/order`,
         method: 'PUT',
         body: data,
         secure: true,
@@ -11182,11 +11365,12 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description You only need to send the fields you want to change.
      *
-     * @tags Guilds
+     * @tags Tickets
      * @name UpdateTicketType
-     * @request PATCH:/guilds/{guildId}/tickets/panels/{panelId}/types/{typeId}
+     * @summary Update a ticket type
+     * @request PATCH:/tickets/{guildId}/panels/{panelId}/types/{typeId}
      * @secure
      * @response `200` `UpdateTicketTypeData`
      * @response `500` `ErrorResponseDto`
@@ -11197,7 +11381,7 @@ export class Api<SecurityDataType extends unknown> {
       params: RequestParams = {}
     ) =>
       this.http.request<UpdateTicketTypeData, UpdateTicketTypeError>({
-        path: `/guilds/${guildId}/tickets/panels/${panelId}/types/${typeId}`,
+        path: `/tickets/${guildId}/panels/${panelId}/types/${typeId}`,
         method: 'PATCH',
         body: data,
         secure: true,
@@ -11207,11 +11391,12 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Tickets already opened with this type stay open.
      *
-     * @tags Guilds
+     * @tags Tickets
      * @name DeleteTicketType
-     * @request DELETE:/guilds/{guildId}/tickets/panels/{panelId}/types/{typeId}
+     * @summary Delete a ticket type
+     * @request DELETE:/tickets/{guildId}/panels/{panelId}/types/{typeId}
      * @secure
      * @response `200` `DeleteTicketTypeData`
      * @response `500` `ErrorResponseDto`
@@ -11221,7 +11406,7 @@ export class Api<SecurityDataType extends unknown> {
       params: RequestParams = {}
     ) =>
       this.http.request<DeleteTicketTypeData, DeleteTicketTypeError>({
-        path: `/guilds/${guildId}/tickets/panels/${panelId}/types/${typeId}`,
+        path: `/tickets/${guildId}/panels/${panelId}/types/${typeId}`,
         method: 'DELETE',
         secure: true,
         format: 'json',
@@ -11229,22 +11414,23 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Staff can use these replies in any ticket in the server. You can save up to 25, and each needs a different name.
      *
-     * @tags Guilds
-     * @name SaveTicketReplies
-     * @request PUT:/guilds/{guildId}/tickets/saved-replies
+     * @tags Tickets
+     * @name ReplaceSavedReplies
+     * @summary Replace the server's saved ticket replies
+     * @request PUT:/tickets/{guildId}/saved-replies
      * @secure
-     * @response `200` `SaveTicketRepliesData`
+     * @response `200` `ReplaceSavedRepliesData`
      * @response `500` `ErrorResponseDto`
      */
-    saveTicketReplies: (
-      { guildId }: SaveTicketRepliesParams,
+    replaceSavedReplies: (
+      { guildId }: ReplaceSavedRepliesParams,
       data: TicketSavedRepliesInput,
       params: RequestParams = {}
     ) =>
-      this.http.request<SaveTicketRepliesData, SaveTicketRepliesError>({
-        path: `/guilds/${guildId}/tickets/saved-replies`,
+      this.http.request<ReplaceSavedRepliesData, ReplaceSavedRepliesError>({
+        path: `/tickets/${guildId}/saved-replies`,
         method: 'PUT',
         body: data,
         secure: true,
@@ -11253,12 +11439,302 @@ export class Api<SecurityDataType extends unknown> {
         ...params
       })
   };
-  exports = {
+  reminders = {
+    /**
+     * @description Includes clan war, capital raid and Clan Games reminders, with when each one will go off next.
+     *
+     * @tags Reminders
+     * @name ListReminders
+     * @summary List the server's reminders
+     * @request GET:/reminders/{guildId}
+     * @secure
+     * @response `200` `ListRemindersData`
+     * @response `500` `ErrorResponseDto`
+     */
+    listReminders: ({ guildId }: ListRemindersParams, params: RequestParams = {}) =>
+      this.http.request<ListRemindersData, ListRemindersError>({
+        path: `/reminders/${guildId}`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
     /**
      * No description
      *
+     * @tags Reminders
+     * @name GetReminderPings
+     * @summary Get the roles that control reminder pings
+     * @request GET:/reminders/{guildId}/pings
+     * @secure
+     * @response `200` `GetReminderPingsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getReminderPings: ({ guildId }: GetReminderPingsParams, params: RequestParams = {}) =>
+      this.http.request<GetReminderPingsData, GetReminderPingsError>({
+        path: `/reminders/${guildId}/pings`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Sending an empty list clears the setting. Members with these roles are saved right away, and the bot keeps the list up to date.
+     *
+     * @tags Reminders
+     * @name SaveReminderPings
+     * @summary Set the roles that control reminder pings
+     * @request PUT:/reminders/{guildId}/pings
+     * @secure
+     * @response `200` `SaveReminderPingsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    saveReminderPings: (
+      { guildId }: SaveReminderPingsParams,
+      data: ReminderPingsInput,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<SaveReminderPingsData, SaveReminderPingsError>({
+        path: `/reminders/${guildId}/pings`,
+        method: 'PUT',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Set `duration` to how long before the war ends the reminder should go off, in milliseconds. It can be up to 48 hours, in 15-minute steps. A server can have 25 reminders of each type, or 5 per clan if that's more. Supporter servers have no limit.
+     *
+     * @tags Reminders
+     * @name CreateClanWarReminder
+     * @summary Create a clan war reminder
+     * @request POST:/reminders/{guildId}/clan-wars
+     * @secure
+     * @response `201` `CreateClanWarReminderData`
+     * @response `500` `ErrorResponseDto`
+     */
+    createClanWarReminder: (
+      { guildId }: CreateClanWarReminderParams,
+      data: ClanWarReminderInput,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<CreateClanWarReminderData, CreateClanWarReminderError>({
+        path: `/reminders/${guildId}/clan-wars`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Send the whole reminder, the same as when you created it. Moving it to another channel removes its thread.
+     *
+     * @tags Reminders
+     * @name UpdateClanWarReminder
+     * @summary Update a clan war reminder
+     * @request PUT:/reminders/{guildId}/clan-wars/{reminderId}
+     * @secure
+     * @response `200` `UpdateClanWarReminderData`
+     * @response `500` `ErrorResponseDto`
+     */
+    updateClanWarReminder: (
+      { guildId, reminderId }: UpdateClanWarReminderParams,
+      data: ClanWarReminderInput,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<UpdateClanWarReminderData, UpdateClanWarReminderError>({
+        path: `/reminders/${guildId}/clan-wars/${reminderId}`,
+        method: 'PUT',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Reminders
+     * @name DeleteClanWarReminder
+     * @summary Delete a clan war reminder
+     * @request DELETE:/reminders/{guildId}/clan-wars/{reminderId}
+     * @secure
+     * @response `204` `DeleteClanWarReminderData`
+     * @response `500` `ErrorResponseDto`
+     */
+    deleteClanWarReminder: (
+      { guildId, reminderId }: DeleteClanWarReminderParams,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<DeleteClanWarReminderData, DeleteClanWarReminderError>({
+        path: `/reminders/${guildId}/clan-wars/${reminderId}`,
+        method: 'DELETE',
+        secure: true,
+        ...params
+      }),
+
+    /**
+     * @description Set `duration` to how long before the raid weekend ends the reminder should go off, in milliseconds. It can be up to 3 days, in 15-minute steps. A server can have 25 reminders of each type, or 5 per clan if that's more. Supporter servers have no limit.
+     *
+     * @tags Reminders
+     * @name CreateCapitalRaidReminder
+     * @summary Create a capital raid reminder
+     * @request POST:/reminders/{guildId}/capital-raids
+     * @secure
+     * @response `201` `CreateCapitalRaidReminderData`
+     * @response `500` `ErrorResponseDto`
+     */
+    createCapitalRaidReminder: (
+      { guildId }: CreateCapitalRaidReminderParams,
+      data: CapitalRaidReminderInput,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<CreateCapitalRaidReminderData, CreateCapitalRaidReminderError>({
+        path: `/reminders/${guildId}/capital-raids`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Send the whole reminder, the same as when you created it. Moving it to another channel removes its thread.
+     *
+     * @tags Reminders
+     * @name UpdateCapitalRaidReminder
+     * @summary Update a capital raid reminder
+     * @request PUT:/reminders/{guildId}/capital-raids/{reminderId}
+     * @secure
+     * @response `200` `UpdateCapitalRaidReminderData`
+     * @response `500` `ErrorResponseDto`
+     */
+    updateCapitalRaidReminder: (
+      { guildId, reminderId }: UpdateCapitalRaidReminderParams,
+      data: CapitalRaidReminderInput,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<UpdateCapitalRaidReminderData, UpdateCapitalRaidReminderError>({
+        path: `/reminders/${guildId}/capital-raids/${reminderId}`,
+        method: 'PUT',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Reminders
+     * @name DeleteCapitalRaidReminder
+     * @summary Delete a capital raid reminder
+     * @request DELETE:/reminders/{guildId}/capital-raids/{reminderId}
+     * @secure
+     * @response `204` `DeleteCapitalRaidReminderData`
+     * @response `500` `ErrorResponseDto`
+     */
+    deleteCapitalRaidReminder: (
+      { guildId, reminderId }: DeleteCapitalRaidReminderParams,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<DeleteCapitalRaidReminderData, DeleteCapitalRaidReminderError>({
+        path: `/reminders/${guildId}/capital-raids/${reminderId}`,
+        method: 'DELETE',
+        secure: true,
+        ...params
+      }),
+
+    /**
+     * @description Set `duration` to how long before Clan Games end the reminder should go off, in milliseconds. It can be up to 6 days, in 15-minute steps. A server can have 25 reminders of each type, or 5 per clan if that's more. Supporter servers have no limit.
+     *
+     * @tags Reminders
+     * @name CreateClanGamesReminder
+     * @summary Create a Clan Games reminder
+     * @request POST:/reminders/{guildId}/clan-games
+     * @secure
+     * @response `201` `CreateClanGamesReminderData`
+     * @response `500` `ErrorResponseDto`
+     */
+    createClanGamesReminder: (
+      { guildId }: CreateClanGamesReminderParams,
+      data: ClanGamesReminderInput,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<CreateClanGamesReminderData, CreateClanGamesReminderError>({
+        path: `/reminders/${guildId}/clan-games`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Send the whole reminder, the same as when you created it. Moving it to another channel removes its thread.
+     *
+     * @tags Reminders
+     * @name UpdateClanGamesReminder
+     * @summary Update a Clan Games reminder
+     * @request PUT:/reminders/{guildId}/clan-games/{reminderId}
+     * @secure
+     * @response `200` `UpdateClanGamesReminderData`
+     * @response `500` `ErrorResponseDto`
+     */
+    updateClanGamesReminder: (
+      { guildId, reminderId }: UpdateClanGamesReminderParams,
+      data: ClanGamesReminderInput,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<UpdateClanGamesReminderData, UpdateClanGamesReminderError>({
+        path: `/reminders/${guildId}/clan-games/${reminderId}`,
+        method: 'PUT',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Reminders
+     * @name DeleteClanGamesReminder
+     * @summary Delete a Clan Games reminder
+     * @request DELETE:/reminders/{guildId}/clan-games/{reminderId}
+     * @secure
+     * @response `204` `DeleteClanGamesReminderData`
+     * @response `500` `ErrorResponseDto`
+     */
+    deleteClanGamesReminder: (
+      { guildId, reminderId }: DeleteClanGamesReminderParams,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<DeleteClanGamesReminderData, DeleteClanGamesReminderError>({
+        path: `/reminders/${guildId}/clan-games/${reminderId}`,
+        method: 'DELETE',
+        secure: true,
+        ...params
+      })
+  };
+  exports = {
+    /**
+     * @description For a scheduled export, the sheet already made for the same server and clans is returned instead of a new one.
+     *
      * @tags Internal
      * @name ExportClanMembers
+     * @summary Export clan members to a Google Sheet
      * @request POST:/exports/members
      * @response `201` `ExportClanMembersData`
      * @response `500` `ErrorResponseDto`
@@ -11279,6 +11755,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Admin
      * @name ListBetaGuilds
+     * @summary List beta servers
      * @request GET:/admin/beta-guilds
      * @secure
      * @response `200` `ListBetaGuildsData`
@@ -11294,10 +11771,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Servers that are already in the beta are left as they are, with their original note.
      *
      * @tags Admin
      * @name AddBetaGuilds
+     * @summary Add servers to the beta
      * @request POST:/admin/beta-guilds
      * @secure
      * @response `201` `AddBetaGuildsData`
@@ -11319,6 +11797,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Admin
      * @name RemoveBetaGuild
+     * @summary Remove a server from the beta
      * @request DELETE:/admin/beta-guilds/{guildId}
      * @secure
      * @response `200` `RemoveBetaGuildData`
@@ -11338,6 +11817,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Admin
      * @name ListSubscribers
+     * @summary List Patreon and manual subscriptions
      * @request GET:/admin/subscribers
      * @secure
      * @response `200` `ListSubscribersData`
@@ -11353,10 +11833,59 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
+     * @description For payments an admin has checked by hand, such as Ko-fi or PayPal. A user can only have one active manual subscription.
+     *
+     * @tags Admin
+     * @name GrantSubscription
+     * @summary Grant a subscription by hand
+     * @request POST:/admin/subscribers
+     * @secure
+     * @response `201` `GrantSubscriptionData`
+     * @response `500` `ErrorResponseDto`
+     */
+    grantSubscription: (data: GrantSubscriptionInput, params: RequestParams = {}) =>
+      this.http.request<GrantSubscriptionData, GrantSubscriptionError>({
+        path: `/admin/subscribers`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Use it to extend, renew, change the plan of or add servers to a manual subscription. Patreon subscriptions can't be changed here.
+     *
+     * @tags Admin
+     * @name UpdateSubscription
+     * @summary Update a manual subscription
+     * @request PATCH:/admin/subscribers/{id}
+     * @secure
+     * @response `200` `UpdateSubscriptionData`
+     * @response `500` `ErrorResponseDto`
+     */
+    updateSubscription: (
+      { id }: UpdateSubscriptionParams,
+      data: UpdateSubscriptionInput,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<UpdateSubscriptionData, UpdateSubscriptionError>({
+        path: `/admin/subscribers/${id}`,
+        method: 'PATCH',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
      * No description
      *
      * @tags Admin
      * @name ListDevelopers
+     * @summary List developer accounts
      * @request GET:/admin/developers
      * @secure
      * @response `200` `ListDevelopersData`
@@ -11372,10 +11901,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description The response includes the new account's passkey. Save it, because it's only shown once. Admin accounts can't be created here.
      *
      * @tags Admin
      * @name AddDeveloper
+     * @summary Add a developer account
      * @request POST:/admin/developers
      * @secure
      * @response `201` `AddDeveloperData`
@@ -11393,21 +11923,22 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description The new roles take effect the next time the developer logs in. Admin accounts can't be changed.
      *
      * @tags Admin
-     * @name EditDeveloper
+     * @name UpdateDeveloperRoles
+     * @summary Change a developer's roles
      * @request PATCH:/admin/developers/{userId}
      * @secure
-     * @response `200` `EditDeveloperData`
+     * @response `200` `UpdateDeveloperRolesData`
      * @response `500` `ErrorResponseDto`
      */
-    editDeveloper: (
-      { userId }: EditDeveloperParams,
+    updateDeveloperRoles: (
+      { userId }: UpdateDeveloperRolesParams,
       data: EditDeveloperInput,
       params: RequestParams = {}
     ) =>
-      this.http.request<EditDeveloperData, EditDeveloperError>({
+      this.http.request<UpdateDeveloperRolesData, UpdateDeveloperRolesError>({
         path: `/admin/developers/${userId}`,
         method: 'PATCH',
         body: data,
@@ -11418,10 +11949,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description The passkey stops working right away. Tokens already issued keep working until they expire, which takes up to 2 hours. Admin accounts can't be revoked.
      *
      * @tags Admin
      * @name RevokeDeveloper
+     * @summary Revoke a developer account
      * @request DELETE:/admin/developers/{userId}
      * @secure
      * @response `200` `RevokeDeveloperData`
@@ -11442,6 +11974,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Internal
      * @name ListBetaGuildIds
+     * @summary List beta server IDs, oldest first
      * @request GET:/beta-guilds/ids
      * @secure
      * @response `200` `ListBetaGuildIdsData`
