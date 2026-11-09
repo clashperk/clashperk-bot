@@ -132,7 +132,8 @@ export const createRankedGraph = async ({
   lastTournament: Tournament | null;
   weekStart: Date;
 }) => {
-  const leagueId = String(player.leagueTier!.id);
+  const league = tournament.league!;
+  const leagueId = String(league.id);
   const lastWeekStart = new Date(weekStart.getTime() - 7 * DAY_MS);
   const lastDays = lastTournament ? rankedDays(lastTournament, lastWeekStart) : [];
   const lastAttacks = lastDays.reduce((sum, day) => sum + day.attacks, 0);
@@ -146,11 +147,7 @@ export const createRankedGraph = async ({
       townHall: player.townHallLevel.toString(),
       clanName: player.clan?.name,
       clanBadgeURL: player.clan?.badgeUrls.large,
-      league: {
-        id: player.leagueTier!.id,
-        name: player.leagueTier!.name,
-        iconUrl: player.leagueTier!.iconUrls.large
-      },
+      league: { id: league.id, name: league.name, iconUrl: league.iconUrls.large },
       weekStart: weekStart.toISOString(),
       trophies: tournament.member.leagueTrophies,
       rank: tournament.rank,

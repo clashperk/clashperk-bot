@@ -41,14 +41,9 @@ import {
   createRankedGraph,
   LegendCardStats
 } from '../../struct/image-helper.js';
+import { EMOJIS, HOME_BASE_LEAGUES, PLAYER_LEAGUE_TIERS, TOWN_HALLS } from '../../util/emojis.js';
 import {
-  EMOJIS,
-  HOME_BASE_LEAGUES,
-  HOME_TROOPS,
-  PLAYER_LEAGUE_TIERS,
-  TOWN_HALLS
-} from '../../util/emojis.js';
-import {
+  dashboardLink,
   dashboardUrl,
   formatLeague,
   getMenuFromMessage,
@@ -58,6 +53,7 @@ import {
 import { Season, Util } from '../../util/toolkit.js';
 
 const MIN_LAST_SEASON_DAYS = 7;
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export default class LegendDaysCommand extends Command {
   public constructor() {
@@ -101,7 +97,7 @@ export default class LegendDaysCommand extends Command {
       )
       .addComponents(
         new ButtonBuilder()
-          .setLabel(args.prev ? 'Overview / Current Day' : 'Previous Days / Graph')
+          .setLabel(args.prev ? 'Today' : 'Season History')
           .setCustomId(customIds.overview)
           .setStyle(args.prev ? ButtonStyle.Success : ButtonStyle.Primary)
       )
@@ -206,15 +202,7 @@ export default class LegendDaysCommand extends Command {
     return null;
   }
 
-  private async addClanAndEquipmentFields({
-    embed,
-    player,
-    showEquipment
-  }: {
-    embed: EmbedBuilder;
-    player: APIPlayer;
-    showEquipment: boolean;
-  }) {
+  private async addClanField(embed: EmbedBuilder, player: APIPlayer) {
     const clan = player.clan ? await this.getClan(player.clan.tag) : null;
     const member = (clan?.memberList ?? []).find((en) => en.tag === player.tag);
 
@@ -226,29 +214,6 @@ export default class LegendDaysCommand extends Command {
           `- Rank in Clan: ${member.clanRank}`
         ].join('\n')
       });
-    }
-
-    if (showEquipment) {
-      const heroes = player.heroes.filter(
-        (hero) => hero.equipment?.length && hero.village === 'home'
-      );
-      const equipmentGroup = heroes
-        .map((hero) => {
-          const troops = [hero, ...hero.equipment!].filter((unit) => HOME_TROOPS[unit.name]);
-          return troops.map((unit, idx) => {
-            const unitIcon = HOME_TROOPS[unit.name];
-            const level = padStart(unit.level, idx === 0 ? 3 : 2);
-            return `${unitIcon} \`\u200e${level}\u200f\`${idx === 0 ? ' -' : ''}`;
-          });
-        })
-        .filter((group) => group.length);
-
-      if (equipmentGroup.length) {
-        embed.addFields({
-          name: 'Equipment Used',
-          value: equipmentGroup.map((group) => group.join(' ')).join('\n')
-        });
-      }
     }
   }
 
@@ -327,11 +292,7 @@ export default class LegendDaysCommand extends Command {
       });
     }
 
-    await this.addClanAndEquipmentFields({
-      embed,
-      player: data,
-      showEquipment: attacks.length > 0 && Util.getLegendDay() === day
-    });
+    await this.addClanField(embed, data);
 
     embed.addFields([
       {
@@ -562,12 +523,13 @@ export default class LegendDaysCommand extends Command {
     interaction: CommandInteraction<'cached'> | ButtonInteraction<'cached'>,
     player: APIPlayer
   ) {
-    const tournament = await getTournament(player);
-    if (!tournament) return null;
+    const week = await this.shownTournament(player);
+    if (!week) return null;
+    const { tournament, weekStart, isLastWeek } = week;
     const { battles } = tournament;
 
-    const leagueId = player.leagueTier?.id ?? UNRANKED_TIER_ID;
-    if (!battles.length || leagueId === UNRANKED_TIER_ID || !player.leagueTier) return null;
+    const leagueId = tournament.league?.id ?? UNRANKED_TIER_ID;
+    if (!battles.length || leagueId === UNRANKED_TIER_ID) return null;
 
     const attacks = battles.filter((b) => b.isAttack);
     const defenses = battles.filter((b) => !b.isAttack);
@@ -589,12 +551,13 @@ export default class LegendDaysCommand extends Command {
     const leagueLabel = formatLeague(PLAYER_LEAGUE_MAP[leagueId]);
     embed.setDescription(
       [
-        `${TOWN_HALLS[player.townHallLevel]} **${player.townHallLevel}** ${EMOJIS.TROPHY} **${player.trophies} ${HOME_BASE_LEAGUES[leagueId]} ${leagueLabel}**`
+        `${TOWN_HALLS[player.townHallLevel]} **${player.townHallLevel}** ${EMOJIS.TROPHY} **${tournament.member.leagueTrophies} ${HOME_BASE_LEAGUES[leagueId]} ${leagueLabel}**`
       ].join('\n')
     );
 
-    if (!Season.isTournamentReset) {
-      const { startTime, endTime } = Util.getTournamentWindow();
+    {
+      const startTime = weekStart;
+      const endTime = new Date(weekStart.getTime() + WEEK_MS);
 
       const zoneLine = tournament.isInPromotionZone
         ? `- **Promotion Zone** (top ${tournament.promotionZone} players) ${EMOJIS.UP_KEY}`
@@ -603,9 +566,9 @@ export default class LegendDaysCommand extends Command {
           : `- **Safe Zone** (rank ${tournament.promotionZone + 1}-${tournament.total - tournament.demotionZone})`;
 
       embed.addFields({
-        name: `Overview (${moment(startTime).format('D MMM')} - ${moment(endTime).format('D MMM')})`,
+        name: `${isLastWeek ? 'Last Week' : 'Overview'} (${moment(startTime).format('D MMM')} - ${moment(endTime).format('D MMM')})`,
         value: [
-          `- ${player.trophies} trophies gained`,
+          `- ${tournament.member.leagueTrophies} trophies gained`,
           `- ${attacks.length}/${BattlesPerWeek[leagueId]} attacks`,
           `- ${defenses.length}/${BattlesPerWeek[leagueId]} defenses`,
           `- +${trophiesFromAttacks} from attacks (Avg: ${avgOffenseStars} | ${avgOffenseDestruction}%)`,
@@ -634,7 +597,17 @@ export default class LegendDaysCommand extends Command {
     //   });
     // }
 
-    await this.addClanAndEquipmentFields({ embed, player, showEquipment: attacks.length > 0 });
+    if (Season.isTournamentReset) {
+      const { startTime, endTime } = Util.getTournamentWindow();
+      embed.addFields([
+        {
+          name: 'Upcoming Tournament',
+          value: `${time(startTime, 'D')} - ${time(endTime, 'D')}`
+        }
+      ]);
+    }
+
+    await this.addClanField(embed, player);
 
     embed.addFields([
       {
@@ -670,27 +643,22 @@ export default class LegendDaysCommand extends Command {
       }
     ]);
 
-    if (Season.isTournamentReset) {
-      const { startTime, endTime } = Util.getTournamentWindow();
-      embed.addFields([
-        {
-          name: 'Upcoming Tournament',
-          value: `${time(startTime, 'D')} - ${time(endTime, 'D')}`
-        }
-      ]);
-    }
-
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setEmoji(EMOJIS.REFRESH)
         .setCustomId(JSON.stringify({ cmd: this.id, tag: player.tag }))
-        .setStyle(ButtonStyle.Secondary)
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setLabel('View ranked')
+        .setStyle(ButtonStyle.Link)
+        .setURL(
+          dashboardLink(`/players/${encodeURIComponent(player.tag)}/ranked`, 'ranked-battles')
+        )
     );
 
     await interaction.editReply({ embeds: [embed], components: [row], content: null });
-    if (Season.isTournamentReset) return;
 
-    const card = await this.rankedCard(player, tournament);
+    const card = await this.rankedCard(player, tournament, weekStart, isLastWeek);
     if (!card) return;
     embed.setImage(card.attachmentKey);
     return interaction.editReply({
@@ -700,14 +668,45 @@ export default class LegendDaysCommand extends Command {
     });
   }
 
-  private async rankedCard(player: APIPlayer, tournament: Tournament) {
-    const lastTournament = await getTournament(player, true).catch(() => null);
-    return createRankedGraph({
-      player,
-      tournament,
-      lastTournament,
-      weekStart: Util.getTournamentWindow().startTime
-    }).catch(() => null);
+  /**
+   * This week's group once it has battles; otherwise (the Monday reset, or before the first battle)
+   * last week's, in the league the player was in then.
+   */
+  private async shownTournament(player: APIPlayer) {
+    const thisWeekStart = Util.getTournamentWindow().startTime;
+    const current = player.currentLeagueGroupTag
+      ? await getTournament(player).catch(() => null)
+      : null;
+    if (current?.battles.length)
+      return { tournament: current, weekStart: thisWeekStart, isLastWeek: false };
+    if (!player.previousLeagueGroupTag) return null;
+
+    const { result } = await this.getLastTournament(player.tag);
+    const league =
+      result && result.leagueId !== player.leagueTier?.id
+        ? await this.client.coc
+            .getLeagueTier(result.leagueId)
+            .then(({ body, res }) => (res.ok ? body : player.leagueTier))
+            .catch(() => player.leagueTier)
+        : player.leagueTier;
+    const last = await getTournament(player, true, league).catch(() => null);
+    if (!last) return null;
+    return {
+      tournament: last,
+      weekStart: new Date(thisWeekStart.getTime() - WEEK_MS),
+      isLastWeek: true
+    };
+  }
+
+  private async rankedCard(
+    player: APIPlayer,
+    tournament: Tournament,
+    weekStart: Date,
+    isLastWeek: boolean
+  ) {
+    // Last week's own previous group isn't in the API, so it has no comparison line.
+    const lastTournament = isLastWeek ? null : await getTournament(player, true).catch(() => null);
+    return createRankedGraph({ player, tournament, lastTournament, weekStart }).catch(() => null);
   }
 
   private async getLastTournament(playerTag: string) {
