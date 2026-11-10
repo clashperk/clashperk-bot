@@ -16,7 +16,7 @@ const AGE_BUCKETS = [0.25, 0.5, 1, 1.5, 2, 2.5, 3, 4, 6];
 const REPLY_BUCKETS = [0.5, 1, 1.5, 2, 3, 4, 6, 8, 12, 20];
 const CALLBACK_PATH = /^\/interactions\/(\d+)\/[^/]+\/callback/;
 // The first edit of a deferred reply, or its first follow-up.
-const WEBHOOK_PATH = /^\/webhooks\/\d+\/([^/?]+)(\/messages\/@original)?$/;
+const WEBHOOK_PATH = /^\/webhooks\/\d+\/([^/?]+)(\/messages\/(?:@|%40)original)?$/;
 const DEFERRED = [
   InteractionResponseType.DeferredChannelMessageWithSource,
   InteractionResponseType.DeferredMessageUpdate
