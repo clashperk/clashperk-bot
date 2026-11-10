@@ -4,13 +4,29 @@ on:
   workflow_dispatch:
   workflow_call:
 
+env:
+  REPOSITORY: clashperk-bot
+
 jobs:
   build:
     environment: Production
-    name: aws-ecr-publish
-    runs-on: ubuntu-24.04
+    name: aws-ecr-publish (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
 
     steps:
+      - name: Prepare
+        run: echo "PLATFORM_PAIR=${PLATFORM//\//-}" >> "$GITHUB_ENV"
+        env:
+          PLATFORM: ${{ matrix.platform }}
+
       - name: Checkout
         uses: actions/checkout@v7
 
@@ -41,25 +57,76 @@ jobs:
 
       - name: Set up Docker Buildkit
         uses: docker/setup-buildx-action@v4
+
+      # Each platform builds natively and is pushed by digest. The merge job tags both under one manifest.
+      - name: Docker Build and Push by Digest
+        id: build
+        uses: docker/build-push-action@v7
         with:
-          buildkitd-flags: --debug
+          context: .
+          platforms: ${{ matrix.platform }}
+          build-args: GIT_SHA=${{ github.sha }}
+          outputs: type=image,name=${{ steps.ecr-login.outputs.registry }}/${{ env.REPOSITORY }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ env.PLATFORM_PAIR }}
+          cache-to: type=gha,mode=max,scope=${{ env.PLATFORM_PAIR }}
+
+      - name: Export Digest
+        run: |
+          mkdir -p "${{ runner.temp }}/digests"
+          touch "${{ runner.temp }}/digests/${DIGEST#sha256:}"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+
+      - name: Upload Digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    environment: Production
+    name: aws-ecr-publish (manifest)
+    runs-on: ubuntu-24.04
+    needs: build
+
+    steps:
+      - name: Download Digests
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Get ECR Registry
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildkit
+        uses: docker/setup-buildx-action@v4
 
       - name: Get Tags for Image
         id: metadata
         uses: docker/metadata-action@v6
         with:
-          images: ${{ steps.ecr-login.outputs.registry }}/clashperk-bot
+          images: ${{ steps.ecr-login.outputs.registry }}/${{ env.REPOSITORY }}
           tags: |
             type=raw,value=latest
             type=ref,event=tag
 
-      - name: Docker Build, Tag and Push to ECR
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.metadata.outputs.tags }}
-          build-args: GIT_SHA=${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Create and Push Manifest
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ steps.ecr-login.outputs.registry }}/${{ env.REPOSITORY }}@sha256:%s ' *)
+
+      - name: Inspect Image
+        run: docker buildx imagetools inspect ${{ steps.ecr-login.outputs.registry }}/${{ env.REPOSITORY }}:${{ steps.metadata.outputs.version }}
