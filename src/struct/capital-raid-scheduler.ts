@@ -145,9 +145,13 @@ export class CapitalRaidScheduler {
 
     this.queued.set(
       schedule._id.toHexString(),
-      setTimeout(() => {
-        this.trigger(schedule);
-      }, schedule.timestamp.getTime() - Date.now())
+      setTimeout(
+        () => {
+          this.trigger(schedule);
+        },
+        // A schedule can arrive already due. Run it now.
+        Math.max(0, schedule.timestamp.getTime() - Date.now())
+      )
     );
   }
 
