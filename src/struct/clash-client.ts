@@ -46,10 +46,15 @@ export class ClashClient extends RestManager {
       restRequestTimeout: 10_000,
       rejectIfNotValid: false,
       cache: false,
-      retryLimit: 0,
+      // Cloudflare resets connections when it moves them between data centers. Only those are retried.
+      retryLimit: 1,
+      retryOn: { statusCodes: [], errorCodes: ['ECONNRESET', 'EPIPE', 'UND_ERR_SOCKET'] },
       keys: [...keys],
       baseURL: process.env.CLASH_OF_CLANS_API_BASE_URL,
-      onError: ({ path, status, body }) => {
+      onError: ({ path, status, body, retries }) => {
+        if (retries) {
+          this.client.logger.debug(`${status} ${path} after ${retries} retry`, { label: 'HTTP' });
+        }
         if (
           (status !== 200 || !body) &&
           !(!(body as Record<string, string>)?.message && status === 403) &&
