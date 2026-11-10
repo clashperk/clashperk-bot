@@ -1,5 +1,8 @@
 import { collectDefaultMetrics, Counter, Histogram, register } from '@prometheus-io/client';
 import { getInfo } from 'discord-hybrid-sharding';
+import diagnostics from 'node:diagnostics_channel';
+import type { EventEmitter } from 'node:events';
+import type { Socket } from 'node:net';
 import {
   Events,
   Interaction,
@@ -63,6 +66,27 @@ const commandReplySeconds = new Counter({
   labelNames: ['command']
 });
 
+// Temporary, to find why CoC requests open new connections. Remove once known.
+const COC_ORIGIN = 'https://api.clashofclans.com';
+const cocRequests = new Counter({
+  name: 'coc_api_requests_total',
+  help: 'CoC API requests by whether they reused an open connection or opened a new one',
+  labelNames: ['connection']
+});
+const cocDisconnects = new Counter({
+  name: 'coc_api_disconnects_total',
+  help: 'CoC API connections closed, by reason',
+  labelNames: ['reason']
+});
+
+function disconnectReason(error: unknown) {
+  const { code, message = '' } = (error ?? {}) as { code?: string; message?: string };
+  if (/idle timeout/i.test(message)) return 'idle_timeout';
+  if (/other side closed/i.test(message)) return 'server_closed';
+  if (/abort/i.test(message) || code === 'UND_ERR_ABORTED') return 'aborted';
+  return code ?? 'unknown';
+}
+
 /** Command name with its subcommand group and subcommand, e.g. "history clan-games"; null if not a command. */
 function commandOf(interaction: Interaction) {
   if (interaction.isChatInputCommand()) {
@@ -89,6 +113,18 @@ export function startMetrics(client: Client) {
   }
 
   collectDefaultMetrics();
+
+  const usedSockets = new WeakSet<Socket>();
+  diagnostics.subscribe('undici:client:sendHeaders', (message) => {
+    const { request, socket } = message as { request: { origin?: unknown }; socket: Socket };
+    if (String(request.origin) !== COC_ORIGIN) return;
+    cocRequests.inc({ connection: usedSockets.has(socket) ? 'reused' : 'new' });
+    usedSockets.add(socket);
+  });
+  const { dispatcher } = client.coc.requestHandler as unknown as { dispatcher: EventEmitter };
+  dispatcher.on('disconnect', (_origin, _targets, error) => {
+    cocDisconnects.inc({ reason: disconnectReason(error) });
+  });
 
   // The callback request only carries the interaction id, so keep each id's details until it is answered.
   const pending = new Map<string, { type: string; command: string | null; token: string }>();
