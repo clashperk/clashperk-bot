@@ -38,7 +38,7 @@ import { RAW_RUSHED_UNITS } from '../util/troops.js';
 import { Enqueuer } from './enqueuer.js';
 import { RootLog } from './root-log.js';
 
-const POSTED_AT_INTERVAL = 60 * 60 * 1000;
+const POSTED_AT_INTERVAL = 5 * 60 * 1000;
 
 const COLOR_MAPS: { [key: string]: number } = {
   [LogActions.NAME_CHANGE]: COLOR_CODES.PEACH,
@@ -458,7 +458,7 @@ export class ClanLog extends RootLog {
     }
   }
 
-  /** Stamps `lastPostedAt` for the dashboard, at most hourly per log, since these logs post often. */
+  /** Stamps `lastPostedAt` for the dashboard, at most every 5 minutes per log, since these logs post often. */
   private recordPost(cache: Cache) {
     const now = Date.now();
     if (cache.lastPostedAt && now - cache.lastPostedAt < POSTED_AT_INTERVAL) return;
