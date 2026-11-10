@@ -13,6 +13,13 @@ export const sentryConfig: NodeOptions = {
   // Only command executions are traced; every other root span (DB, HTTP) would be recorded and then dropped.
   tracesSampler: ({ attributes }) => (attributes?.['interaction.command'] ? 1 : 0),
   sendDefaultPii: true,
+  // Trace headers push the CoC API's request headers past ~1 KB, which makes it ~300 ms slower.
+  tracePropagationTargets: [
+    /^https:\/\/([\w-]+\.)*clashperk\.com\//,
+    ...(process.env.INTERNAL_API_BASE_URL
+      ? [new URL(process.env.INTERNAL_API_BASE_URL).origin]
+      : [])
+  ],
 
   ignoreSpans: [{ op: /^(?!command_executed|http\.client|db)/ }],
   beforeSendTransaction(event) {
