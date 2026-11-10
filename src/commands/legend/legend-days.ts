@@ -463,7 +463,7 @@ export default class LegendDaysCommand extends Command {
       `- ${data.attackWins || totalAttacks} ${pluralize('attack', data.attackWins)} and ${data.defenseWins} ${pluralize('defense', data.defenseWins)} won`,
       '',
       [
-        '`DAY` `  ATK ` `  DEF ` ` +/- ` ` INIT ` `FINAL `',
+        '`DAY` `  ATK ` `  DEF ` ` +/- ` `START` ` END`',
         ...perDayLogs.map((day, i) => {
           const def = padStart(
             `-${Math.abs(day.loss)}${ATTACK_COUNTS[Math.min(8, day.defenseCount)]}`,
@@ -473,8 +473,8 @@ export default class LegendDaysCommand extends Command {
           const ng = padStart(`${day.net > 0 ? '+' : ''}${day.net}`, 4);
           const final = padStart(day.final, 4);
           const init = padStart(day.initial, 5);
-          const n = (i + 1).toString().padStart(2, ' ');
-          return `\`\u200e${n} \` \`${atk} \` \`${def} \` \`${ng} \` \`${init} \` \` ${final} \``;
+          const n = padStart(i + 1, 2);
+          return `\`\u200e${n} \` \`${atk} \` \`${def} \` \`${ng} \` \`${init}\` \`${final}\``;
         })
       ].join('\n')
     ].join('\n');

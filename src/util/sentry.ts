@@ -1,6 +1,9 @@
 import * as Sentry from '@sentry/node';
 import { NodeOptions, httpIntegration, rewriteFramesIntegration } from '@sentry/node';
 
+// Child spans (HTTP, Mongo, Redis) are kept on this share of command traces, to stay within the span quota.
+const CHILD_SPAN_RATE = 0.1;
+
 export const sentryConfig: NodeOptions = {
   dsn: process.env.SENTRY_DSN,
   serverName: process.env.SERVICE_NAME ?? 'clashperk_bot',
@@ -11,7 +14,11 @@ export const sentryConfig: NodeOptions = {
   tracesSampler: ({ attributes }) => (attributes?.['interaction.command'] ? 1 : 0),
   sendDefaultPii: true,
 
-  ignoreSpans: [{ op: /^(?!command_executed)/ }],
+  ignoreSpans: [{ op: /^(?!command_executed|http\.client|db)/ }],
+  beforeSendTransaction(event) {
+    if (Math.random() >= CHILD_SPAN_RATE) event.spans = [];
+    return event;
+  },
 
   integrations: [
     rewriteFramesIntegration({
@@ -36,8 +43,9 @@ export const sentryConfig: NodeOptions = {
   ]
 };
 
+/** Usually already done by the `--import` preload (instrument.ts), which Mongo spans need. */
 const sentry = () => {
-  if (process.env.SENTRY_DSN) {
+  if (process.env.SENTRY_DSN && !Sentry.isInitialized()) {
     Sentry.init(sentryConfig);
   }
 };
