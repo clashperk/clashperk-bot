@@ -25,7 +25,7 @@ COPY --from=deps /app/dist ./dist
 ARG GIT_SHA
 ENV GIT_SHA=$GIT_SHA
 
-ENV NODE_OPTIONS="--trace-warnings --enable-source-maps"
+ENV NODE_OPTIONS="--trace-warnings --enable-source-maps --import /app/dist/src/instrument.js"
 ENV TZ=UTC
 ENV PORT=8070
 ENV FORCE_COLOR=1
