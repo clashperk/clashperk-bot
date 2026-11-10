@@ -38,6 +38,8 @@ import { RAW_RUSHED_UNITS } from '../util/troops.js';
 import { Enqueuer } from './enqueuer.js';
 import { RootLog } from './root-log.js';
 
+const POSTED_AT_INTERVAL = 60 * 60 * 1000;
+
 const COLOR_MAPS: { [key: string]: number } = {
   [LogActions.NAME_CHANGE]: COLOR_CODES.PEACH,
   [LogActions.TOWN_HALL_UPGRADE]: COLOR_CODES.CYAN,
@@ -445,13 +447,29 @@ export class ClanLog extends RootLog {
 
   private async send(cache: Cache, webhook: WebhookClient, payload: WebhookMessageCreateOptions) {
     try {
-      return await super.sendMessage(cache, webhook, payload);
+      const message = await super.sendMessage(cache, webhook, payload);
+      this.recordPost(cache);
+      return message;
     } catch (error) {
       this.client.logger.error(`${error.toString()} {${cache._id.toString()}}`, {
         label: ClanLog.name
       });
       return null;
     }
+  }
+
+  /** Stamps `lastPostedAt` for the dashboard, at most hourly per log, since these logs post often. */
+  private recordPost(cache: Cache) {
+    const now = Date.now();
+    if (cache.lastPostedAt && now - cache.lastPostedAt < POSTED_AT_INTERVAL) return;
+    cache.lastPostedAt = now;
+    this.collection
+      .updateOne({ _id: cache._id }, { $set: { lastPostedAt: new Date(now) } })
+      .catch((error) =>
+        this.client.logger.error(`${error.toString()} {${cache._id.toString()}}`, {
+          label: ClanLog.name
+        })
+      );
   }
 
   public async init() {
@@ -501,6 +519,7 @@ export class ClanLog extends RootLog {
       deepLink: data.deepLink,
       logType: data.logType,
       retries: 0,
+      lastPostedAt: data.lastPostedAt?.getTime(),
       webhook: data.webhook?.id ? new WebhookClient(data.webhook) : null
     });
   }
@@ -560,4 +579,6 @@ interface Cache {
   logType: ClanLogType;
   deepLink?: string;
   retries: number;
+  /** When `lastPostedAt` was last written, in epoch milliseconds. */
+  lastPostedAt?: number;
 }
