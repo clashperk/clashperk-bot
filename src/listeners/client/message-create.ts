@@ -1,24 +1,21 @@
 import { Settings } from '@app/constants';
-import { Message, PermissionFlagsBits } from 'discord.js';
+import { ClashLinkType, LinkParsingMode } from '@app/entities';
+import { BaseMessageOptions, Message, PermissionFlagsBits } from 'discord.js';
+import {
+  canReply,
+  ClashLink,
+  findClashLinks,
+  isOnlyClashLinks,
+  linkModesFor,
+  markShown,
+  onlyClashLinks,
+  recordReply,
+  renderClashLinks,
+  splitRepeats
+} from '../../helper/clash-links.helper.js';
 import { Command, Listener } from '../../lib/handlers.js';
-
-const IN_GAME_REGEX = /\bhttps:\/\/link\.clashofclans\.com\S+/gi;
-
-// const SHORT_LINK_REGEX = /\bhttps?:\/\/cprk\.us\S+/gi;
-
-// https://link.clashofclans.com/en?action=OpenPlayerProfile&tag=
-
-// https://link.clashofclans.com/en?action=OpenClanProfile&tag=
-
-// https://link.clashofclans.com/en?action=SupportCreator&id=
-
-// https://link.clashofclans.com/en?action=OpenMoreSettings
-
-// https://link.clashofclans.com/en?action=openhelpshift
-
-// https://link.clashofclans.com/en?action=OpenLayout&id=
-
-// https://link.clashofclans.com/en?action=CopyArmy&army=
+import { countLinkCards } from '../../util/metrics.js';
+import type LayoutCommand from '../../commands/search/layout-post.js';
 
 export default class MessageCreateListener extends Listener {
   public constructor() {
@@ -34,6 +31,11 @@ export default class MessageCreateListener extends Listener {
     if (message.author.bot) return;
 
     void this.client.tickets.resetAutoSleep(message.channelId, message.author.id);
+
+    // Most messages stop here: nothing below runs unless ClashPerk is mentioned or links are on.
+    const mentioned = message.mentions.users.has(this.client.user.id);
+    const linkModes = mentioned ? null : linkModesFor(this.client, message.channel);
+    if (!mentioned && !linkModes?.size) return;
 
     if (this.inhibitor(message)) return;
 
@@ -52,9 +54,10 @@ export default class MessageCreateListener extends Listener {
     )
       return;
 
-    if (IN_GAME_REGEX.test(message.content)) {
-      return this.linkParser(message);
-    }
+    const found = findClashLinks(message.content);
+    const links = linkModes ? found.filter((link) => linkModes.has(link.type)) : found;
+    if (links.length) return this.expandLinks(message, links, linkModes);
+    if (!mentioned) return;
 
     const parsed = [`<@${this.client.user.id}>`, `<@!${this.client.user.id}>`]
       .map((mention) => this.parseWithPrefix(message.content, mention))
@@ -98,41 +101,107 @@ export default class MessageCreateListener extends Listener {
     }
   }
 
-  private linkParser(message: Message) {
-    const matches = (message.content.match(IN_GAME_REGEX) ?? []).slice(0, 3);
+  /**
+   * A mention asks for every link and always replies. Otherwise each type follows its own rule:
+   * reply, post on its own, or post on its own and delete the member's message.
+   */
+  private async expandLinks(
+    message: Message<true>,
+    links: ClashLink[],
+    modes: Map<ClashLinkType, LinkParsingMode> | null
+  ) {
+    if (this.client.settings.hasCustomBot(message.guild) && !this.client.isCustom()) return;
 
-    for (const text of matches) {
-      const url = new URL(text);
-      const action = url.searchParams.get('action')?.toLowerCase();
-      if (!action) continue;
+    const source = modes ? 'channel' : 'mention';
+    const { fresh, repeated } = splitRepeats(message.channelId, links);
+    countLinkCards(repeated, source, 'repeated');
+    if (!fresh.length) return;
 
-      switch (action) {
-        case 'openplayerprofile': {
-          const tag = url.searchParams.get('tag');
-          if (!tag) continue;
-          return this.client.commandHandler.getCommand('player')?.run(message, { tag });
-        }
-        case 'openclanprofile': {
-          const tag = url.searchParams.get('tag');
-          return this.client.commandHandler.getCommand('clan')?.run(message, { tag });
-        }
-        case 'supportcreator':
-          break;
-        case 'openmoresettings':
-          break;
-        case 'openhelpshift':
-          break;
-        case 'openlayout':
-          break;
-        case 'copyarmy': {
-          const army = url.searchParams.get('army');
-          if (!army) continue;
-          return this.client.commandHandler.getCommand('army')?.run(message, { link: url.href });
-        }
-        default:
-          break;
+    const memberKey = `${message.guildId}:${message.author.id}`;
+    if (!canReply(message.channelId, memberKey)) {
+      return countLinkCards(fresh, source, 'rate_limited');
+    }
+    recordReply(message.channelId, memberKey);
+
+    const permissions = message.channel.permissionsFor(this.client.user);
+    const modeOf = (link: ClashLink) => modes?.get(link.type) ?? 'reply';
+    const screenshot = message.attachments.find((file) => file.contentType?.startsWith('image/'));
+    const baseLinks = fresh.filter((link) => link.type === 'base');
+    // Every link must get a card and the text must be only links. A screenshot is kept by its layout post.
+    const replace =
+      !!modes &&
+      fresh.every((link) => modeOf(link) === 'replace') &&
+      !!permissions?.has(PermissionFlagsBits.ManageMessages) &&
+      isOnlyClashLinks(message.content) &&
+      findClashLinks(message.content, Infinity).length === fresh.length &&
+      message.attachments.every((file) => file === screenshot && baseLinks.length > 0);
+
+    const send = async (group: ClashLink[], payload: BaseMessageOptions) => {
+      const shared = `-# Shared by <@${message.author.id}>`;
+      // A Replace rule that can't delete this message replies instead.
+      if (!replace && group.some((link) => modeOf(link) !== 'message')) {
+        return message.reply({ ...payload, allowedMentions: { repliedUser: false } });
+      }
+      return message.channel.send({
+        ...payload,
+        content: [payload.content, shared].filter(Boolean).join('\n'),
+        allowedMentions: { parse: [] }
+      });
+    };
+
+    const sent: ClashLink[] = [];
+    const cards = fresh.filter((link) => link.type !== 'base');
+    if (cards.length) {
+      const { shown, failed, ...payload } = await renderClashLinks(
+        this.client,
+        message.guild,
+        message.guild.preferredLocale,
+        cards
+      );
+      countLinkCards(failed, source, 'lookup_failed');
+      if (payload.embeds.length) {
+        const reply = await send(shown, payload).catch(() => null);
+        if (reply) sent.push(...shown);
+        else countLinkCards(shown, source, 'send_failed');
       }
     }
+
+    // Base links get the same post as /layout, so Copy Layout, downloads and voting work.
+    const layouts = this.client.commandHandler.getCommand(
+      'layout-post'
+    ) as unknown as LayoutCommand;
+    for (const link of baseLinks) {
+      const reply = await layouts
+        .postLayout({
+          guild: message.guild,
+          link: link.url,
+          screenshot: screenshot?.url ?? null,
+          userId: message.author.id,
+          canReact: !!permissions?.has(PermissionFlagsBits.AddReactions),
+          send: (payload) => send([link], payload)
+        })
+        .catch(() => null);
+      if (reply) sent.push(link);
+      else countLinkCards([link], source, 'send_failed');
+    }
+    if (!sent.length) return;
+
+    if (replace && sent.length === fresh.length) {
+      await message.delete().catch(() => null);
+    } else if (
+      permissions?.has(PermissionFlagsBits.ManageMessages) &&
+      onlyClashLinks(message.content)
+    ) {
+      await message.suppressEmbeds(true).catch(() => null);
+    }
+
+    markShown(message.channelId, sent);
+    countLinkCards(sent, source, 'sent');
+    const linkTypes = sent.map((link) => link.type);
+    this.client.logger.log(`${linkTypes.map((type) => `link-${type}`).join(', ')} ~ ${source}`, {
+      label: `${message.guild.name}/${message.author.displayName}`
+    });
+    void this.client.stats.links(linkTypes);
   }
 
   private parseWithPrefix(messageContent: string, prefix: string) {

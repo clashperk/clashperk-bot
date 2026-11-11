@@ -4,6 +4,7 @@ import {
   ActionRowBuilder,
   AttachmentBuilder,
   BaseInteraction,
+  BaseMessageOptions,
   ButtonBuilder,
   ButtonInteraction,
   ButtonStyle,
@@ -11,6 +12,10 @@ import {
   ComponentType,
   DiscordjsError,
   DiscordjsErrorCodes,
+  FileUploadBuilder,
+  Guild,
+  LabelBuilder,
+  Message,
   MessageFlags,
   ModalBuilder,
   ModalSubmitInteraction,
@@ -22,6 +27,7 @@ import {
 import pluralize from 'pluralize';
 import { shake } from 'radash';
 import { Command, CommandOptions } from '../../lib/handlers.js';
+import { layoutLabel } from '../../helper/layouts.helper.js';
 import { EMOJIS } from '../../util/emojis.js';
 import { Util } from '../../util/toolkit.js';
 
@@ -74,7 +80,8 @@ export default class LayoutCommand extends Command {
 
     const isAdmin =
       this.client.util.isManager(interaction.member) ||
-      interaction.message.interactionMetadata?.user.id === interaction.user.id;
+      interaction.message.interactionMetadata?.user.id === interaction.user.id ||
+      interaction.message.mentions.repliedUser?.id === interaction.user.id;
     if (!isAdmin) {
       return interaction.reply({
         flags: MessageFlags.Ephemeral,
@@ -91,12 +98,12 @@ export default class LayoutCommand extends Command {
     const modalCustomId = this.client.uuid(interaction.user.id);
     const customIds = {
       link: this.client.uuid(interaction.user.id),
-      notes: this.client.uuid(interaction.user.id)
+      notes: this.client.uuid(interaction.user.id),
+      screenshot: this.client.uuid(interaction.user.id)
     };
     const modal = new ModalBuilder().setCustomId(modalCustomId).setTitle('Edit Layout');
     const linkInput = new TextInputBuilder()
       .setCustomId(customIds.link)
-      .setLabel('Layout Link')
       .setPlaceholder('Enter Layout Link')
       .setStyle(TextInputStyle.Paragraph)
       .setMaxLength(200)
@@ -107,7 +114,6 @@ export default class LayoutCommand extends Command {
 
     const descriptionInput = new TextInputBuilder()
       .setCustomId(customIds.notes)
-      .setLabel('Notes')
       .setPlaceholder(
         'Write anything you want (markdown, hyperlink and custom emojis are supported)'
       )
@@ -123,9 +129,19 @@ export default class LayoutCommand extends Command {
       descriptionInput.setValue(layoutTemplate);
     }
 
-    modal.addComponents(
-      new ActionRowBuilder<TextInputBuilder>().addComponents(linkInput),
-      new ActionRowBuilder<TextInputBuilder>().addComponents(descriptionInput)
+    modal.addLabelComponents(
+      new LabelBuilder().setLabel('Layout Link').setTextInputComponent(linkInput),
+      new LabelBuilder().setLabel('Notes').setTextInputComponent(descriptionInput),
+      new LabelBuilder()
+        .setLabel('Screenshot')
+        .setDescription('Optional. A new image replaces the current one.')
+        .setFileUploadComponent(
+          new FileUploadBuilder()
+            .setCustomId(customIds.screenshot)
+            .setMinValues(0)
+            .setMaxValues(1)
+            .setRequired(false)
+        )
     );
 
     try {
@@ -138,8 +154,17 @@ export default class LayoutCommand extends Command {
 
       args.layout_link = modalSubmitInteraction.fields.getTextInputValue(customIds.link);
       args.notes = modalSubmitInteraction.fields.getTextInputValue(customIds.notes);
+      const image = modalSubmitInteraction.fields.getUploadedFiles(customIds.screenshot)?.first();
 
       await modalSubmitInteraction.deferUpdate();
+
+      if (image && !image.contentType?.startsWith('image/')) {
+        return await modalSubmitInteraction.followUp({
+          flags: MessageFlags.Ephemeral,
+          content: 'The screenshot must be an image. Nothing was changed.'
+        });
+      }
+      if (image) args.screenshot = image.url;
 
       return await this.handleSubmit(interaction, args);
     } catch (error) {
@@ -164,64 +189,72 @@ export default class LayoutCommand extends Command {
       });
     }
 
-    const layoutTypes: Record<string, string> = {
-      'WB': 'Town Hall',
-      'HV': 'Town Hall',
-      'BB2': 'Builder Base',
-      'CC:0': 'Capital Peak',
-      'CC:1': 'Barbarian Champ',
-      'CC:2': 'Wizard Valley',
-      'CC:3': 'Ballon Lagoon',
-      'CC:4': "Builder's Workshop",
-      'CC:5': 'Dragon Cliff',
-      'CC:6': 'Golem Quarry',
-      'CC:7': 'Skeleton Park',
-      'CC:8': 'Goblin Mines'
-    };
+    return this.postLayout({
+      guild: interaction.guild,
+      link: args.layout_link,
+      screenshot: args.screenshot,
+      notes: args.notes,
+      downloads: args.downloads,
+      userId: interaction.isButton()
+        ? interaction.message.interactionMetadata?.user.id || interaction.user.id
+        : interaction.user.id,
+      canReact: interaction.appPermissions.has(PermissionFlagsBits.AddReactions),
+      // Without `attachments: []` an edit keeps the old image next to the new one.
+      send: (payload) =>
+        interaction.editReply({ ...payload, ...(payload.files ? { attachments: [] } : {}) })
+    });
+  }
 
-    const layoutId = new URL(args.layout_link).searchParams.get('id')!;
-    const [levelString, layoutType, buildingType] = layoutId.split(':');
-    const level = levelString.replace('TH', '');
-    const buildingLabel = ['HV', 'BB2', 'WB'].includes(layoutType)
-      ? layoutTypes[layoutType]
-      : layoutTypes[`CC:${buildingType}`];
-
+  /** Posts a layout the way `/layout` does and tracks it, so Copy Layout, downloads and voting work. */
+  public async postLayout(input: {
+    guild: Guild;
+    link: string;
+    screenshot?: string | null;
+    notes?: string;
+    downloads?: number;
+    userId: string;
+    canReact: boolean;
+    send: (payload: BaseMessageOptions) => Promise<Message>;
+  }) {
+    const { guild, link } = input;
+    const layoutId = new URL(link).searchParams.get('id')!;
+    const label = layoutLabel(link) ?? 'Base Layout';
     const allowLayoutTracking = this.client.settings.get<boolean>(
-      interaction.guild,
+      guild,
       Settings.ALLOW_LAYOUT_TRACKING,
       false
     );
 
-    const layout = await this.collection.findOne({ guildId: interaction.guild.id, layoutId });
+    const layout = await this.collection.findOne({ guildId: guild.id, layoutId });
     const row = this.getComponents({
-      ...args,
+      screenshot: input.screenshot ?? '',
+      notes: input.notes,
+      layout_link: link,
       allow_layout_tracking: allowLayoutTracking,
-      downloads: layout?.downloader?.length || args.downloads || 0
+      downloads: layout?.downloader?.length || input.downloads || 0
     });
 
-    const msg = await interaction.editReply({
+    const msg = await input.send({
       components: [row],
-      content: args.notes || `**${buildingLabel} ${level} Layout**`,
-      ...(args.screenshot && { files: [new AttachmentBuilder(args.screenshot)] })
+      content: input.notes || `**${label}**`,
+      ...(input.screenshot && { files: [new AttachmentBuilder(input.screenshot)] })
     });
 
     await this.collection.updateOne(
-      { layoutId, guildId: interaction.guild.id },
+      { layoutId, guildId: guild.id },
       {
         $set: shake({
-          label: `${buildingLabel} ${level} Layout`,
-          notes: args.notes || null,
-          link: args.layout_link,
-          imageUrl: args.screenshot,
+          label,
+          notes: input.notes || null,
+          link,
+          imageUrl: input.screenshot ?? undefined,
           updatedAt: new Date()
         }),
         $addToSet: {
           messageIds: msg.id
         },
         $setOnInsert: {
-          userId: interaction.isButton()
-            ? interaction.message.interactionMetadata?.user.id || interaction.user.id
-            : interaction.user.id,
+          userId: input.userId,
           downloads: 0,
           downloader: [],
           votes: {
@@ -234,19 +267,16 @@ export default class LayoutCommand extends Command {
       { upsert: true }
     );
 
-    const isVotingEnabled = this.client.settings.get(
-      interaction.guild,
-      Settings.ALLOW_LAYOUT_VOTING,
-      false
-    );
+    const isVotingEnabled = this.client.settings.get(guild, Settings.ALLOW_LAYOUT_VOTING, false);
 
-    if (interaction.appPermissions.has(PermissionFlagsBits.AddReactions) && isVotingEnabled) {
+    if (input.canReact && isVotingEnabled) {
       try {
         await msg.react(EMOJIS.WHITE_CHECK_MARK);
         await Util.delay(250);
         await msg.react(EMOJIS.RED_CHECK_MARK);
       } catch {}
     }
+    return msg;
   }
 
   private async displayLink(interaction: ButtonInteraction<'cached'>, args: LayoutCommandArgs) {

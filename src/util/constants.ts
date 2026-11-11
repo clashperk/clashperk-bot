@@ -210,7 +210,8 @@ export const enum Settings {
   TROPHY_ROLES = 'trophyRoles',
   ALLOW_LAYOUT_VOTING = 'allowLayoutVoting',
   ALLOW_LAYOUT_TRACKING = 'allowLayoutTracking',
-  LAYOUT_TEMPLATE = 'layoutTemplate'
+  LAYOUT_TEMPLATE = 'layoutTemplate',
+  LINK_PARSING = 'linkParsing'
 }
 
 export enum FeatureFlags {

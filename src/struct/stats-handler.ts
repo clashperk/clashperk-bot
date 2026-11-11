@@ -85,6 +85,17 @@ export class StatsHandler {
     return this.historic(command);
   }
 
+  /** A link card counts as a use of `link-<type>`, so `/usage` lists it next to commands. */
+  public async links(types: string[]) {
+    for (const type of types) {
+      const command = `link-${type}`;
+      await this.client.db
+        .collection(Collections.BOT_COMMANDS)
+        .updateOne({ command }, { $inc: { total: 1, uses: 1 } }, { upsert: true });
+      await this.commands(command);
+    }
+  }
+
   public deletion() {
     return this.client.db.collection(Collections.BOT_GROWTH).updateOne(
       { key: this.key },

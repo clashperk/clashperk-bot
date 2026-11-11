@@ -103,7 +103,9 @@ export class Client extends DiscordClient<true> {
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildWebhooks,
-        GatewayIntentBits.GuildMessages
+        GatewayIntentBits.GuildMessages,
+        // Privileged: requesting it while the portal toggle is off fails the login.
+        ...(process.env.MESSAGE_CONTENT_INTENT === 'true' ? [GatewayIntentBits.MessageContent] : [])
       ],
       makeCache: Options.cacheWithLimits({
         ...Options.DefaultMakeCacheSettings,
