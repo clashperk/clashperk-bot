@@ -21,6 +21,8 @@ export interface ClashLink {
   type: ClashLinkType;
   value: string;
   url: string;
+  /** Type and value, the same for every spelling of one link. */
+  key: string;
 }
 
 /** Cards per message, so a pasted list can't flood a channel. */
@@ -33,6 +35,22 @@ const ACTIONS: Record<string, { type: ClashLinkType; param: string }> = {
   openlayout: { type: 'base', param: 'id' }
 };
 
+// Not global, so `.test()` keeps no state between messages.
+const CLASH_LINK_HINT = /link\.clashofclans\.com/i;
+
+const CHANNEL_WINDOW_MS = 10_000;
+const CHANNEL_LIMIT = 5;
+const MEMBER_COOLDOWN_MS = 5_000;
+const REPEAT_WINDOW_MS = 2 * 60_000;
+const LOOKUP_TTL_MS = 60_000;
+const MAX_LOOKUPS = 1000;
+const SWEEP_INTERVAL_MS = 60_000;
+
+const channelReplies = new Map<string, number[]>();
+const memberReplies = new Map<string, number>();
+const shownLinks = new Map<string, number>();
+const lookups = new Map<string, { expires: number; body: unknown }>();
+
 /** Text Discord would preview: no code, no spoilers, no `<link>` (Discord's "don't preview"). */
 function previewableText(content: string) {
   return content
@@ -44,6 +62,8 @@ function previewableText(content: string) {
 
 /** Share links from the game (`link.clashofclans.com/<lang>?action=...`), deduped, in order. */
 export function findClashLinks(content: string, limit = MAX_LINKS_PER_MESSAGE): ClashLink[] {
+  if (!CLASH_LINK_HINT.test(content)) return [];
+
   const links = new Map<string, ClashLink>();
   // A fresh regex per call: a shared global one keeps lastIndex between messages.
   for (const [text] of previewableText(content).matchAll(
@@ -60,7 +80,7 @@ export function findClashLinks(content: string, limit = MAX_LINKS_PER_MESSAGE): 
     if (!action || !value) continue;
 
     const key = `${action.type}:${value.toUpperCase()}`;
-    if (!links.has(key)) links.set(key, { type: action.type, value, url: url.href });
+    if (!links.has(key)) links.set(key, { type: action.type, value, url: url.href, key });
     if (links.size >= limit) break;
   }
   return [...links.values()];
@@ -88,31 +108,69 @@ export function linkTypesFor(client: Client, channel: GuildTextBasedChannel) {
   return new Set(types);
 }
 
-const RATE_WINDOW_MS = 10_000;
-const RATE_LIMIT = 5;
-const recentReplies = new Map<string, number[]>();
-
-/** At most `RATE_LIMIT` link replies per channel every 10 seconds. Counts the reply when allowed. */
-export function takeLinkReply(channelId: string) {
+/** Links this channel already got a card for in the last 2 minutes are left out. */
+export function splitRepeats(channelId: string, links: ClashLink[]) {
   const now = Date.now();
-  const recent = (recentReplies.get(channelId) ?? []).filter((at) => now - at < RATE_WINDOW_MS);
-  if (recent.length >= RATE_LIMIT) {
-    recentReplies.set(channelId, recent);
-    return false;
-  }
-  recent.push(now);
-  recentReplies.set(channelId, recent);
-  return true;
+  const repeated = links.filter(
+    (link) => now - (shownLinks.get(`${channelId}:${link.key}`) ?? 0) < REPEAT_WINDOW_MS
+  );
+  return { fresh: links.filter((link) => !repeated.includes(link)), repeated };
+}
+
+/** At most 5 link replies per channel every 10 seconds, and one per member every 5 seconds. */
+export function canReply(channelId: string, memberKey: string) {
+  const now = Date.now();
+  const recent = (channelReplies.get(channelId) ?? []).filter((at) => now - at < CHANNEL_WINDOW_MS);
+  channelReplies.set(channelId, recent);
+  return (
+    recent.length < CHANNEL_LIMIT && now - (memberReplies.get(memberKey) ?? 0) >= MEMBER_COOLDOWN_MS
+  );
+}
+
+/** Takes the channel's and member's slot before the cards are built, so racing messages can't both pass. */
+export function recordReply(channelId: string, memberKey: string) {
+  const now = Date.now();
+  channelReplies.set(channelId, [...(channelReplies.get(channelId) ?? []), now]);
+  memberReplies.set(memberKey, now);
+}
+
+export function markShown(channelId: string, links: ClashLink[]) {
+  const now = Date.now();
+  for (const link of links) shownLinks.set(`${channelId}:${link.key}`, now);
 }
 
 setInterval(() => {
   const now = Date.now();
-  for (const [channelId, recent] of recentReplies) {
-    if (recent.every((at) => now - at >= RATE_WINDOW_MS)) recentReplies.delete(channelId);
+  for (const [channelId, recent] of channelReplies) {
+    if (recent.every((at) => now - at >= CHANNEL_WINDOW_MS)) channelReplies.delete(channelId);
   }
-}, 60_000).unref();
+  for (const [key, at] of memberReplies) {
+    if (now - at >= MEMBER_COOLDOWN_MS) memberReplies.delete(key);
+  }
+  for (const [key, at] of shownLinks) {
+    if (now - at >= REPEAT_WINDOW_MS) shownLinks.delete(key);
+  }
+  for (const [key, entry] of lookups) {
+    if (now >= entry.expires) lookups.delete(key);
+  }
+}, SWEEP_INTERVAL_MS).unref();
 
-/** One card per link, using the same embeds as `/player`, `/clan` and `/army`. Failed lookups are skipped. */
+/** Game API answers for a minute, so a link pasted again doesn't call the API again. */
+async function cachedLookup<T>(
+  key: string,
+  fetch: () => Promise<{ body: T; res: { ok: boolean } }>
+) {
+  const hit = lookups.get(key);
+  if (hit && Date.now() < hit.expires) return hit.body as T;
+
+  const { body, res } = await fetch();
+  if (!res.ok) return null;
+  if (lookups.size >= MAX_LOOKUPS) lookups.delete(lookups.keys().next().value!);
+  lookups.set(key, { expires: Date.now() + LOOKUP_TTL_MS, body });
+  return body;
+}
+
+/** One card per link, using the same embeds as `/player`, `/clan` and `/army`. Failed lookups are skipped and listed. */
 export async function renderClashLinks(
   client: Client,
   guild: Guild,
@@ -121,19 +179,27 @@ export async function renderClashLinks(
 ) {
   const embeds: (EmbedBuilder | APIEmbed)[] = [];
   const components: ActionRowBuilder<MessageActionRowComponentBuilder>[] = [];
+  const shown: ClashLink[] = [];
+  const failed: ClashLink[] = [];
   const color = client.embed(guild.id);
 
   for (const link of links) {
     if (link.type === 'player') {
-      const { body, res } = await client.coc.getPlayer(link.value);
-      if (!res.ok) continue;
+      const body = await cachedLookup(link.key, () => client.coc.getPlayer(link.value));
+      if (!body) {
+        failed.push(link);
+        continue;
+      }
       const command = client.commandHandler.getCommand('player') as unknown as PlayerCommand;
       embeds.push((await command.embed(body)).setColor(color));
     }
 
     if (link.type === 'clan') {
-      const { body, res } = await client.coc.getClan(link.value);
-      if (!res.ok) continue;
+      const body = await cachedLookup(link.key, () => client.coc.getClan(link.value));
+      if (!body) {
+        failed.push(link);
+        continue;
+      }
       const command = client.commandHandler.getCommand('clan') as unknown as ClanCommand;
       embeds.push(await command.embed(guild.id, body));
     }
@@ -141,7 +207,10 @@ export async function renderClashLinks(
     if (link.type === 'army') {
       const command = client.commandHandler.getCommand('army') as unknown as ArmyCommand;
       const payload = command.embed(guild, locale, { link: link.url });
-      if (!payload.embeds.length) continue;
+      if (!payload.embeds.length) {
+        failed.push(link);
+        continue;
+      }
       embeds.push(...payload.embeds);
       if ('components' in payload) components.push(...(payload.components ?? []));
     }
@@ -158,7 +227,8 @@ export async function renderClashLinks(
         )
       );
     }
+    shown.push(link);
   }
 
-  return { embeds, components: components.slice(0, 5) };
+  return { embeds, components: components.slice(0, 5), shown, failed };
 }

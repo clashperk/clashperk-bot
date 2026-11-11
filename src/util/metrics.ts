@@ -79,6 +79,21 @@ function commandOf(interaction: Interaction) {
 const ageOf = (id: string) => (Date.now() - SnowflakeUtil.timestampFrom(id)) / 1000;
 
 /** Pushes this cluster's metrics to VictoriaMetrics; off unless METRICS_PUSH_URL is set. */
+// No server or user labels, so this stays at a few dozen series per cluster.
+const linkCards = new Counter({
+  name: 'discord_link_cards_total',
+  help: 'Clash of Clans links in chat by type, source (channel or mention) and result: sent, repeated, rate_limited, lookup_failed or send_failed',
+  labelNames: ['type', 'source', 'result']
+});
+
+export function countLinkCards(
+  links: { type: string }[],
+  source: 'channel' | 'mention',
+  result: 'sent' | 'repeated' | 'rate_limited' | 'lookup_failed' | 'send_failed'
+) {
+  for (const link of links) linkCards.inc({ type: link.type, source, result });
+}
+
 export function startMetrics(client: Client) {
   const url = process.env.METRICS_PUSH_URL;
   if (!url) return;
