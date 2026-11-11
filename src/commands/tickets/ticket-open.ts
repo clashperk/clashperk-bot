@@ -156,8 +156,6 @@ export default class TicketOpenCommand extends Command {
     return !!channel?.permissionsFor(interaction.member).has(PermissionFlagsBits.ManageChannels);
   }
 
-  // =================== TICKET CREATION ===================
-
   private async openTicketFlow(
     interaction: MessageComponentInteraction<'cached'>,
     args: Record<string, unknown>
@@ -182,7 +180,6 @@ export default class TicketOpenCommand extends Command {
       });
     }
 
-    // Buttons mode: type is pre-selected via the button's customId
     const typeId = args.bid as string | undefined;
     if (typeId) {
       const btn = panel.ticketTypes.find((b) => b.id === typeId);
@@ -194,12 +191,10 @@ export default class TicketOpenCommand extends Command {
       return this.proceedWithType(interaction, panel, btn);
     }
 
-    // Single type — proceed directly
     if (panel.ticketTypes.length === 1) {
       return this.proceedWithType(interaction, panel, panel.ticketTypes[0]);
     }
 
-    // Multiple types — show select menu
     const selectId = this.createId({
       cmd: 'ticket-open',
       action: 'select-type',
@@ -265,14 +260,13 @@ export default class TicketOpenCommand extends Command {
       });
     }
 
-    // Log button click
     void this.logButtonClick(panel, btn, interaction);
 
     if (btn.requireLinkedAccount) {
       return this.showAccountSelect(interaction, panel, btn);
     }
 
-    // If questions configured, show modal (must be first response — before any defer)
+    // showModal must be the first response, so nothing defers before it.
     if (btn.questions?.length) {
       return this.showQuestionsModal(interaction, panel, btn, null);
     }
@@ -551,13 +545,11 @@ export default class TicketOpenCommand extends Command {
       accountTh: player?.townHallLevel
     });
 
-    // Get category
     const categoryId = btn.openCategoryId;
     const category = categoryId
       ? (guild.channels.cache.get(categoryId) as CategoryChannel | undefined)
       : undefined;
 
-    // Build permissions
     const permissionOverwrites: OverwriteResolvable[] = [
       {
         id: guild.roles.everyone.id,
@@ -590,7 +582,6 @@ export default class TicketOpenCommand extends Command {
       }
     ];
 
-    // Ping roles — full access
     for (const roleId of btn.pingRoleIds) {
       permissionOverwrites.push({
         id: roleId,
@@ -606,7 +597,6 @@ export default class TicketOpenCommand extends Command {
       });
     }
 
-    // View-only roles — can see and send but not manage
     for (const roleId of btn.viewOnlyRoleIds) {
       permissionOverwrites.push({
         id: roleId,
@@ -662,7 +652,6 @@ export default class TicketOpenCommand extends Command {
       );
     }
 
-    // Optional: add/remove roles from creator
     const member = interaction.member as GuildMember | null;
     if (member) {
       for (const roleId of btn.addRoleIds) {
@@ -673,7 +662,6 @@ export default class TicketOpenCommand extends Command {
       }
     }
 
-    // Optional: create private staff thread
     if (btn.createStaffThread && btn.pingRoleIds.length > 0) {
       const thread = await ticketChannel.threads
         .create({
@@ -696,7 +684,6 @@ export default class TicketOpenCommand extends Command {
       }
     }
 
-    // Log status change
     void this.client.tickets.logStatusChange(
       panel,
       ticketDoc,
@@ -761,7 +748,6 @@ export default class TicketOpenCommand extends Command {
       container.addTextDisplayComponents(new TextDisplayBuilder().setContent(answersText));
     }
 
-    // Build in-ticket action buttons
     const deleteId = this.createId({
       cmd: 'ticket-open',
       action: 'del-confirm',
@@ -790,7 +776,6 @@ export default class TicketOpenCommand extends Command {
       ephemeral: true
     });
 
-    // Row 1: Reply | Set Clan | Notify Me
     const topButtons = [
       ...(SHOW_REPLY_BUTTON
         ? [
@@ -826,7 +811,6 @@ export default class TicketOpenCommand extends Command {
       container.addActionRowComponents((row) => row.addComponents(...topButtons));
     }
 
-    // Row 2: [Claim|Unclaim] | Delete Ticket | [View Account]
     const bottomButtons: ButtonBuilder[] = [];
 
     if (btn.allowClaim) {
@@ -880,7 +864,6 @@ export default class TicketOpenCommand extends Command {
     container.addSeparatorComponents((s) => s.setSpacing(SeparatorSpacingSize.Small));
     container.addActionRowComponents((row) => row.addComponents(...bottomButtons));
 
-    // Ping staff roles + mention user
     const pings = btn.pingRoleIds.map((id) => `<@&${id}>`).join(' ');
     const mentionLine = [pings, `<@${ticket.creatorId}>`].filter(Boolean).join(' ');
     if (mentionLine) {
@@ -895,8 +878,6 @@ export default class TicketOpenCommand extends Command {
     const container = this.buildTicketContainer(ticket, btn, channel.id);
     return channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
   }
-
-  // =================== IN-TICKET BUTTON HANDLERS ===================
 
   private async confirmDeleteTicket(
     interaction: MessageComponentInteraction<'cached'>,
@@ -936,7 +917,6 @@ export default class TicketOpenCommand extends Command {
       flags: MessageFlags.IsComponentsV2
     });
 
-    // Collect cancel press
     const msg = await interaction.fetchReply();
     const cancel = await msg
       .awaitMessageComponent({
@@ -1044,7 +1024,6 @@ export default class TicketOpenCommand extends Command {
       });
     }
 
-    // Build variable map
     const [creatorMember, leader] = await Promise.all([
       interaction.guild!.members.fetch(ticket.creatorId).catch(() => null),
       ticket.clanTag ? this.getClanLeader(ticket.clanTag) : null
@@ -1069,11 +1048,9 @@ export default class TicketOpenCommand extends Command {
       server_name: interaction.guild!.name
     };
 
-    // Check for unknown variables
     const unknown = findUnknownVars(template.content, vars);
 
     if (unknown.length > 0) {
-      // Show modal for staff to fill in unknowns
       const modalId = this.client.uuid(selection.user.id);
       const unknownIds = unknown.map(() => nanoid(8));
       const modal = new ModalBuilder().setCustomId(modalId).setTitle('Fill in Template Variables');
@@ -1279,7 +1256,6 @@ export default class TicketOpenCommand extends Command {
       })
       .catch(() => null);
 
-    // Remove all staff and viewer role overwrites
     for (const roleId of [...(btn.pingRoleIds ?? []), ...(btn.viewOnlyRoleIds ?? [])]) {
       await channel.permissionOverwrites.delete(roleId).catch(() => null);
     }
@@ -1337,7 +1313,6 @@ export default class TicketOpenCommand extends Command {
     const channel = interaction.guild!.channels.cache.get(channelId) as TextChannel | undefined;
     if (!channel) return interaction.editReply(this.reply('Channel not found.'));
 
-    // Remove claimer's personal overwrite (unless they are also the creator)
     await this.client.tickets.removeClaimerAccess(channel, ticket);
     await this.client.tickets.restoreStaffAccess(channel, btn);
 
@@ -1364,8 +1339,6 @@ export default class TicketOpenCommand extends Command {
     );
     await interaction.editReply(this.reply('Ticket unclaimed. Staff access has been restored.'));
   }
-
-  // =================== UTILITY ===================
 
   /** The clan's leader and the Discord account linked to them, if any. */
   private async getClanLeader(clanTag: string) {
