@@ -2,15 +2,18 @@ import { Settings } from '@app/constants';
 import { Message, PermissionFlagsBits } from 'discord.js';
 import {
   canReply,
+  ClashLink,
   findClashLinks,
   linkTypesFor,
   markShown,
+  onlyClashLinks,
   recordReply,
   renderClashLinks,
   splitRepeats
 } from '../../helper/clash-links.helper.js';
 import { Command, Listener } from '../../lib/handlers.js';
 import { countLinkCards } from '../../util/metrics.js';
+import type LayoutCommand from '../../commands/search/layout-post.js';
 
 export default class MessageCreateListener extends Listener {
   public constructor() {
@@ -114,23 +117,55 @@ export default class MessageCreateListener extends Listener {
     }
     recordReply(message.channelId, memberKey);
 
-    const { shown, failed, ...payload } = await renderClashLinks(
-      this.client,
-      message.guild,
-      message.guild.preferredLocale,
-      fresh
-    );
-    countLinkCards(failed, source, 'lookup_failed');
-    if (!payload.embeds.length) return;
+    const sent: ClashLink[] = [];
+    const cards = fresh.filter((link) => link.type !== 'base');
+    if (cards.length) {
+      const { shown, failed, ...payload } = await renderClashLinks(
+        this.client,
+        message.guild,
+        message.guild.preferredLocale,
+        cards
+      );
+      countLinkCards(failed, source, 'lookup_failed');
+      if (payload.embeds.length) {
+        const reply = await message
+          .reply({ ...payload, allowedMentions: { repliedUser: false } })
+          .catch(() => null);
+        if (reply) sent.push(...shown);
+        else countLinkCards(shown, source, 'send_failed');
+      }
+    }
 
-    const sent = await message
-      .reply({ ...payload, allowedMentions: { repliedUser: false } })
-      .catch(() => null);
-    if (!sent) return countLinkCards(shown, source, 'send_failed');
+    // Base links get the same post as /layout, so Copy Layout, downloads and voting work.
+    const permissions = message.channel.permissionsFor(this.client.user);
+    const layouts = this.client.commandHandler.getCommand(
+      'layout-post'
+    ) as unknown as LayoutCommand;
+    const screenshot =
+      message.attachments.find((file) => file.contentType?.startsWith('image/'))?.url ?? null;
+    for (const link of fresh.filter((link) => link.type === 'base')) {
+      const reply = await layouts
+        .postLayout({
+          guild: message.guild,
+          link: link.url,
+          screenshot,
+          userId: message.author.id,
+          canReact: !!permissions?.has(PermissionFlagsBits.AddReactions),
+          send: (payload) => message.reply({ ...payload, allowedMentions: { repliedUser: false } })
+        })
+        .catch(() => null);
+      if (reply) sent.push(link);
+      else countLinkCards([link], source, 'send_failed');
+    }
+    if (!sent.length) return;
 
-    markShown(message.channelId, shown);
-    countLinkCards(shown, source, 'sent');
-    const linkTypes = shown.map((link) => link.type);
+    if (permissions?.has(PermissionFlagsBits.ManageMessages) && onlyClashLinks(message.content)) {
+      await message.suppressEmbeds(true).catch(() => null);
+    }
+
+    markShown(message.channelId, sent);
+    countLinkCards(sent, source, 'sent');
+    const linkTypes = sent.map((link) => link.type);
     this.client.logger.log(`${linkTypes.map((type) => `link-${type}`).join(', ')} ~ ${source}`, {
       label: `${message.guild.name}/${message.author.displayName}`
     });

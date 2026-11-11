@@ -3,8 +3,6 @@ import { ClashLinkType, LinkParsingConfig } from '@app/entities';
 import {
   ActionRowBuilder,
   APIEmbed,
-  ButtonBuilder,
-  ButtonStyle,
   EmbedBuilder,
   Guild,
   GuildTextBasedChannel,
@@ -37,6 +35,7 @@ const ACTIONS: Record<string, { type: ClashLinkType; param: string }> = {
 
 // Not global, so `.test()` keeps no state between messages.
 const CLASH_LINK_HINT = /link\.clashofclans\.com/i;
+const OTHER_LINK = /https?:\/\/(?!link\.clashofclans\.com)\S/i;
 
 const CHANNEL_WINDOW_MS = 10_000;
 const CHANNEL_LIMIT = 5;
@@ -84,6 +83,11 @@ export function findClashLinks(content: string, limit = MAX_LINKS_PER_MESSAGE): 
     if (links.size >= limit) break;
   }
   return [...links.values()];
+}
+
+/** True when every link in the message is a game link, so hiding its previews hides nothing else. */
+export function onlyClashLinks(content: string) {
+  return !OTHER_LINK.test(content);
 }
 
 /** Link types that are on in this channel. Threads follow their channel, categories cover theirs. */
@@ -170,7 +174,7 @@ async function cachedLookup<T>(
   return body;
 }
 
-/** One card per link, using the same embeds as `/player`, `/clan` and `/army`. Failed lookups are skipped and listed. */
+/** Player, clan and army cards, the same embeds as `/player`, `/clan` and `/army`. Base links go through `/layout`'s post instead. */
 export async function renderClashLinks(
   client: Client,
   guild: Guild,
@@ -215,18 +219,6 @@ export async function renderClashLinks(
       if ('components' in payload) components.push(...(payload.components ?? []));
     }
 
-    if (link.type === 'base') {
-      const [, hall, level] = /^(TH|BH)(\d+)/i.exec(link.value) ?? [];
-      const title = hall
-        ? `${hall.toUpperCase() === 'BH' ? 'Builder Hall' : 'Town Hall'} ${level} base`
-        : 'Base layout';
-      embeds.push(new EmbedBuilder().setColor(color).setTitle(title));
-      components.push(
-        new ActionRowBuilder<MessageActionRowComponentBuilder>().addComponents(
-          new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Open in game').setURL(link.url)
-        )
-      );
-    }
     shown.push(link);
   }
 
