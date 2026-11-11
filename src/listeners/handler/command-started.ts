@@ -118,7 +118,7 @@ export default class CommandStartedListener extends Listener {
     const label = interaction.guild
       ? `${interaction.guild.name}/${interaction.user.displayName}`
       : `${interaction.user.displayName}`;
-    this.client.logger.log(`${command.id}`, { label });
+    this.client.logger.debug(`${command.id}`, { label });
     return this.counter(interaction, command);
   }
 
