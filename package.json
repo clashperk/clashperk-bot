@@ -32,7 +32,7 @@
     "generate:api": "swagger-typescript-api generate -p http://localhost:8080/docs/json?x-typings-ignored=1 -o ./src/api --name generated.ts --axios --route-types --extract-request-params --extract-response-body --extract-response-error --single-http-client --responses"
   },
   "dependencies": {
-    "@ai-sdk/groq": "^4.0.73",
+    "@ai-sdk/groq": "^4.0.78",
     "@ai-sdk/mcp": "^2.0.87",
     "@clickhouse/client": "^1.12.0",
     "@google-cloud/translate": "^9.3.0",
