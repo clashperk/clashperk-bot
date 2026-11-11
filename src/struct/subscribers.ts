@@ -196,7 +196,8 @@ export class Subscribers {
         isGifted === patron.isGifted &&
         isLifetime === patron.isLifetime &&
         patron.note === pledge.attributes.note &&
-        patron.email === pledge.attributes.email &&
+        // Patreon omits the email for some patrons, and the driver stores that undefined as null.
+        (patron.email ?? null) === (pledge.attributes.email ?? null) &&
         patronStatus === patron.status
       )
     ) {
