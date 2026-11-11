@@ -23,8 +23,6 @@ export interface TicketTypeConfig {
   buttonStyle?: number;
   requireLinkedAccount: boolean;
   thMin?: number;
-  maxAccounts?: number;
-  heroRequirements?: { name: string; level: number }[];
   minTrophies?: number;
   minLeagueTier?: string;
   questions?: { label: string; placeholder?: string; required: boolean }[];
@@ -34,7 +32,6 @@ export interface TicketTypeConfig {
   removeRoleIds: string[];
   openCategoryId?: string;
   sleepCategoryId?: string;
-  closedCategoryId?: string;
   namingConvention: string;
   createStaffThread: boolean;
   autoSleepHours?: number;
@@ -104,8 +101,8 @@ export interface TicketEntity {
   clanTag?: string;
   clanName?: string;
   status: 'open' | 'sleep' | 'closed';
+  /** Users who get a DM when the ticket's status changes. */
   notifyMeUserIds: string[];
-  transcriptUrl?: string;
   autoSleepAt?: Date;
   claimedBy?: string;
   createdAt: Date;

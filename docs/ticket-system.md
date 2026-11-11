@@ -119,7 +119,6 @@ interface TicketTypeConfig {
   thMin?: number; // minimum Town Hall level (only checked when requireLinkedAccount=true)
   minTrophies?: number; // minimum trophy count (only checked when requireLinkedAccount=true)
   minLeagueTier?: string; // minimum league tier ID from PLAYER_LEAGUE_MAP (requireLinkedAccount=true)
-  heroRequirements?: { name: string; level: number }[];
 
   // Application questions shown in a modal before ticket creation
   questions?: { label: string; placeholder?: string; required: boolean }[];
@@ -135,7 +134,6 @@ interface TicketTypeConfig {
   // Channel placement
   openCategoryId?: string;
   sleepCategoryId?: string;
-  closedCategoryId?: string;
 
   namingConvention: string; // see Channel Naming Conventions
   createStaffThread: boolean; // create a private thread for staff on ticket open
@@ -158,7 +156,7 @@ interface TicketGuildSettingsEntity {
 }
 ```
 
-**Saved reply variables** — resolved in `sendReply`, defined as `SAVED_REPLY_VARIABLES` in `tickets.entity.ts`, and listed in the dashboard's Saved Replies section so users can reference them: `{user_mention}`, `{user_name}`, `{account_name}`, `{account_th}`, `{account_heroes}`, `{clan_name}`, `{clan_tag}`, `{clan_link}`, `{clan_leader}`, `{clan_leader_mention}`, `{ticket_count}`, `{ticket_status}`, `{server_name}`. `{clan_leader}` is the leader of the clan set with **Set Clan**, read live from the game, and `{clan_leader_mention}` mentions the Discord account linked to them. Either is left unresolved when there's no clan or no linked leader. Any unknown or unresolved `{...}` token triggers a fill-in modal before the reply is sent.
+**Saved reply variables** — resolved in `sendReply`, defined as `SAVED_REPLY_VARIABLES` in `tickets.entity.ts`, and listed in the dashboard's Saved Replies section so users can reference them: `{user_mention}`, `{user_name}`, `{account_name}`, `{account_th}`, `{account_heroes}`, `{clan_name}`, `{clan_tag}`, `{clan_link}`, `{clan_leader}`, `{clan_leader_mention}`, `{ticket_count}`, `{ticket_status}`, `{server_name}`. `{account_heroes}` lists the linked account's home village hero levels (`Barbarian King 95, Archer Queen 95`), read live and only when the template uses it. `{clan_leader}` is the leader of the clan set with **Set Clan**, read live from the game, and `{clan_leader_mention}` mentions the Discord account linked to them. These three are left unresolved when the game API can't answer, or when there's no clan or no linked leader. Any unknown or unresolved `{...}` token triggers a fill-in modal before the reply is sent.
 
 ### `TicketEntity` (collection: `Tickets`)
 
@@ -182,7 +180,6 @@ interface TicketEntity {
   clanName?: string;
   status: 'open' | 'sleep' | 'closed';
   notifyMeUserIds: string[];
-  transcriptUrl?: string;
   autoSleepAt?: Date; // set on creation if autoSleepHours configured
   claimedBy?: string; // Discord user ID of the admin who claimed the ticket
   createdAt: Date;
@@ -247,7 +244,7 @@ Opened via **Edit / Delete** next to a type. Sections:
 | **Staff Roles**                  | Ping roles (full access + notify), Viewer roles (read only), Add roles, Remove roles                                                   |
 | **Rules**                        | TH min, min trophies, min league tier, require linked account, staff thread, allow claiming                                            |
 | **Questions**                    | Up to 5 text-input questions shown in a modal before ticket creation                                                                   |
-| **Categories**                   | Open / Sleep / Closed Discord category channels                                                                                        |
+| **Categories**                   | Open / Sleep Discord category channels (closing deletes the channel)                                                                   |
 | **Naming**                       | Channel naming convention                                                                                                              |
 
 ### Emoji validation
@@ -489,7 +486,7 @@ All buttons in the ticket channel send CV2-format responses (no `content` field 
 | **Reply**         | `reply`                      | Shows saved reply select menu; supports variable fill-in modal for unknown vars                                                                                                                                                                                                                                    |
 | **Set Clan**      | `set-clan`                   | Clan select menu (inline collector); updates `clanTag`/`clanName` on ticket and re-edits the embed via `interaction.message.edit`                                                                                                                                                                                  |
 | **View Account**  | routes to `player` cmd       | Link button in ticket header (only shown when `accountTag` set); no in-file handler                                                                                                                                                                                                                                |
-| **Notify Me**     | `notify`                     | Toggles `notifyMeUserIds` array on ticket                                                                                                                                                                                                                                                                          |
+| **Notify Me**     | `notify`                     | Toggles the user in `notifyMeUserIds`. `TicketHandler` DMs them when the ticket is slept, reopened or closed                                                                                                                                                                                                       |
 | **Claim**         | `claim`                      | Sets `claimedBy`. Gives the claimer a user overwrite that includes Manage Channels (staff checks use channel Manage Channels, so without it the claimer would lose access to staff actions). Removes all `pingRoleIds` + `viewOnlyRoleIds` overwrites and rebuilds the embed. Only shown if `btn.allowClaim=true`. |
 | **Unclaim**       | `unclaim`                    | Clears `claimedBy`. Deletes the claimer's overwrite, or strips its staff permissions when the claimer is the creator. Restores all role overwrites and rebuilds the embed. Only the claimer can unclaim.                                                                                                           |
 

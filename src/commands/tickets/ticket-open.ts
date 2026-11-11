@@ -1024,9 +1024,11 @@ export default class TicketOpenCommand extends Command {
       });
     }
 
-    const [creatorMember, leader] = await Promise.all([
+    const wantsHeroes = !!ticket.accountTag && template.content.includes('{account_heroes}');
+    const [creatorMember, leader, heroes] = await Promise.all([
       interaction.guild!.members.fetch(ticket.creatorId).catch(() => null),
-      ticket.clanTag ? this.getClanLeader(ticket.clanTag) : null
+      ticket.clanTag ? this.getClanLeader(ticket.clanTag) : null,
+      wantsHeroes ? this.getAccountHeroes(ticket.accountTag!) : null
     ]);
 
     const vars: Record<string, string> = {
@@ -1034,7 +1036,6 @@ export default class TicketOpenCommand extends Command {
       user_name: creatorMember?.user.username ?? ticket.creatorId,
       account_name: ticket.accountName ?? '',
       account_th: ticket.accountTh ? `TH${ticket.accountTh}` : '',
-      account_heroes: '',
       clan_name: ticket.clanName ?? '',
       clan_tag: ticket.clanTag ?? '',
       clan_link: ticket.clanTag
@@ -1042,6 +1043,7 @@ export default class TicketOpenCommand extends Command {
         : '',
       // Left out when unknown, so staff are asked to fill them in.
       ...(leader ? { clan_leader: leader.name } : {}),
+      ...(heroes !== null || !ticket.accountTag ? { account_heroes: heroes ?? '' } : {}),
       ...(leader?.userId ? { clan_leader_mention: `<@${leader.userId}>` } : {}),
       ticket_count: String(ticket.count).padStart(4, '0'),
       ticket_status: ticket.status,
@@ -1208,14 +1210,14 @@ export default class TicketOpenCommand extends Command {
         .collection<TicketEntity>(Collections.TICKETS)
         .updateOne({ channelId }, { $pull: { notifyMeUserIds: userId } });
       await interaction.editReply(
-        this.reply('You will no longer be notified when the ticket creator sends a message.')
+        this.reply("You will no longer get a DM when this ticket's status changes.")
       );
     } else {
       await this.client.db
         .collection<TicketEntity>(Collections.TICKETS)
         .updateOne({ channelId }, { $addToSet: { notifyMeUserIds: userId } });
       await interaction.editReply(
-        this.reply('You will be notified when the ticket creator sends a message.')
+        this.reply('You will get a DM when this ticket is put to sleep, reopened or closed.')
       );
     }
   }
@@ -1349,6 +1351,18 @@ export default class TicketOpenCommand extends Command {
       .collection<PlayerLinksEntity>(Collections.PLAYER_LINKS)
       .findOne({ tag: leader.tag });
     return { name: leader.name, userId: link?.userId ?? null };
+  }
+
+  /** Home village hero levels, e.g. "Barbarian King 95, Archer Queen 95". Null if the API fails. */
+  private async getAccountHeroes(tag: string) {
+    const { body, res } = await this.client.coc
+      .getPlayer(tag)
+      .catch(() => ({ body: null, res: null }));
+    if (!res?.ok || !body) return null;
+    return body.heroes
+      .filter((hero) => hero.village === 'home')
+      .map((hero) => `${hero.name} ${hero.level}`)
+      .join(', ');
   }
 
   public async getTicketByChannel(channelId: string) {
