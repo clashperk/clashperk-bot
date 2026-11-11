@@ -1,5 +1,5 @@
 import { captureException, setContext } from '@sentry/node';
-import { AxiosError } from 'axios';
+import { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { Agent as HttpAgent } from 'http';
 import { Agent as HttpsAgent } from 'https';
 import { container } from 'tsyringe';
@@ -14,6 +14,10 @@ const isExpectedError = (error: AxiosError) => {
   const url = error.config?.url ?? '';
   return EXPECTED_NOT_FOUND.some((pattern) => pattern.test(url));
 };
+
+// Cloudflare resets open connections when it moves them between data centers. A GET is safe to send again.
+const RETRYABLE_CODES = new Set(['ECONNRESET', 'EPIPE']);
+type RetryableConfig = InternalAxiosRequestConfig & { retried?: boolean };
 
 // the host has no IPv6 route, so every AAAA attempt ends in ENETUNREACH before falling back
 const agentOptions = { keepAlive: true, family: 4 } as const;
@@ -36,8 +40,24 @@ const httpClient = new HttpClient({
 
 httpClient.instance.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ message: string }>) => {
+  async (error: AxiosError<{ message: string }>) => {
     const client = container.resolve(Client);
+
+    const config = error.config as RetryableConfig | undefined;
+    if (
+      config &&
+      !config.retried &&
+      !error.response &&
+      config.method?.toUpperCase() === 'GET' &&
+      RETRYABLE_CODES.has(error.code ?? '')
+    ) {
+      config.retried = true;
+      // A failed retry goes through this interceptor again, which logs and reports it.
+      const response = await httpClient.instance.request(config);
+      client.logger.debug(`${response.status} GET ${config.url} after 1 retry`, { label: 'AXIOS' });
+      return response;
+    }
+
     client.logger.error(
       `${error.config?.method?.toUpperCase()} ${error.config?.url} ${JSON.stringify(error.response?.data || error.code, null, 0)}`,
       { label: 'AXIOS' }
