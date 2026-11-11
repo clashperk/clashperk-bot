@@ -89,7 +89,7 @@ export default class MessageCreateListener extends Listener {
     }
 
     try {
-      this.client.logger.log(`${command.id}`, {
+      this.client.logger.debug(`${command.id}`, {
         label: `${message.guild.name}/${message.author.displayName}`
       });
       await command.run(message, args);
@@ -198,7 +198,7 @@ export default class MessageCreateListener extends Listener {
     markShown(message.channelId, sent);
     countLinkCards(sent, source, 'sent');
     const linkTypes = sent.map((link) => link.type);
-    this.client.logger.log(`${linkTypes.map((type) => `link-${type}`).join(', ')} ~ ${source}`, {
+    this.client.logger.debug(`${linkTypes.map((type) => `link-${type}`).join(', ')} ~ ${source}`, {
       label: `${message.guild.name}/${message.author.displayName}`
     });
     void this.client.stats.links(linkTypes);
