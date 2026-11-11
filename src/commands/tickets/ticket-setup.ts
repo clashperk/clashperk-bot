@@ -1017,7 +1017,7 @@ export default class TicketSetupCommand extends Command {
         new SectionBuilder()
           .addTextDisplayComponents(
             new TextDisplayBuilder().setContent(
-              `**Categories**\nOpen: ${b.openCategoryId ? `<#${b.openCategoryId}>` : '*(none)*'} | Sleep: ${b.sleepCategoryId ? `<#${b.sleepCategoryId}>` : '*(none)*'} | Closed: ${b.closedCategoryId ? `<#${b.closedCategoryId}>` : '*(none)*'}`
+              `**Categories**\nOpen: ${b.openCategoryId ? `<#${b.openCategoryId}>` : '*(none)*'} | Sleep: ${b.sleepCategoryId ? `<#${b.sleepCategoryId}>` : '*(none)*'}`
             )
           )
           .setButtonAccessory(
@@ -1738,8 +1738,7 @@ export default class TicketSetupCommand extends Command {
     const customIds = {
       modal: this.client.uuid(action.user.id),
       open: nanoid(8),
-      sleep: nanoid(8),
-      closed: nanoid(8)
+      sleep: nanoid(8)
     };
 
     const modal = new ModalBuilder().setCustomId(customIds.modal).setTitle('Edit Categories');
@@ -1759,14 +1758,6 @@ export default class TicketSetupCommand extends Command {
           .setRequired(false)
           .setMaxValues(1)
           .setDefaultChannels(btn.sleepCategoryId ? [btn.sleepCategoryId] : [])
-      ),
-      new LabelBuilder().setLabel('Closed tickets category').setChannelSelectMenuComponent(
-        new ChannelSelectMenuBuilder()
-          .setCustomId(customIds.closed)
-          .setChannelTypes(ChannelType.GuildCategory)
-          .setRequired(false)
-          .setMaxValues(1)
-          .setDefaultChannels(btn.closedCategoryId ? [btn.closedCategoryId] : [])
       )
     );
 
@@ -1778,8 +1769,6 @@ export default class TicketSetupCommand extends Command {
 
     const openCategoryId = submit.fields.getSelectedChannels(customIds.open)?.first()?.id ?? null;
     const sleepCategoryId = submit.fields.getSelectedChannels(customIds.sleep)?.first()?.id ?? null;
-    const closedCategoryId =
-      submit.fields.getSelectedChannels(customIds.closed)?.first()?.id ?? null;
 
     await this.ticketPanels.updateOne(
       { '_id': panel._id, 'ticketTypes.id': buttonId },
@@ -1787,7 +1776,6 @@ export default class TicketSetupCommand extends Command {
         $set: {
           'ticketTypes.$.openCategoryId': openCategoryId,
           'ticketTypes.$.sleepCategoryId': sleepCategoryId,
-          'ticketTypes.$.closedCategoryId': closedCategoryId,
           'updatedAt': new Date()
         }
       }

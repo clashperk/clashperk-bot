@@ -104,8 +104,10 @@ export class TicketHandler {
     await this.client.redis.connection.del(REDIS_KEY(channelId));
     const guild = this.client.guilds.cache.get(ticket.guildId);
     const { panel, btn } = await this.getPanelAndType(ticket);
-    if (guild) await this.revertCreatorRoles(guild, ticket, btn);
     await this.logStatusChange(panel, ticket, 'Closed', ticket.status, 'closed', null);
+    if (!guild) return;
+    await this.revertCreatorRoles(guild, ticket, btn);
+    await this.notifySubscribers(guild, ticket, 'was closed (its channel was deleted)');
   }
 
   public async closeTicket(
@@ -154,6 +156,7 @@ export class TicketHandler {
       .catch(() => null);
 
     await this.logStatusChange(panel, ticket, 'Closed', ticket.status, 'closed', closedBy);
+    await this.notifySubscribers(channel.guild, ticket, 'was closed');
     setTimeout(() => channel.delete('Ticket closed').catch(() => null), 3000);
   }
 
@@ -190,6 +193,7 @@ export class TicketHandler {
       .catch(() => null);
 
     await this.logStatusChange(panel, ticket, 'Slept', 'open', 'sleep', sleptBy);
+    await this.notifySubscribers(channel.guild, ticket, 'was put to sleep');
   }
 
   public async reopenTicket(
@@ -235,6 +239,7 @@ export class TicketHandler {
       .send({ content: `Ticket reopened by <@${reopenedBy}>.`, allowedMentions: { parse: [] } })
       .catch(() => null);
     await this.logStatusChange(panel, ticket, 'Reopened', 'sleep', 'open', reopenedBy);
+    await this.notifySubscribers(channel.guild, ticket, 'was reopened');
   }
 
   /** A claimer who opened the ticket keeps their creator access, minus the staff permissions. */
@@ -276,6 +281,13 @@ export class TicketHandler {
     }
     for (const roleId of btn.removeRoleIds ?? []) {
       await member.roles.add(roleId).catch(() => null);
+    }
+  }
+
+  private async notifySubscribers(guild: Guild, ticket: TicketEntity, change: string) {
+    const content = `Ticket #${this.ticketNumber(ticket)} in **${guild.name}** ${change}.`;
+    for (const userId of ticket.notifyMeUserIds ?? []) {
+      await this.client.users.send(userId, { content }).catch(() => null);
     }
   }
 
