@@ -26,4 +26,3 @@ updates:
       - dependency-name: '@google-cloud/*'
       - dependency-name: '@googleapis/*'
       - dependency-name: 'google-auth-library'
-      - dependency-name: '@elastic/elasticsearch'
