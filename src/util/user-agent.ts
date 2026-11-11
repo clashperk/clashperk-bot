@@ -5,8 +5,8 @@ const pkg = JSON.parse(readFileSync(new URL('../../../package.json', import.meta
   version: string;
 };
 
-/** `clashperk/<version>/<cluster>`, plus ` (<application id>)` once the bot has logged in. */
+/** `clashperk/bot/<version>/<cluster>`, plus ` (<application id>)` once the bot has logged in. */
 export function userAgent(applicationId?: string) {
-  const base = `clashperk/${pkg.version}/${getInfo().CLUSTER}`;
+  const base = `clashperk/bot/${pkg.version}/${getInfo().CLUSTER}`;
   return applicationId ? `${base} (${applicationId})` : base;
 }
