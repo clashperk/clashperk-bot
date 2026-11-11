@@ -33,11 +33,22 @@ const ACTIONS: Record<string, { type: ClashLinkType; param: string }> = {
   openlayout: { type: 'base', param: 'id' }
 };
 
+/** Text Discord would preview: no code, no spoilers, no `<link>` (Discord's "don't preview"). */
+function previewableText(content: string) {
+  return content
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`[^`]*`/g, ' ')
+    .replace(/\|\|[\s\S]*?\|\|/g, ' ')
+    .replace(/<https?:\/\/[^\s>]+>/gi, ' ');
+}
+
 /** Share links from the game (`link.clashofclans.com/<lang>?action=...`), deduped, in order. */
 export function findClashLinks(content: string, limit = MAX_LINKS_PER_MESSAGE): ClashLink[] {
   const links = new Map<string, ClashLink>();
   // A fresh regex per call: a shared global one keeps lastIndex between messages.
-  for (const [text] of content.matchAll(/https?:\/\/link\.clashofclans\.com\/[^\s<>]+/gi)) {
+  for (const [text] of previewableText(content).matchAll(
+    /https?:\/\/link\.clashofclans\.com\/[^\s<>]+/gi
+  )) {
     let url: URL;
     try {
       url = new URL(text);
