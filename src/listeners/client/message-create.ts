@@ -1,10 +1,12 @@
 import { Settings } from '@app/constants';
-import { Message, PermissionFlagsBits } from 'discord.js';
+import { ClashLinkType, LinkParsingMode } from '@app/entities';
+import { BaseMessageOptions, Message, PermissionFlagsBits } from 'discord.js';
 import {
   canReply,
   ClashLink,
   findClashLinks,
-  linkTypesFor,
+  isOnlyClashLinks,
+  linkModesFor,
   markShown,
   onlyClashLinks,
   recordReply,
@@ -32,8 +34,8 @@ export default class MessageCreateListener extends Listener {
 
     // Most messages stop here: nothing below runs unless ClashPerk is mentioned or links are on.
     const mentioned = message.mentions.users.has(this.client.user.id);
-    const linkTypes = mentioned ? null : linkTypesFor(this.client, message.channel);
-    if (!mentioned && !linkTypes?.size) return;
+    const linkModes = mentioned ? null : linkModesFor(this.client, message.channel);
+    if (!mentioned && !linkModes?.size) return;
 
     if (this.inhibitor(message)) return;
 
@@ -53,8 +55,8 @@ export default class MessageCreateListener extends Listener {
       return;
 
     const found = findClashLinks(message.content);
-    const links = linkTypes ? found.filter((link) => linkTypes.has(link.type)) : found;
-    if (links.length) return this.expandLinks(message, links, mentioned ? 'mention' : 'channel');
+    const links = linkModes ? found.filter((link) => linkModes.has(link.type)) : found;
+    if (links.length) return this.expandLinks(message, links, linkModes);
     if (!mentioned) return;
 
     const parsed = [`<@${this.client.user.id}>`, `<@!${this.client.user.id}>`]
@@ -99,14 +101,18 @@ export default class MessageCreateListener extends Listener {
     }
   }
 
-  /** A mention asks for every link. Otherwise each link type follows its own channels. */
+  /**
+   * A mention asks for every link and always replies. Otherwise each type follows its own rule:
+   * reply, post on its own, or post on its own and delete the member's message.
+   */
   private async expandLinks(
     message: Message<true>,
-    links: ReturnType<typeof findClashLinks>,
-    source: 'mention' | 'channel'
+    links: ClashLink[],
+    modes: Map<ClashLinkType, LinkParsingMode> | null
   ) {
     if (this.client.settings.hasCustomBot(message.guild) && !this.client.isCustom()) return;
 
+    const source = modes ? 'channel' : 'mention';
     const { fresh, repeated } = splitRepeats(message.channelId, links);
     countLinkCards(repeated, source, 'repeated');
     if (!fresh.length) return;
@@ -116,6 +122,32 @@ export default class MessageCreateListener extends Listener {
       return countLinkCards(fresh, source, 'rate_limited');
     }
     recordReply(message.channelId, memberKey);
+
+    const permissions = message.channel.permissionsFor(this.client.user);
+    const modeOf = (link: ClashLink) => modes?.get(link.type) ?? 'reply';
+    const screenshot = message.attachments.find((file) => file.contentType?.startsWith('image/'));
+    const baseLinks = fresh.filter((link) => link.type === 'base');
+    // Every link must get a card and the text must be only links. A screenshot is kept by its layout post.
+    const replace =
+      !!modes &&
+      fresh.every((link) => modeOf(link) === 'replace') &&
+      !!permissions?.has(PermissionFlagsBits.ManageMessages) &&
+      isOnlyClashLinks(message.content) &&
+      findClashLinks(message.content, Infinity).length === fresh.length &&
+      message.attachments.every((file) => file === screenshot && baseLinks.length > 0);
+
+    const send = async (group: ClashLink[], payload: BaseMessageOptions) => {
+      const shared = `-# Shared by <@${message.author.id}>`;
+      // A Replace rule that can't delete this message replies instead.
+      if (!replace && group.some((link) => modeOf(link) !== 'message')) {
+        return message.reply({ ...payload, allowedMentions: { repliedUser: false } });
+      }
+      return message.channel.send({
+        ...payload,
+        content: [payload.content, shared].filter(Boolean).join('\n'),
+        allowedMentions: { parse: [] }
+      });
+    };
 
     const sent: ClashLink[] = [];
     const cards = fresh.filter((link) => link.type !== 'base');
@@ -128,30 +160,25 @@ export default class MessageCreateListener extends Listener {
       );
       countLinkCards(failed, source, 'lookup_failed');
       if (payload.embeds.length) {
-        const reply = await message
-          .reply({ ...payload, allowedMentions: { repliedUser: false } })
-          .catch(() => null);
+        const reply = await send(shown, payload).catch(() => null);
         if (reply) sent.push(...shown);
         else countLinkCards(shown, source, 'send_failed');
       }
     }
 
     // Base links get the same post as /layout, so Copy Layout, downloads and voting work.
-    const permissions = message.channel.permissionsFor(this.client.user);
     const layouts = this.client.commandHandler.getCommand(
       'layout-post'
     ) as unknown as LayoutCommand;
-    const screenshot =
-      message.attachments.find((file) => file.contentType?.startsWith('image/'))?.url ?? null;
-    for (const link of fresh.filter((link) => link.type === 'base')) {
+    for (const link of baseLinks) {
       const reply = await layouts
         .postLayout({
           guild: message.guild,
           link: link.url,
-          screenshot,
+          screenshot: screenshot?.url ?? null,
           userId: message.author.id,
           canReact: !!permissions?.has(PermissionFlagsBits.AddReactions),
-          send: (payload) => message.reply({ ...payload, allowedMentions: { repliedUser: false } })
+          send: (payload) => send([link], payload)
         })
         .catch(() => null);
       if (reply) sent.push(link);
@@ -159,7 +186,12 @@ export default class MessageCreateListener extends Listener {
     }
     if (!sent.length) return;
 
-    if (permissions?.has(PermissionFlagsBits.ManageMessages) && onlyClashLinks(message.content)) {
+    if (replace && sent.length === fresh.length) {
+      await message.delete().catch(() => null);
+    } else if (
+      permissions?.has(PermissionFlagsBits.ManageMessages) &&
+      onlyClashLinks(message.content)
+    ) {
       await message.suppressEmbeds(true).catch(() => null);
     }
 

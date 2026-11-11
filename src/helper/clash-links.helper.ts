@@ -1,5 +1,5 @@
 import { Settings } from '@app/constants';
-import { ClashLinkType, LinkParsingConfig } from '@app/entities';
+import { ClashLinkType, LinkParsingConfig, LinkParsingMode } from '@app/entities';
 import {
   ActionRowBuilder,
   APIEmbed,
@@ -36,6 +36,7 @@ const ACTIONS: Record<string, { type: ClashLinkType; param: string }> = {
 // Not global, so `.test()` keeps no state between messages.
 const CLASH_LINK_HINT = /link\.clashofclans\.com/i;
 const OTHER_LINK = /https?:\/\/(?!link\.clashofclans\.com)\S/i;
+const CLASH_LINK_URL = /https?:\/\/link\.clashofclans\.com\/\S+/gi;
 
 const CHANNEL_WINDOW_MS = 10_000;
 const CHANNEL_LIMIT = 5;
@@ -90,26 +91,30 @@ export function onlyClashLinks(content: string) {
   return !OTHER_LINK.test(content);
 }
 
-/** Link types that are on in this channel. Threads follow their channel, categories cover theirs. */
-export function linkTypesFor(client: Client, channel: GuildTextBasedChannel) {
+/** Link types that are on in this channel, with how each posts. Threads follow their channel. */
+export function linkModesFor(client: Client, channel: GuildTextBasedChannel) {
+  const modes = new Map<ClashLinkType, LinkParsingMode>();
   const config = client.settings.get<LinkParsingConfig | null>(
     channel.guild,
     Settings.LINK_PARSING,
     null
   );
-  if (!config) return new Set<ClashLinkType>();
-
   const parent = channel.isThread() ? channel.parent : channel;
-  if (!parent) return new Set<ClashLinkType>();
-  const types = (Object.keys(config) as ClashLinkType[]).filter((type) => {
+  if (!config || !parent) return modes;
+
+  for (const type of Object.keys(config) as ClashLinkType[]) {
     const rule = config[type];
-    return (
-      rule?.enabled &&
-      (rule.channelIds.includes(parent.id) ||
-        (!!parent.parentId && rule.categoryIds.includes(parent.parentId)))
-    );
-  });
-  return new Set(types);
+    const covered =
+      rule?.channelIds.includes(parent.id) ||
+      (!!parent.parentId && rule?.categoryIds.includes(parent.parentId));
+    if (rule?.enabled && covered) modes.set(type, rule.mode ?? 'reply');
+  }
+  return modes;
+}
+
+/** True when the text is nothing but game links, so deleting it loses nothing else. */
+export function isOnlyClashLinks(content: string) {
+  return !content.replace(CLASH_LINK_URL, '').trim();
 }
 
 /** Links this channel already got a card for in the last 2 minutes are left out. */
