@@ -140,8 +140,7 @@ Links to the member-join and role-sync demo videos.
 
 > Message content is only read where a server's admins turn it on. Link parsing is a server setting,
 > off by default. Admins pick the channels or categories and the link types (player, clan, army,
-> base). Members can also expand a single message themselves with the right-click "Expand Clash
-> link" command instead. Ticket transcripts are a per-panel setting that admins can switch off, and
+> base). Ticket transcripts are a per-panel setting that admins can switch off, and
 > every ticket says when transcripts are on.
 
 ### C2. Storing message content off-platform? (after build)
@@ -177,8 +176,7 @@ Links to the member-join and role-sync demo videos.
 > so everyone in the channel can see it without opening the game. The person reading the link is
 > the one who benefits, not the one who posted it, and the poster usually doesn't think to run a
 > command. It's a server setting, off by default, and admins choose the channels and link types.
-> We also offer a right-click "Expand Clash link" command and @mention support, and the slash
-> commands keep working, for servers that don't turn it on.
+> Servers that leave it off can still @mention ClashPerk with a link, or use the slash commands.
 >
 > We only read messages in channels where one of these features is on. We don't store message
 > content, log it, or use it for anything else.
