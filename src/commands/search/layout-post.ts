@@ -12,7 +12,9 @@ import {
   ComponentType,
   DiscordjsError,
   DiscordjsErrorCodes,
+  FileUploadBuilder,
   Guild,
+  LabelBuilder,
   Message,
   MessageFlags,
   ModalBuilder,
@@ -96,12 +98,12 @@ export default class LayoutCommand extends Command {
     const modalCustomId = this.client.uuid(interaction.user.id);
     const customIds = {
       link: this.client.uuid(interaction.user.id),
-      notes: this.client.uuid(interaction.user.id)
+      notes: this.client.uuid(interaction.user.id),
+      screenshot: this.client.uuid(interaction.user.id)
     };
     const modal = new ModalBuilder().setCustomId(modalCustomId).setTitle('Edit Layout');
     const linkInput = new TextInputBuilder()
       .setCustomId(customIds.link)
-      .setLabel('Layout Link')
       .setPlaceholder('Enter Layout Link')
       .setStyle(TextInputStyle.Paragraph)
       .setMaxLength(200)
@@ -112,7 +114,6 @@ export default class LayoutCommand extends Command {
 
     const descriptionInput = new TextInputBuilder()
       .setCustomId(customIds.notes)
-      .setLabel('Notes')
       .setPlaceholder(
         'Write anything you want (markdown, hyperlink and custom emojis are supported)'
       )
@@ -128,9 +129,19 @@ export default class LayoutCommand extends Command {
       descriptionInput.setValue(layoutTemplate);
     }
 
-    modal.addComponents(
-      new ActionRowBuilder<TextInputBuilder>().addComponents(linkInput),
-      new ActionRowBuilder<TextInputBuilder>().addComponents(descriptionInput)
+    modal.addLabelComponents(
+      new LabelBuilder().setLabel('Layout Link').setTextInputComponent(linkInput),
+      new LabelBuilder().setLabel('Notes').setTextInputComponent(descriptionInput),
+      new LabelBuilder()
+        .setLabel('Screenshot')
+        .setDescription('Optional. A new image replaces the current one.')
+        .setFileUploadComponent(
+          new FileUploadBuilder()
+            .setCustomId(customIds.screenshot)
+            .setMinValues(0)
+            .setMaxValues(1)
+            .setRequired(false)
+        )
     );
 
     try {
@@ -143,8 +154,17 @@ export default class LayoutCommand extends Command {
 
       args.layout_link = modalSubmitInteraction.fields.getTextInputValue(customIds.link);
       args.notes = modalSubmitInteraction.fields.getTextInputValue(customIds.notes);
+      const image = modalSubmitInteraction.fields.getUploadedFiles(customIds.screenshot)?.first();
 
       await modalSubmitInteraction.deferUpdate();
+
+      if (image && !image.contentType?.startsWith('image/')) {
+        return await modalSubmitInteraction.followUp({
+          flags: MessageFlags.Ephemeral,
+          content: 'The screenshot must be an image. Nothing was changed.'
+        });
+      }
+      if (image) args.screenshot = image.url;
 
       return await this.handleSubmit(interaction, args);
     } catch (error) {
@@ -179,7 +199,9 @@ export default class LayoutCommand extends Command {
         ? interaction.message.interactionMetadata?.user.id || interaction.user.id
         : interaction.user.id,
       canReact: interaction.appPermissions.has(PermissionFlagsBits.AddReactions),
-      send: (payload) => interaction.editReply(payload)
+      // Without `attachments: []` an edit keeps the old image next to the new one.
+      send: (payload) =>
+        interaction.editReply({ ...payload, ...(payload.files ? { attachments: [] } : {}) })
     });
   }
 
