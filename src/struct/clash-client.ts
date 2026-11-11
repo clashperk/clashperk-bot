@@ -13,6 +13,7 @@ import {
 import { getInfo } from 'discord-hybrid-sharding';
 import moment from 'moment';
 import { isWinner } from '../helper/cwl.helper.js';
+import { userAgent } from '../util/user-agent.js';
 import { Client } from './client.js';
 import { HotPlayerTracer } from './hot-player-tracer.js';
 
@@ -55,6 +56,7 @@ export class ClashClient extends RestManager {
       retryOn: { statusCodes: [], errorCodes: ['ECONNRESET', 'EPIPE', 'UND_ERR_SOCKET'] },
       keys: [...keys],
       baseURL: process.env.CLASH_OF_CLANS_API_BASE_URL,
+      userAgent: userAgent(),
       onError: ({ path, status, body, retries, elapsed }) => {
         if (retries) {
           this.client.logger.debug(`${status} ${path} after ${retries} retry in ${elapsed} ms`, {
