@@ -83,7 +83,7 @@ export class ClientUtil {
         errored_at: new Date()
       });
       captureException(error);
-      this.client.logger.error(error, { label: 'ClientUtil' });
+      this.client.logger.warn(error, { label: 'ClientUtil' });
 
       return guild.members.cache;
     }

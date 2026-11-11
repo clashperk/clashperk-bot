@@ -68,8 +68,9 @@ export class ClashClient extends RestManager {
           !(!(body as Record<string, string>)?.message && status === 403) &&
           !(path.includes('war') && status === 404)
         ) {
-          if (status === 500) {
-            this.client.logger.debug(`${status} ${path} ${JSON.stringify(body)}`, {
+          // 500 is a timeout, a dropped connection or a CoC API failure. Other codes are bad tags and the like.
+          if (status >= 500) {
+            this.client.logger.warn(`${status} ${path} ${JSON.stringify(body)}`, {
               label: 'HTTP'
             });
           } else {

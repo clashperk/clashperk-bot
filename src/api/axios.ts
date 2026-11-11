@@ -73,12 +73,13 @@ httpClient.instance.interceptors.response.use(
       return response;
     }
 
-    client.logger.error(
+    const expected = isExpectedError(error);
+    client.logger[expected ? 'debug' : 'error'](
       `${error.config?.method?.toUpperCase()} ${error.config?.url} ${JSON.stringify(error.response?.data || error.code, null, 0)}`,
       { label: 'AXIOS' }
     );
 
-    if (!isExpectedError(error)) {
+    if (!expected) {
       setContext('http_call_errored', {
         response: error.response?.data || {},
         url: error.config?.url,
