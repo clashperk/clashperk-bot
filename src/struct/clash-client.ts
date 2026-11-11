@@ -33,10 +33,23 @@ export function timeoutSignal(timeout: number, path: string) {
   return controller.signal;
 }
 
+type PlayerResult = Awaited<ReturnType<RestManager['getPlayer']>>;
+
+interface PendingPlayer {
+  request: Promise<PlayerResult>;
+  shared: boolean;
+}
+
+const copyBody = (result: PlayerResult): PlayerResult => ({
+  ...result,
+  body: structuredClone(result.body)
+});
+
 export class ClashClient extends RestManager {
   private bearerToken!: string;
   private linkApiURL = 'https://cocdiscord.link';
   private hotPlayers = new HotPlayerTracer(getInfo().CLUSTER);
+  private pendingPlayers = new Map<string, PendingPlayer>();
 
   public constructor(private readonly client: Client) {
     const keys = process.env.CLASH_OF_CLANS_API_KEYS?.split(',') ?? [];
@@ -82,10 +95,26 @@ export class ClashClient extends RestManager {
   }
 
   public override getPlayer(playerTag: string, options?: OverrideOptions) {
+    const tag = this.fixTag(playerTag);
     if (this.client.isFeatureEnabled(FeatureFlags.HOT_PLAYER_TRACE, 'global')) {
-      this.hotPlayers.record(this.fixTag(playerTag), this.getPlayer);
+      this.hotPlayers.record(tag, this.getPlayer);
     }
-    return super.getPlayer(playerTag, options);
+    if (options) return super.getPlayer(playerTag, options);
+
+    // Callers that ask for a player already being fetched share that request. When it was shared, each
+    // caller gets its own copy of the body, since some callers change it.
+    const pending = this.pendingPlayers.get(tag);
+    if (pending) {
+      pending.shared = true;
+      return pending.request.then(copyBody);
+    }
+
+    const entry: PendingPlayer = {
+      shared: false,
+      request: super.getPlayer(playerTag).finally(() => this.pendingPlayers.delete(tag))
+    };
+    this.pendingPlayers.set(tag, entry);
+    return entry.request.then((result) => (entry.shared ? copyBody(result) : result));
   }
 
   public getClanURL(clanTag: string) {
