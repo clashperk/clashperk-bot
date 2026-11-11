@@ -17,7 +17,7 @@ const isExpectedError = (error: AxiosError) => {
 
 // Cloudflare resets open connections when it moves them between data centers. A GET is safe to send again.
 const RETRYABLE_CODES = new Set(['ECONNRESET', 'EPIPE']);
-type RetryableConfig = InternalAxiosRequestConfig & { retried?: boolean };
+type RetryableConfig = InternalAxiosRequestConfig & { retried?: boolean; startedAt?: number };
 
 // the host has no IPv6 route, so every AAAA attempt ends in ENETUNREACH before falling back
 const agentOptions = { keepAlive: true, family: 4 } as const;
@@ -38,6 +38,11 @@ const httpClient = new HttpClient({
   }
 });
 
+httpClient.instance.interceptors.request.use((config: RetryableConfig) => {
+  config.startedAt ??= performance.now();
+  return config;
+});
+
 httpClient.instance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<{ message: string }>) => {
@@ -54,7 +59,10 @@ httpClient.instance.interceptors.response.use(
       config.retried = true;
       // A failed retry goes through this interceptor again, which logs and reports it.
       const response = await httpClient.instance.request(config);
-      client.logger.debug(`${response.status} GET ${config.url} after 1 retry`, { label: 'AXIOS' });
+      const elapsed = Math.round(performance.now() - (config.startedAt ?? performance.now()));
+      client.logger.debug(`${response.status} GET ${config.url} after 1 retry in ${elapsed} ms`, {
+        label: 'AXIOS'
+      });
       return response;
     }
 
