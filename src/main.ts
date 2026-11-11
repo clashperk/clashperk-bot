@@ -9,6 +9,7 @@ import i18next from 'i18next';
 import 'moment-duration-format';
 import { fileURLToPath } from 'node:url';
 import { inspect } from 'node:util';
+import { errorStack } from './util/logger.js';
 import { Client } from './struct/client.js';
 import { Backend } from './util/i18n.backend.js';
 import { defaultOptions } from './util/i18n.config.js';
@@ -22,7 +23,7 @@ await i18next.use(Backend).init({
 });
 
 client.on('error', (error) => {
-  console.error(inspect(error, { depth: Infinity }));
+  console.error(errorStack(error));
   Sentry.captureException(error);
 });
 
@@ -32,7 +33,7 @@ client.on('warn', (warn) => {
 });
 
 process.on('unhandledRejection', (error: DiscordAPIError) => {
-  console.error(inspect(error, { depth: Infinity }));
+  console.error(errorStack(error));
   Sentry.captureException(error);
 });
 

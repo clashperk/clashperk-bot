@@ -2,7 +2,7 @@ import { Collections, Flags, INACTIVE_GUILD_DURATION } from '@app/constants';
 import { ClanLogsEntity, ClanStoresEntity, FlagAlertLogsEntity } from '@app/entities';
 import { captureException } from '@sentry/node';
 import { Collection } from 'discord.js';
-import { inspect } from 'node:util';
+import { errorStack } from '../util/logger.js';
 import { Client } from '../struct/client.js';
 import { Queue } from '../struct/queue.js';
 import { AutoBoardLog } from './auto-board-log.js';
@@ -111,7 +111,7 @@ export class Enqueuer {
             break;
         }
       } catch (error) {
-        console.error(inspect(error, { depth: Infinity }));
+        console.error(errorStack(error));
         captureException(error);
       } finally {
         this.queue.shift();

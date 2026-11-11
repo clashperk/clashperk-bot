@@ -148,7 +148,6 @@ export class ClanWarLog extends RootLog {
       this.client.logger.error(`${error.toString()} {${cache._id.toString()}}`, {
         label: ClanWarLog.name
       });
-      console.log(error);
       return null;
     }
   }
@@ -160,7 +159,6 @@ export class ClanWarLog extends RootLog {
       this.client.logger.error(`${error.toString()} {${cache._id.toString()}}`, {
         label: ClanWarLog.name
       });
-      console.log(error);
       return null;
     }
   }

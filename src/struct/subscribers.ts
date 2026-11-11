@@ -623,8 +623,7 @@ export class Subscribers {
       const result = (await res.json()) as PatreonApiOutput;
       return result?.data ? result : null;
     } catch (error) {
-      this.client.logger.log('Failed to fetch Patreon API', { label: 'PATREON' });
-      this.client.logger.error(error, { label: 'PATREON' });
+      this.client.logger.error(`Failed to fetch Patreon API: ${error}`, { label: 'PATREON' });
       return null;
     }
   }
