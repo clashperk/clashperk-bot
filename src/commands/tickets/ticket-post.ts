@@ -77,9 +77,9 @@ export default class TicketPostCommand extends Command {
 
     const ticketButtons: ButtonBuilder[] = useButtonMode
       ? panel.ticketTypes.map((type) => {
+          // No `action`: with it the ID passes 100 chars and lands in Redis with a TTL.
           const customId = this.createId({
             cmd: 'ticket-open',
-            action: 'open',
             pid: panel._id.toHexString(),
             bid: type.id,
             defer: false
