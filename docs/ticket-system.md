@@ -472,7 +472,7 @@ The slash command is `ticket` with subcommands. It's in `HIDDEN_COMMANDS`, so it
 
 **Transcripts and message content:** the client doesn't request the privileged `MessageContent` intent, so Discord returns empty `content` for other users' messages. Transcripts only carry the text of the bot's own messages and of messages that mention the bot.
 
-The dashboard lists every ticket (`GET /guilds/:guildId/tickets/list`, filterable by status) and closes open or sleeping ones through `POST /guilds/:guildId/tickets/:ticketId/close` in the API. That route does what **Delete Ticket** does: it posts the transcript of the last 100 messages to the panel's `ticketClose` log and a line to `statusChange`, sets `status`, `closedAt` and `closedBy`, and deletes the channel. A ticket whose channel is already gone is only marked closed.
+The dashboard lists every ticket (`GET /tickets/:guildId/list`, filterable by status) and closes open or sleeping ones through `POST /tickets/:guildId/:ticketId/close` in the API. That route does what `TicketHandler.closeTicket` does: it posts the transcript of the last 100 messages to the panel's `ticketClose` log and a line to `statusChange`, sets `status`, `closedAt` and `closedBy`, unsets `autoSleepAt`, reverts the creator's roles, DMs Notify Me subscribers and deletes the channel. Keep the two in step. A ticket whose channel is already gone is only marked closed.
 
 ---
 
@@ -523,7 +523,7 @@ Three optional log channels per panel, configured in the **Logging** dashboard s
 
 ## Auto-sleep
 
-`autoSleepHours` on a type sets `autoSleepAt` on new tickets and a Redis key `ticket:autosleep:<channelId>` with that TTL. Each message from the creator pushes the key's expiry out (`resetAutoSleep`). Every 5 minutes, each cluster sweeps due tickets in its own guilds. A ticket whose key is still alive gets its `autoSleepAt` moved to match. Otherwise it's slept with `sleepTicket(..., null)`, or closed with `markChannelDeleted` if its channel is gone.
+`autoSleepHours` on a type sets `autoSleepAt` on new tickets and a Redis key `ticket:autosleep:<channelId>` with that TTL. Each message from the creator pushes the key's expiry out (`resetAutoSleep`). To keep Redis off the path of every guild message, each cluster holds the channel IDs of its open auto-sleep tickets in memory (`autoSleepChannels`). It's loaded on ready and kept in step wherever the key is set or cleared, and `resetAutoSleep` only reaches Redis for those channels. Until the set has loaded, it looks up every channel. Every 5 minutes, each cluster sweeps due tickets in its own guilds. A ticket whose key is still alive gets its `autoSleepAt` moved to match. Otherwise it's slept with `sleepTicket(..., null)`, or closed with `markChannelDeleted` if its channel is gone.
 
 ## Indexes
 

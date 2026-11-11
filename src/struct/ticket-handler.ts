@@ -25,10 +25,33 @@ const STAFF_ALLOW = {
 const VIEWER_ALLOW = { ViewChannel: true, SendMessages: true, ReadMessageHistory: true };
 
 export class TicketHandler {
+  // Open auto-sleep ticket channels in this cluster's guilds, so most messages skip Redis.
+  private autoSleepChannels = new Set<string>();
+  private autoSleepLoaded = false;
+
   public constructor(private readonly client: Client) {}
 
   public init() {
     setInterval(() => this.processSleepQueue(), 5 * 60 * 1000);
+    void this.loadAutoSleepChannels();
+  }
+
+  private async loadAutoSleepChannels() {
+    const tickets = await this.tickets
+      .find(
+        {
+          guildId: { $in: [...this.client.guilds.cache.keys()] },
+          status: 'open',
+          autoSleepAt: { $type: 'date' }
+        },
+        { projection: { channelId: 1 } }
+      )
+      .toArray()
+      .catch(() => null);
+    if (!tickets) return;
+
+    for (const { channelId } of tickets) this.autoSleepChannels.add(channelId);
+    this.autoSleepLoaded = true;
   }
 
   private get tickets() {
@@ -74,12 +97,21 @@ export class TicketHandler {
   }
 
   public async setAutoSleepCache(channelId: string, creatorId: string, autoSleepHours: number) {
+    this.autoSleepChannels.add(channelId);
     await this.client.redis.connection.set(REDIS_KEY(channelId), `${creatorId}:${autoSleepHours}`, {
       EX: autoSleepHours * 60 * 60
     });
   }
 
+  private async clearAutoSleep(channelId: string) {
+    this.autoSleepChannels.delete(channelId);
+    await this.client.redis.connection.del(REDIS_KEY(channelId));
+  }
+
   public async resetAutoSleep(channelId: string, userId: string) {
+    // Until the set has loaded, every channel is looked up so no reset is missed.
+    if (this.autoSleepLoaded && !this.autoSleepChannels.has(channelId)) return;
+
     const raw = await this.client.redis.connection.get(REDIS_KEY(channelId));
     if (!raw) return;
 
@@ -101,7 +133,7 @@ export class TicketHandler {
     );
     if (!ticket) return;
 
-    await this.client.redis.connection.del(REDIS_KEY(channelId));
+    await this.clearAutoSleep(channelId);
     const guild = this.client.guilds.cache.get(ticket.guildId);
     const { panel, btn } = await this.getPanelAndType(ticket);
     await this.logStatusChange(panel, ticket, 'Closed', ticket.status, 'closed', null);
@@ -127,7 +159,7 @@ export class TicketHandler {
         $unset: { autoSleepAt: '' }
       }
     );
-    await this.client.redis.connection.del(REDIS_KEY(ticket.channelId));
+    await this.clearAutoSleep(ticket.channelId);
     await this.revertCreatorRoles(channel.guild, ticket, btn);
 
     const logChannel = panel?.logChannels.ticketClose
@@ -181,7 +213,7 @@ export class TicketHandler {
       { _id: ticket._id },
       { $set: { status: 'sleep', updatedAt: new Date() }, $unset: { autoSleepAt: '' } }
     );
-    await this.client.redis.connection.del(REDIS_KEY(ticket.channelId));
+    await this.clearAutoSleep(ticket.channelId);
 
     await channel
       .send({
