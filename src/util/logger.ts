@@ -29,6 +29,13 @@ const TAGS: Record<string, string> = {
   log: '[INFO ]'
 };
 
+/** The stack only. A full dump of a Discord error holds the request body, file buffers and webhook token. */
+export function errorStack(error: unknown) {
+  return error instanceof Error
+    ? (error.stack ?? String(error))
+    : util.inspect(error, { depth: 2 });
+}
+
 export class Logger {
   public constructor(private readonly client: Client | null) {}
 

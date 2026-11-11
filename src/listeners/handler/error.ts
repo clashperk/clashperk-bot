@@ -11,7 +11,7 @@ import {
   InteractionType,
   MessageFlags
 } from 'discord.js';
-import { inspect } from 'node:util';
+import { errorStack } from '../../util/logger.js';
 import { Command, Listener } from '../../lib/handlers.js';
 
 export default class ErrorListener extends Listener {
@@ -33,8 +33,8 @@ export default class ErrorListener extends Listener {
       : `${interaction.user.displayName}`;
 
     this.client.logger.error(`${command?.id ?? 'unknown'} ~ ${error.toString()}`, { label });
-    // an AxiosError carries its request, socket and agents; the API interceptor already logged it
-    if (!isAxiosError(error)) console.error(inspect(error, { depth: Infinity }));
+    // The API interceptor already logged an AxiosError.
+    if (!isAxiosError(error)) console.error(errorStack(error));
 
     const context = {
       user: {

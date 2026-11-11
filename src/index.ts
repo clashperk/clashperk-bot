@@ -8,7 +8,7 @@ import { createServer } from 'node:http';
 import { ClusterManager } from 'discord-hybrid-sharding';
 import { fileURLToPath } from 'node:url';
 import type { Client } from './struct/client.js';
-import { Logger } from './util/logger.js';
+import { errorStack, Logger } from './util/logger.js';
 
 const logger = new Logger(null);
 
@@ -78,7 +78,7 @@ const manager = new Manager();
 manager.init();
 
 process.on('unhandledRejection', (error) => {
-  console.error(error);
+  console.error(errorStack(error));
 });
 
 const server = createServer((_, res) => {
