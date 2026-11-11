@@ -686,8 +686,12 @@ export class RolesManager {
       ])
       .toArray();
 
+    // The lookup returns all of a user's links once per matched tag, so a user with k tags in the
+    // event would otherwise get every account fetched k times.
+    const seen = new Set<string>();
     return players.reduce<Record<string, PlayerLinksEntity[]>>((record, link) => {
-      if (link.deleted) return record;
+      if (link.deleted || seen.has(link.tag)) return record;
+      seen.add(link.tag);
       record[link.userId] ??= [];
       record[link.userId].push(link);
       return record;
