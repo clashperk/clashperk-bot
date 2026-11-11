@@ -51,9 +51,11 @@ export class ClashClient extends RestManager {
       retryOn: { statusCodes: [], errorCodes: ['ECONNRESET', 'EPIPE', 'UND_ERR_SOCKET'] },
       keys: [...keys],
       baseURL: process.env.CLASH_OF_CLANS_API_BASE_URL,
-      onError: ({ path, status, body, retries }) => {
+      onError: ({ path, status, body, retries, elapsed }) => {
         if (retries) {
-          this.client.logger.debug(`${status} ${path} after ${retries} retry`, { label: 'HTTP' });
+          this.client.logger.debug(`${status} ${path} after ${retries} retry in ${elapsed} ms`, {
+            label: 'HTTP'
+          });
         }
         if (
           (status !== 200 || !body) &&
