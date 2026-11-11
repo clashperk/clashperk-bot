@@ -19,13 +19,17 @@ export interface WelcomeLogConfig {
   embedColor: number | null;
 }
 
-/** Where Clash of Clans share links pasted in chat get a card. Written by the API. */
-export interface LinkParsingConfig {
+/** Where one kind of Clash of Clans share link pasted in chat gets a card. Written by the API. */
+export interface LinkParsingRule {
   enabled: boolean;
   channelIds: string[];
   categoryIds: string[];
-  types: ('player' | 'clan' | 'army' | 'base')[];
 }
+
+export type ClashLinkType = 'player' | 'clan' | 'army' | 'base';
+
+/** One rule per link type. A missing type is off. */
+export type LinkParsingConfig = Partial<Record<ClashLinkType, LinkParsingRule>>;
 
 export interface SettingsEntity {
   guildId: string;

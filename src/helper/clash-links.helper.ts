@@ -1,5 +1,5 @@
 import { Settings } from '@app/constants';
-import { LinkParsingConfig } from '@app/entities';
+import { ClashLinkType, LinkParsingConfig } from '@app/entities';
 import {
   ActionRowBuilder,
   APIEmbed,
@@ -15,7 +15,7 @@ import type ClanCommand from '../commands/search/clan.js';
 import type PlayerCommand from '../commands/search/player.js';
 import type { Client } from '../struct/client.js';
 
-export type ClashLinkType = LinkParsingConfig['types'][number];
+export type { ClashLinkType };
 
 export interface ClashLink {
   type: ClashLinkType;
@@ -55,21 +55,26 @@ export function findClashLinks(content: string, limit = MAX_LINKS_PER_MESSAGE): 
   return [...links.values()];
 }
 
-/** The server's setting, when it's on and covers this channel (threads follow their channel). */
-export function linkParsingFor(client: Client, channel: GuildTextBasedChannel) {
+/** Link types that are on in this channel. Threads follow their channel, categories cover theirs. */
+export function linkTypesFor(client: Client, channel: GuildTextBasedChannel) {
   const config = client.settings.get<LinkParsingConfig | null>(
     channel.guild,
     Settings.LINK_PARSING,
     null
   );
-  if (!config?.enabled || !config.types.length) return null;
+  if (!config) return new Set<ClashLinkType>();
 
   const parent = channel.isThread() ? channel.parent : channel;
-  if (!parent) return null;
-  const covered =
-    config.channelIds.includes(parent.id) ||
-    (!!parent.parentId && config.categoryIds.includes(parent.parentId));
-  return covered ? config : null;
+  if (!parent) return new Set<ClashLinkType>();
+  const types = (Object.keys(config) as ClashLinkType[]).filter((type) => {
+    const rule = config[type];
+    return (
+      rule?.enabled &&
+      (rule.channelIds.includes(parent.id) ||
+        (!!parent.parentId && rule.categoryIds.includes(parent.parentId)))
+    );
+  });
+  return new Set(types);
 }
 
 const RATE_WINDOW_MS = 10_000;

@@ -2,7 +2,7 @@ import { Settings } from '@app/constants';
 import { Message, PermissionFlagsBits } from 'discord.js';
 import {
   findClashLinks,
-  linkParsingFor,
+  linkTypesFor,
   renderClashLinks,
   takeLinkReply
 } from '../../helper/clash-links.helper.js';
@@ -85,15 +85,13 @@ export default class MessageCreateListener extends Listener {
     }
   }
 
-  /** A mention asks for every link. Otherwise the server's setting picks channels and types. */
+  /** A mention asks for every link. Otherwise each link type follows its own channels. */
   private async expandLinks(message: Message<true>, found: ReturnType<typeof findClashLinks>) {
     if (this.client.settings.hasCustomBot(message.guild) && !this.client.isCustom()) return;
 
     const mentioned = message.mentions.users.has(this.client.user.id);
-    const config = mentioned ? null : linkParsingFor(this.client, message.channel);
-    if (!mentioned && !config) return;
-
-    const links = config ? found.filter((link) => config.types.includes(link.type)) : found;
+    const types = mentioned ? null : linkTypesFor(this.client, message.channel);
+    const links = types ? found.filter((link) => types.has(link.type)) : found;
     if (!links.length || !takeLinkReply(message.channelId)) return;
 
     const payload = await renderClashLinks(
