@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import chalk from 'chalk';
 import moment from 'moment';
 import util from 'node:util';
@@ -10,6 +11,14 @@ const COLORS: Record<string, string> = {
   warn: 'magenta',
   error: 'red',
   log: 'grey'
+};
+
+// Debug lines (CoC API retries, autocomplete timings) are too many and stay on the console.
+const SENTRY_LEVELS: Record<string, 'info' | 'warn' | 'error'> = {
+  log: 'info',
+  info: 'info',
+  warn: 'warn',
+  error: 'error'
 };
 
 const TAGS: Record<string, string> = {
@@ -54,6 +63,14 @@ export class Logger {
     stream.write(
       `[${timestamp}]${this.shard} ${chalk[color].bold(TAGS[tag])} » ${label ? `[${label}] » ` : ''}${content}\n`
     );
+
+    const level = SENTRY_LEVELS[tag];
+    if (level) {
+      Sentry.logger[level](label ? `[${label}] ${content}` : content, {
+        label,
+        cluster: this.client?.cluster?.id
+      });
+    }
   }
 
   private clean(message: string | unknown) {

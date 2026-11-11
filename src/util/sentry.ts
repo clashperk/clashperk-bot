@@ -9,6 +9,7 @@ export const sentryConfig: NodeOptions = {
   serverName: process.env.SERVICE_NAME ?? 'clashperk_bot',
   environment: process.env.NODE_ENV ?? 'development',
   release: process.env.GIT_SHA,
+  enableLogs: true,
 
   // Only command executions are traced; every other root span (DB, HTTP) would be recorded and then dropped.
   tracesSampler: ({ attributes }) => (attributes?.['interaction.command'] ? 1 : 0),
