@@ -656,42 +656,11 @@ export class RolesManager {
   }
 
   private async getLinkedPlayersByPlayerTag(playerTags: string[]) {
-    const players = await this.client.db
-      .collection(Collections.PLAYER_LINKS)
-      .aggregate<PlayerLinksEntity>([
-        {
-          $match: { tag: { $in: playerTags } }
-        },
-        {
-          $lookup: {
-            from: Collections.PLAYER_LINKS,
-            localField: 'userId',
-            foreignField: 'userId',
-            as: 'links'
-          }
-        },
-        {
-          $unwind: {
-            path: '$links'
-          }
-        },
-        {
-          $replaceRoot: {
-            newRoot: '$links'
-          }
-        },
-        {
-          $sort: { order: 1 }
-        }
-      ])
-      .toArray();
+    const userIds = await this.client.db
+      .collection<PlayerLinksEntity>(Collections.PLAYER_LINKS)
+      .distinct('userId', { tag: { $in: playerTags } });
 
-    return players.reduce<Record<string, PlayerLinksEntity[]>>((record, link) => {
-      if (link.deleted) return record;
-      record[link.userId] ??= [];
-      record[link.userId].push(link);
-      return record;
-    }, {});
+    return this.getLinkedPlayersByUserId(userIds);
   }
 
   private async preRoleUpdateAction({
