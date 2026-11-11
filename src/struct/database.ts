@@ -70,6 +70,17 @@ class MongoDbClient extends MongoClient {
         }
       ]),
 
+      db
+        .collection(Collections.TICKETS)
+        .createIndexes([
+          { key: { channelId: 1 } },
+          { key: { guildId: 1, count: -1 } },
+          { key: { guildId: 1, creatorId: 1, panelId: 1, buttonId: 1, status: 1 } },
+          { key: { status: 1, autoSleepAt: 1 } }
+        ]),
+
+      db.collection(Collections.TICKET_SETTINGS).createIndex({ guildId: 1 }),
+
       db.collection(Collections.LAYOUTS).createIndexes([
         {
           key: { layoutId: 1 }

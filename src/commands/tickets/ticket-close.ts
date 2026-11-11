@@ -1,5 +1,5 @@
 import { Collections } from '@app/constants';
-import { TicketEntity, TicketPanelEntity } from '@app/entities';
+import { TicketEntity } from '@app/entities';
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -9,7 +9,6 @@ import {
   EmbedBuilder,
   TextChannel
 } from 'discord.js';
-import { ObjectId } from 'mongodb';
 import { Args, Command } from '../../lib/handlers.js';
 
 export default class TicketCloseCommand extends Command {
@@ -81,76 +80,12 @@ export default class TicketCloseCommand extends Command {
       return;
     }
 
-    await action.update({ content: 'Closing ticket…', embeds: [], components: [] });
-
-    const channel = interaction.channel as TextChannel;
-
-    // Generate transcript
-    const messages = await channel.messages.fetch({ limit: 100 }).catch(() => null);
-    let transcript = `Transcript for #${channel.name}\nGenerated: ${new Date().toISOString()}\n${'='.repeat(60)}\n`;
-
-    if (messages) {
-      transcript += [...messages.values()]
-        .reverse()
-        .map((m) => {
-          const time = m.createdAt.toISOString();
-          const author = m.author.username;
-          const content = m.content || (m.embeds.length ? '[embed]' : '[attachment]');
-          return `[${time}] ${author}: ${content}`;
-        })
-        .join('\n');
-    }
-
-    // Update ticket
-    await this.client.db.collection<TicketEntity>(Collections.TICKETS).updateOne(
-      { _id: ticket._id },
-      {
-        $set: {
-          status: 'closed',
-          closedAt: new Date(),
-          closedBy: interaction.user.id,
-          updatedAt: new Date()
-        }
-      }
+    await action.deferUpdate();
+    await this.client.tickets.closeTicket(
+      ticket,
+      interaction.channel as TextChannel,
+      interaction.user.id,
+      (content) => action.editReply({ content, embeds: [], components: [] })
     );
-
-    // Log
-    const panel = await this.client.db
-      .collection<TicketPanelEntity>(Collections.TICKET_PANELS)
-      .findOne({ _id: new ObjectId(ticket.panelId) });
-
-    if (panel?.logChannels.ticketClose) {
-      const logCh = interaction.guild!.channels.cache.get(panel.logChannels.ticketClose) as
-        TextChannel | undefined;
-
-      if (logCh) {
-        const logEmbed = new EmbedBuilder()
-          .setTitle(`Ticket Closed — #${String(ticket.count).padStart(4, '0')}`)
-          .setColor(0xeb3508)
-          .addFields(
-            { name: 'Created by', value: `<@${ticket.creatorId}>`, inline: true },
-            { name: 'Closed by', value: `<@${interaction.user.id}>`, inline: true },
-            {
-              name: 'Created at',
-              value: `<t:${Math.floor(ticket.createdAt.getTime() / 1000)}:F>`,
-              inline: true
-            }
-          );
-
-        await logCh
-          .send({
-            embeds: [logEmbed],
-            files: [
-              {
-                attachment: Buffer.from(transcript, 'utf-8'),
-                name: `ticket-${ticket.count}.txt`
-              }
-            ]
-          })
-          .catch(() => null);
-      }
-    }
-
-    setTimeout(() => channel.delete('Ticket closed').catch(() => null), 3000);
   }
 }

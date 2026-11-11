@@ -143,6 +143,9 @@ export default class TicketOpenCommand extends Command {
         return this.claimTicket(interaction, args);
       case 'unclaim':
         return this.unclaimTicket(interaction, args);
+      default:
+        // Buttons-mode panel buttons carry only `pid` and `bid`.
+        if (!action && args.pid) return this.openTicketFlow(interaction, args);
     }
   }
 
@@ -254,18 +257,7 @@ export default class TicketOpenCommand extends Command {
     panel: WithId<TicketPanelEntity>,
     btn: TicketTypeConfig
   ) {
-    const panelId = panel._id.toHexString();
-    const buttonId = btn.id;
-
-    // Check if user already has an open ticket for this type
-    const existing = await this.client.db.collection<TicketEntity>(Collections.TICKETS).findOne({
-      guildId: interaction.guildId,
-      panelId,
-      buttonId,
-      creatorId: interaction.user.id,
-      status: { $in: ['open', 'sleep'] }
-    });
-
+    const existing = await this.findLiveTicket(interaction, panel, btn);
     if (existing) {
       return interaction.reply({
         flags: MessageFlags.Ephemeral,
@@ -412,11 +404,19 @@ export default class TicketOpenCommand extends Command {
       : null;
     const player = playerResult ? (playerResult.body as APIPlayer) : null;
 
+    if (accountTag && !player) {
+      return interaction.reply({
+        flags: MessageFlags.Ephemeral,
+        content: 'Could not load that account from Clash of Clans. Please try again.'
+      });
+    }
+
     if (btn.questions?.length) {
       return this.showQuestionsModal(interaction, panel, btn, player);
     }
 
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    // Replaces the account select, so it can't be used again.
+    await interaction.deferUpdate();
     return this.createTicketChannel(interaction, panel, btn, player, []);
   }
 
@@ -462,7 +462,10 @@ export default class TicketOpenCommand extends Command {
       answer: submit.fields.getTextInputValue(questionIds[i])
     }));
 
-    await submit.deferUpdate();
+    // Updating would edit the public panel message, so only the ephemeral account select is updated.
+    if (interaction.message.flags.has(MessageFlags.Ephemeral)) await submit.deferUpdate();
+    else await submit.deferReply({ flags: MessageFlags.Ephemeral });
+
     return this.createTicketChannel(
       submit as unknown as MessageComponentInteraction<'cached'>,
       panel,
@@ -479,16 +482,68 @@ export default class TicketOpenCommand extends Command {
     player: APIPlayer | null,
     answers: { question: string; answer: string }[]
   ) {
-    const guild = interaction.guild!;
+    // Stale selects, a second modal and double clicks all end here, so the duplicate check repeats under a lock.
+    const lockKey = `ticket:opening:${interaction.guildId}:${interaction.user.id}`;
+    const locked = await this.client.redis.connection.set(lockKey, '1', { NX: true, EX: 60 });
+    if (!locked) {
+      return interaction
+        .editReply({ content: 'Your ticket is already being created.', components: [] })
+        .catch(() => null);
+    }
 
-    // Get next ticket count
-    const latestTicket = await this.client.db
-      .collection<TicketEntity>(Collections.TICKETS)
-      .findOne({ guildId: guild.id }, { sort: { count: -1 } });
+    try {
+      const existing = await this.findLiveTicket(interaction, panel, btn);
+      if (existing) {
+        return await interaction.editReply({
+          content: `You already have an open ticket: <#${existing.channelId}>`,
+          components: []
+        });
+      }
+      return await this.createTicket(interaction, panel, btn, player, answers);
+    } catch (error) {
+      this.client.logger.error(error, { label: 'TICKET_OPEN' });
+      return interaction
+        .editReply({
+          content:
+            'Could not create your ticket. The bot may be missing permissions, or the ticket category may be full (50 channels). Please contact the server staff.',
+          components: []
+        })
+        .catch(() => null);
+    } finally {
+      await this.client.redis.connection.del(lockKey);
+    }
+  }
 
-    const count = (latestTicket?.count ?? 0) + 1;
+  /** The user's open or sleeping ticket of this type. Records whose channel is gone are closed on the way. */
+  private async findLiveTicket(
+    interaction: MessageComponentInteraction<'cached'>,
+    panel: WithId<TicketPanelEntity>,
+    btn: TicketTypeConfig
+  ) {
+    const existing = await this.client.db.collection<TicketEntity>(Collections.TICKETS).findOne({
+      guildId: interaction.guildId,
+      panelId: panel._id.toHexString(),
+      buttonId: btn.id,
+      creatorId: interaction.user.id,
+      status: { $in: ['open', 'sleep'] }
+    });
+    if (!existing) return null;
+    if (interaction.guild.channels.cache.has(existing.channelId)) return existing;
 
-    // Resolve channel name
+    await this.client.tickets.markChannelDeleted(existing.channelId);
+    return null;
+  }
+
+  private async createTicket(
+    interaction: MessageComponentInteraction<'cached'>,
+    panel: WithId<TicketPanelEntity>,
+    btn: TicketTypeConfig,
+    player: APIPlayer | null,
+    answers: { question: string; answer: string }[]
+  ) {
+    const guild = interaction.guild;
+    const count = await this.client.tickets.nextTicketCount(guild.id);
+
     const channelName = resolveChannelName(btn.namingConvention || DEFAULT_NAMING, {
       count,
       user: interaction.user.username,
@@ -570,7 +625,6 @@ export default class TicketOpenCommand extends Command {
       permissionOverwrites
     });
 
-    // Save ticket to DB
     const ticketDoc: TicketEntity = {
       _id: new ObjectId(),
       count,
@@ -592,7 +646,13 @@ export default class TicketOpenCommand extends Command {
       updatedAt: new Date()
     };
 
-    await this.client.db.collection<TicketEntity>(Collections.TICKETS).insertOne(ticketDoc);
+    try {
+      await this.postTicketEmbed(ticketChannel, ticketDoc, btn);
+      await this.client.db.collection<TicketEntity>(Collections.TICKETS).insertOne(ticketDoc);
+    } catch (error) {
+      await ticketChannel.delete('Ticket could not be set up').catch(() => null);
+      throw error;
+    }
 
     if (btn.autoSleepHours) {
       void this.client.tickets.setAutoSleepCache(
@@ -601,15 +661,6 @@ export default class TicketOpenCommand extends Command {
         btn.autoSleepHours
       );
     }
-
-    // Post ticket embed in channel
-    await this.postTicketEmbed(
-      ticketChannel,
-      ticketDoc,
-      panel,
-      btn,
-      interaction.member as GuildMember
-    );
 
     // Optional: add/remove roles from creator
     const member = interaction.member as GuildMember | null;
@@ -635,14 +686,25 @@ export default class TicketOpenCommand extends Command {
         await this.client.db
           .collection<TicketEntity>(Collections.TICKETS)
           .updateOne({ _id: ticketDoc._id }, { $set: { threadId: thread.id } });
+        // A user mention would add the applicant to this private thread. Role mentions add the staff.
         await thread
-          .send({ content: `Staff thread for ticket #${count} — <@${interaction.user.id}>` })
+          .send({
+            content: `Staff thread for ticket #${String(count).padStart(4, '0')} (${interaction.user.username}). ${btn.pingRoleIds.map((id) => `<@&${id}>`).join(' ')}`,
+            allowedMentions: { roles: btn.pingRoleIds }
+          })
           .catch(() => null);
       }
     }
 
     // Log status change
-    void this.logStatusChange(panel, ticketDoc, 'created', null, 'open', interaction.user.id);
+    void this.client.tickets.logStatusChange(
+      panel,
+      ticketDoc,
+      'Created',
+      null,
+      'open',
+      interaction.user.id
+    );
 
     await interaction
       .editReply({ content: `Ticket opened: <#${ticketChannel.id}>`, components: [] })
@@ -829,13 +891,7 @@ export default class TicketOpenCommand extends Command {
     return container;
   }
 
-  private async postTicketEmbed(
-    channel: TextChannel,
-    ticket: TicketEntity,
-    _panel: WithId<TicketPanelEntity>,
-    btn: TicketTypeConfig,
-    _member: GuildMember
-  ) {
+  private async postTicketEmbed(channel: TextChannel, ticket: TicketEntity, btn: TicketTypeConfig) {
     const container = this.buildTicketContainer(ticket, btn, channel.id);
     return channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
   }
@@ -911,66 +967,15 @@ export default class TicketOpenCommand extends Command {
     const ticket = await this.getTicketByChannel(channelId);
     if (!ticket) return interaction.editReply(this.reply('Ticket not found.'));
 
-    const channel = interaction.guild!.channels.cache.get(channelId) as TextChannel | undefined;
+    if (ticket.status === 'closed')
+      return interaction.editReply(this.reply('This ticket is already closed.'));
+
+    const channel = interaction.guild.channels.cache.get(channelId) as TextChannel | undefined;
     if (!channel) return interaction.editReply(this.reply('Channel not found.'));
 
-    // Get panel for logging
-    const panel = await this.client.db
-      .collection<TicketPanelEntity>(Collections.TICKET_PANELS)
-      .findOne({ _id: new ObjectId(ticket.panelId) });
-
-    await interaction.editReply(this.reply('Closing ticket… generating transcript.'));
-
-    // Generate transcript
-    const transcript = await this.generateTranscript(channel);
-    const transcriptBuffer = Buffer.from(transcript, 'utf-8');
-
-    // Update ticket status
-    await this.client.db.collection<TicketEntity>(Collections.TICKETS).updateOne(
-      { _id: ticket._id },
-      {
-        $set: {
-          status: 'closed',
-          closedAt: new Date(),
-          closedBy: interaction.user.id,
-          updatedAt: new Date()
-        }
-      }
+    await this.client.tickets.closeTicket(ticket, channel, interaction.user.id, (text) =>
+      interaction.editReply(this.reply(text))
     );
-
-    // Log ticket close
-    if (panel?.logChannels.ticketClose) {
-      const logChannel = interaction.guild!.channels.cache.get(panel.logChannels.ticketClose) as
-        TextChannel | undefined;
-
-      if (logChannel) {
-        const closeContainer = new ContainerBuilder();
-        closeContainer.addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `## Ticket Closed — #${String(ticket.count).padStart(4, '0')}\n**Created by:** <@${ticket.creatorId}>\n**Closed by:** <@${interaction.user.id}>\n**Created at:** <t:${Math.floor(ticket.createdAt.getTime() / 1000)}:F>`
-          )
-        );
-        await logChannel
-          .send({
-            components: [closeContainer],
-            flags: MessageFlags.IsComponentsV2,
-            files: [{ attachment: transcriptBuffer, name: `ticket-${ticket.count}.txt` }]
-          })
-          .catch(() => null);
-      }
-    }
-
-    void this.logStatusChange(
-      panel ?? null,
-      ticket,
-      'closed',
-      'open',
-      'closed',
-      interaction.user.id
-    );
-
-    // Delete channel after short delay
-    setTimeout(() => channel.delete('Ticket closed').catch(() => null), 3000);
   }
 
   private async sendReply(
@@ -1105,14 +1110,27 @@ export default class TicketOpenCommand extends Command {
     }
 
     const content = resolveTemplate(template.content, vars);
-    const channel = interaction.guild!.channels.cache.get(channelId) as TextChannel | undefined;
-
-    if (channel) {
-      await channel.send({ content }).catch(() => null);
+    if (content.length > 2000) {
+      return interaction
+        .editReply(
+          this.reply(
+            `The filled-in reply is ${content.length} characters. Discord allows 2000. Shorten the template or the values.`
+          )
+        )
+        .catch(() => null);
     }
 
+    const channel = interaction.guild.channels.cache.get(channelId) as TextChannel | undefined;
+    const sent = await channel?.send({ content }).catch(() => null);
+
     await interaction
-      .editReply(this.reply(`Reply sent using template **${templateName}**.`))
+      .editReply(
+        this.reply(
+          sent
+            ? `Reply sent using template **${templateName}**.`
+            : 'Could not send the reply. Check that ClashPerk can send messages in this channel.'
+        )
+      )
       .catch(() => null);
   }
 
@@ -1248,7 +1266,7 @@ export default class TicketOpenCommand extends Command {
     const channel = interaction.guild!.channels.cache.get(channelId) as TextChannel | undefined;
     if (!channel) return interaction.editReply(this.reply('Channel not found.'));
 
-    // Give claimer a personal overwrite so they keep access after role overwrites are removed
+    // Manage Channels on the claimer's own overwrite is what keeps them counted as staff here.
     await channel.permissionOverwrites
       .edit(interaction.user.id, {
         ViewChannel: true,
@@ -1256,7 +1274,8 @@ export default class TicketOpenCommand extends Command {
         AttachFiles: true,
         EmbedLinks: true,
         ReadMessageHistory: true,
-        ManageMessages: true
+        ManageMessages: true,
+        ManageChannels: true
       })
       .catch(() => null);
 
@@ -1278,7 +1297,14 @@ export default class TicketOpenCommand extends Command {
       .edit({ components: [container], flags: MessageFlags.IsComponentsV2 })
       .catch(() => null);
 
-    void this.logStatusChange(panel!, ticket, 'claimed', null, ticket.status, interaction.user.id);
+    void this.client.tickets.logStatusChange(
+      panel,
+      ticket,
+      'Claimed',
+      null,
+      ticket.status,
+      interaction.user.id
+    );
     await interaction.editReply(
       this.reply('You have claimed this ticket. Other staff no longer have access.')
     );
@@ -1312,31 +1338,8 @@ export default class TicketOpenCommand extends Command {
     if (!channel) return interaction.editReply(this.reply('Channel not found.'));
 
     // Remove claimer's personal overwrite (unless they are also the creator)
-    if (ticket.claimedBy !== ticket.creatorId) {
-      await channel.permissionOverwrites.delete(interaction.user.id).catch(() => null);
-    }
-
-    // Restore ping roles (full staff access)
-    for (const roleId of btn.pingRoleIds ?? []) {
-      await channel.permissionOverwrites
-        .edit(roleId, {
-          ViewChannel: true,
-          SendMessages: true,
-          AttachFiles: true,
-          EmbedLinks: true,
-          ReadMessageHistory: true,
-          ManageMessages: true,
-          ManageChannels: true
-        })
-        .catch(() => null);
-    }
-
-    // Restore view-only roles
-    for (const roleId of btn.viewOnlyRoleIds ?? []) {
-      await channel.permissionOverwrites
-        .edit(roleId, { ViewChannel: true, SendMessages: true, ReadMessageHistory: true })
-        .catch(() => null);
-    }
+    await this.client.tickets.removeClaimerAccess(channel, ticket);
+    await this.client.tickets.restoreStaffAccess(channel, btn);
 
     await this.client.db
       .collection<TicketEntity>(Collections.TICKETS)
@@ -1351,10 +1354,10 @@ export default class TicketOpenCommand extends Command {
       .edit({ components: [container], flags: MessageFlags.IsComponentsV2 })
       .catch(() => null);
 
-    void this.logStatusChange(
-      panel!,
+    void this.client.tickets.logStatusChange(
+      panel,
       ticket,
-      'unclaimed',
+      'Unclaimed',
       null,
       ticket.status,
       interaction.user.id
@@ -1379,25 +1382,6 @@ export default class TicketOpenCommand extends Command {
     return this.client.db.collection<TicketEntity>(Collections.TICKETS).findOne({ channelId });
   }
 
-  private async generateTranscript(channel: TextChannel): Promise<string> {
-    const messages = await channel.messages.fetch({ limit: 100 }).catch(() => null);
-    if (!messages) return '(could not fetch messages)';
-
-    const lines = [...messages.values()].reverse().map((m) => {
-      const time = m.createdAt.toISOString();
-      const author = `${m.author.username}#${m.author.discriminator}`;
-      const content = m.content || (m.embeds.length ? '[embed]' : '[attachment/sticker]');
-      return `[${time}] ${author}: ${content}`;
-    });
-
-    return [
-      `Transcript for #${channel.name}`,
-      `Generated: ${new Date().toISOString()}`,
-      '='.repeat(60),
-      ...lines
-    ].join('\n');
-  }
-
   private async logButtonClick(
     panel: WithId<TicketPanelEntity>,
     btn: TicketTypeConfig,
@@ -1418,37 +1402,6 @@ export default class TicketOpenCommand extends Command {
     );
     await logChannel
       .send({ components: [clickContainer], flags: MessageFlags.IsComponentsV2 })
-      .catch(() => null);
-  }
-
-  private async logStatusChange(
-    panel: WithId<TicketPanelEntity> | null,
-    ticket: WithId<TicketEntity>,
-    action: string,
-    oldStatus: string | null,
-    newStatus: string,
-    byUserId: string
-  ) {
-    if (!panel?.logChannels.statusChange) return;
-
-    const guild = this.client.guilds.cache.get(ticket.guildId);
-    const logChannel = guild?.channels.cache.get(panel.logChannels.statusChange) as
-      TextChannel | undefined;
-
-    if (!logChannel) return;
-
-    const statusContainer = new ContainerBuilder();
-    statusContainer.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        [
-          `## Ticket ${action.charAt(0).toUpperCase() + action.slice(1)}`,
-          `**Ticket:** #${String(ticket.count).padStart(4, '0')} <#${ticket.channelId}>`,
-          `**By:** <@${byUserId}> | **Status:** ${oldStatus ? `${oldStatus} → ${newStatus}` : newStatus}`
-        ].join('\n')
-      )
-    );
-    await logChannel
-      .send({ components: [statusContainer], flags: MessageFlags.IsComponentsV2 })
       .catch(() => null);
   }
 }

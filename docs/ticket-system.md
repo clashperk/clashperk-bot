@@ -28,18 +28,20 @@ The ticket system allows server admins to create **panels** — Discord messages
 
 ## Files
 
-| File                                                                           | Purpose                                     |
-| ------------------------------------------------------------------------------ | ------------------------------------------- |
-| [src/commands/tickets/ticket-setup.ts](src/commands/tickets/ticket-setup.ts)   | Panel configuration dashboard               |
-| [src/commands/tickets/ticket-post.ts](src/commands/tickets/ticket-post.ts)     | Posts the panel embed + button to a channel |
-| [src/commands/tickets/ticket-open.ts](src/commands/tickets/ticket-open.ts)     | Handles button click → ticket creation flow |
-| [src/commands/tickets/ticket-close.ts](src/commands/tickets/ticket-close.ts)   | Closes a ticket (moves to closed category)  |
-| [src/commands/tickets/ticket-delete.ts](src/commands/tickets/ticket-delete.ts) | Deletes a ticket channel                    |
-| [src/commands/tickets/ticket-reopen.ts](src/commands/tickets/ticket-reopen.ts) | Reopens a closed/sleeping ticket            |
-| [src/commands/tickets/ticket-sleep.ts](src/commands/tickets/ticket-sleep.ts)   | Puts a ticket to sleep                      |
-| [src/commands/tickets/ticket-info.ts](src/commands/tickets/ticket-info.ts)     | Shows ticket metadata                       |
-| [src/commands/tickets/ticket-add.ts](src/commands/tickets/ticket-add.ts)       | Adds a user to a ticket channel             |
-| [src/entities/tickets.entity.ts](src/entities/tickets.entity.ts)               | TypeScript interfaces for DB collections    |
+| File                                                                                           | Purpose                                                                               |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [src/commands/tickets/ticket-setup.ts](src/commands/tickets/ticket-setup.ts)                   | Panel configuration dashboard                                                         |
+| [src/commands/tickets/ticket-post.ts](src/commands/tickets/ticket-post.ts)                     | Posts the panel embed + button to a channel                                           |
+| [src/commands/tickets/ticket-open.ts](src/commands/tickets/ticket-open.ts)                     | Handles button click → ticket creation flow                                           |
+| [src/commands/tickets/ticket-close.ts](src/commands/tickets/ticket-close.ts)                   | Closes a ticket: transcript, then deletes the channel                                 |
+| [src/commands/tickets/ticket-delete.ts](src/commands/tickets/ticket-delete.ts)                 | Deletes a **panel** (its tickets stay in the DB)                                      |
+| [src/commands/tickets/ticket-reopen.ts](src/commands/tickets/ticket-reopen.ts)                 | Reopens a sleeping ticket                                                             |
+| [src/commands/tickets/ticket-sleep.ts](src/commands/tickets/ticket-sleep.ts)                   | Puts a ticket to sleep                                                                |
+| [src/commands/tickets/ticket-info.ts](src/commands/tickets/ticket-info.ts)                     | Shows a **panel's** config, ticket counts and warnings                                |
+| [src/commands/tickets/ticket-add.ts](src/commands/tickets/ticket-add.ts)                       | Adds a user to a ticket channel                                                       |
+| [src/struct/ticket-handler.ts](src/struct/ticket-handler.ts)                                   | Shared lifecycle: close, sleep, reopen, auto-sleep sweep, ticket counter, status logs |
+| [src/listeners/client/ticket-channel-delete.ts](src/listeners/client/ticket-channel-delete.ts) | Closes the record when a ticket channel is deleted by hand                            |
+| [src/entities/tickets.entity.ts](src/entities/tickets.entity.ts)                               | TypeScript interfaces for DB collections                                              |
 
 ---
 
@@ -144,13 +146,14 @@ interface TicketTypeConfig {
 
 ### `TicketGuildSettingsEntity` (collection: `TicketSettings`)
 
-One document per guild. Stores server-wide saved replies (shared across all panels and types).
+One document per guild. Stores server-wide saved replies (shared across all panels and types) and the guild's ticket counter. The bot upserts it on the first ticket, so it can exist without `savedReplies`.
 
 ```ts
 interface TicketGuildSettingsEntity {
   _id: ObjectId;
   guildId: string;
   savedReplies: { name: string; content: string }[]; // max 25 per server; names unique per guild
+  ticketCount?: number; // last ticket number handed out, bumped atomically by nextTicketCount
   updatedAt: Date;
 }
 ```
@@ -238,14 +241,14 @@ Per-type settings (staff roles, apply rules, questions, categories, naming, butt
 
 Opened via **Edit / Delete** next to a type. Sections:
 
-| Section                          | What it configures                                                                                                                   |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Section                          | What it configures                                                                                                                     |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | **Label / Emoji / Button Style** | Type label, emoji (validated with `isValidEmoji` — invalid input is discarded), and individual button style (for Buttons display mode) |
-| **Staff Roles**                  | Ping roles (full access + notify), Viewer roles (read only), Add roles, Remove roles                                                 |
-| **Rules**                        | TH min, min trophies, min league tier, require linked account, staff thread, allow claiming                                          |
-| **Questions**                    | Up to 5 text-input questions shown in a modal before ticket creation                                                                 |
-| **Categories**                   | Open / Sleep / Closed Discord category channels                                                                                      |
-| **Naming**                       | Channel naming convention                                                                                                            |
+| **Staff Roles**                  | Ping roles (full access + notify), Viewer roles (read only), Add roles, Remove roles                                                   |
+| **Rules**                        | TH min, min trophies, min league tier, require linked account, staff thread, allow claiming                                            |
+| **Questions**                    | Up to 5 text-input questions shown in a modal before ticket creation                                                                   |
+| **Categories**                   | Open / Sleep / Closed Discord category channels                                                                                        |
+| **Naming**                       | Channel naming convention                                                                                                              |
 
 ### Emoji validation
 
@@ -308,8 +311,10 @@ cmd=ticket-open  action=open  pid=<panelId>  defer=false
 **Buttons mode customId (per type):**
 
 ```
-cmd=ticket-open  action=open  pid=<panelId>  bid=<typeId>  defer=false
+cmd=ticket-open  pid=<panelId>  bid=<typeId>  defer=false
 ```
+
+There's no `action`: with it the JSON is 101 characters, which pushes it into Redis with a 100-day TTL, so the buttons would expire. `exec` treats a missing `action` with a `pid` as `open`. Panels posted before this still carry `action=open` and keep working until their Redis key expires. Re-posting them fixes that.
 
 `defer=false` tells the handler framework **not** to auto-defer, because the first response may need to be `showModal()`.
 
@@ -358,25 +363,27 @@ Run `/ticket-post` again after editing extra buttons to push the updated panel m
 
 ### `proceedWithType` logic
 
-Duplicate ticket check first (same panel + type + user with status `open` or `sleep`).
+Duplicate ticket check first (`findLiveTicket`: same panel + type + user with status `open` or `sleep`). A match whose channel no longer exists is closed on the spot and doesn't block the user.
 
 Then:
 
 ```
-requireLinkedAccount=true AND questions exist
-  → fetchQualifyingAccounts → showQuestionsModal (account select embedded at top)
-
-requireLinkedAccount=true AND no questions
-  → deferReply → showAccountSelect (separate select menu step)
+requireLinkedAccount=true
+  → showAccountSelect (ephemeral select of qualifying accounts)
+  → handleAccountSelect
+      questions exist → showQuestionsModal → createTicketChannel
+      no questions    → deferUpdate (replaces the select) → createTicketChannel
 
 requireLinkedAccount=false AND questions exist
-  → showQuestionsModal (no account select)
+  → showQuestionsModal → createTicketChannel
 
 requireLinkedAccount=false AND no questions
   → deferReply → createTicketChannel
 ```
 
-**Key constraint:** `showModal()` must be the first response to an interaction. Any `deferReply()` before `showModal()` will throw. This is why the account select is embedded inside the questions modal when both features are active.
+**Key constraint:** `showModal()` must be the first response to an interaction. Any `deferReply()` before `showModal()` will throw.
+
+**Modal acknowledgement:** a modal opened from the public panel button is acknowledged with `deferReply` (ephemeral). `deferUpdate` there would make the final `editReply` overwrite the panel message. A modal opened from an ephemeral select uses `deferUpdate`, which replaces that select.
 
 ### `fetchQualifyingAccounts`
 
@@ -390,13 +397,16 @@ Returns formatted options. Returns `null` and sends an ephemeral error listing u
 
 ### `showQuestionsModal`
 
-- Modal has up to **5** components total.
-- If `accountOptions` is provided, a `StringSelectMenuBuilder` (via `LabelBuilder.setStringSelectMenuComponent`) is added as the **first** component, and questions are capped at **4**.
-- After `awaitModalSubmit`, reads the selected account tag via `submit.fields.getStringSelectValues(playerSelectId)?.[0]`, fetches the player, then calls `createTicketChannel`.
+- Up to **5** paragraph questions (max 1000 chars each). The modal waits 10 minutes.
+- The account, if any, was already picked in the account select and is passed in.
 
 ### `createTicketChannel`
 
-1. Gets the next ticket count (max `count` in guild + 1).
+`createTicketChannel` takes a Redis lock (`ticket:opening:<guildId>:<userId>`, 60 s) and repeats the duplicate check under it. A stale select, a second modal or a double click can't create a second ticket. Any error is logged and shown to the user as an ephemeral message (missing permissions, or a category at Discord's 50-channel limit).
+
+`createTicket` then:
+
+1. Gets the next ticket number from `TicketHandler.nextTicketCount`: an atomic `$inc`-style pipeline update on `TicketSettings.ticketCount`, seeded with `$max` from the highest existing `count`.
 2. Resolves channel name from `namingConvention`.
 3. Builds permission overwrites:
    - `@everyone` — deny `ViewChannel`
@@ -405,11 +415,10 @@ Returns formatted options. Returns `null` and sends an ephemeral error listing u
    - **Ping roles** — allow `ViewChannel, SendMessages, AttachFiles, EmbedLinks, ReadMessageHistory, ManageMessages, ManageChannels`
    - **View-only roles** — allow `ViewChannel, SendMessages, ReadMessageHistory`
 4. Creates the `GuildText` channel (placed in `openCategoryId` if set).
-5. Inserts `TicketEntity` to DB.
-6. Calls `postTicketEmbed` to post the CV2 ticket embed.
-7. Applies `addRoleIds` / `removeRoleIds` to the creator.
-8. Creates a private staff thread if `createStaffThread=true` and ping roles exist.
-9. Logs `created` status change.
+5. Posts the CV2 ticket embed, then inserts `TicketEntity`. If either fails, the channel is deleted and the error is rethrown.
+6. Applies `addRoleIds` / `removeRoleIds` to the creator.
+7. Creates a private staff thread if `createStaffThread=true` and ping roles exist. The first message mentions the ping roles (to add staff) and names the creator in plain text. A user mention would add the creator to the private thread.
+8. Logs the `Created` status change.
 
 ### Ticket embed (`postTicketEmbed` / `buildTicketContainer`)
 
@@ -446,14 +455,25 @@ A: Answer text                           ← only if questions were answered
 
 ## Ticket Lifecycle Commands
 
-| Command          | Description                                                                    |
-| ---------------- | ------------------------------------------------------------------------------ |
-| `/ticket-close`  | Set status → `closed`, move to `closedCategoryId`                              |
-| `/ticket-reopen` | Set status → `open`, move back to `openCategoryId`                             |
-| `/ticket-sleep`  | Set status → `sleep`, move to `sleepCategoryId`                                |
-| `/ticket-delete` | Hard delete the channel and update DB                                          |
-| `/ticket-info`   | Show ticket metadata (panel, type, creator, account, status, trophies, league) |
-| `/ticket-add`    | Add a Discord member to the ticket channel                                     |
+| Command          | Description                                                                      |
+| ---------------- | -------------------------------------------------------------------------------- |
+| `/ticket close`  | Confirm, then `TicketHandler.closeTicket` (same as the **Delete Ticket** button) |
+| `/ticket reopen` | `TicketHandler.reopenTicket`: sleeping → `open`, back to `openCategoryId`        |
+| `/ticket sleep`  | `TicketHandler.sleepTicket`: `open` → `sleep`, to `sleepCategoryId`              |
+| `/ticket delete` | Deletes a **panel**. Its ticket records stay                                     |
+| `/ticket info`   | Shows a **panel's** config, ticket counts and setup warnings                     |
+| `/ticket add`    | Add a Discord member to the ticket channel                                       |
+
+The slash command is `ticket` with subcommands. It's in `HIDDEN_COMMANDS`, so it's only deployed to the beta guilds.
+
+### Shared lifecycle (`TicketHandler`)
+
+- **`closeTicket`**: builds the transcript (last 100 messages), sets `closed` / `closedAt` / `closedBy` and unsets `autoSleepAt`, clears the auto-sleep key, reverts the creator's `addRoleIds` / `removeRoleIds`, posts the transcript to `ticketClose` and a `<old status> → closed` line to `statusChange`, then deletes the channel after 3 s.
+- **`sleepTicket`**: denies the creator Send Messages, moves to `sleepCategoryId`, unsets `autoSleepAt` and clears the key. `sleptBy = null` means auto-sleep.
+- **`reopenTicket`**: restores the creator, moves to `openCategoryId`, drops any claim (staff overwrites restored), and restarts the auto-sleep timer when the type has `autoSleepHours`.
+- **`markChannelDeleted`**: runs from the `channelDelete` listener, from the auto-sleep sweep and from `findLiveTicket`. It closes the record (no `closedBy`), reverts the creator's roles and logs it.
+
+**Transcripts and message content:** the client doesn't request the privileged `MessageContent` intent, so Discord returns empty `content` for other users' messages. Transcripts only carry the text of the bot's own messages and of messages that mention the bot.
 
 The dashboard lists every ticket (`GET /guilds/:guildId/tickets/list`, filterable by status) and closes open or sleeping ones through `POST /guilds/:guildId/tickets/:ticketId/close` in the API. That route does what **Delete Ticket** does: it posts the transcript of the last 100 messages to the panel's `ticketClose` log and a line to `statusChange`, sets `status`, `closedAt` and `closedBy`, and deletes the channel. A ticket whose channel is already gone is only marked closed.
 
@@ -463,15 +483,15 @@ The dashboard lists every ticket (`GET /guilds/:guildId/tickets/list`, filterabl
 
 All buttons in the ticket channel send CV2-format responses (no `content` field — the message uses `MessageFlags.IsComponentsV2`).
 
-| Button            | Action                       | Notes                                                                                                                                                                                                |
-| ----------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Delete Ticket** | `del-confirm` → `del-ticket` | Two-step confirm; generates transcript before delete                                                                                                                                                 |
-| **Reply**         | `reply`                      | Shows saved reply select menu; supports variable fill-in modal for unknown vars                                                                                                                      |
-| **Set Clan**      | `set-clan`                   | Clan select menu (inline collector); updates `clanTag`/`clanName` on ticket and re-edits the embed via `interaction.message.edit`                                                                    |
-| **View Account**  | routes to `player` cmd       | Link button in ticket header (only shown when `accountTag` set); no in-file handler                                                                                                                  |
-| **Notify Me**     | `notify`                     | Toggles `notifyMeUserIds` array on ticket                                                                                                                                                            |
-| **Claim**         | `claim`                      | Sets `claimedBy`; adds claimer user overwrite; removes all `pingRoleIds`+`viewOnlyRoleIds` overwrites; rebuilds embed. Only staff (has a pingRoleId) can claim. Only shown if `btn.allowClaim=true`. |
-| **Unclaim**       | `unclaim`                    | Clears `claimedBy`; deletes claimer user overwrite; restores all role overwrites; rebuilds embed. Only the claimer can unclaim.                                                                      |
+| Button            | Action                       | Notes                                                                                                                                                                                                                                                                                                              |
+| ----------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Delete Ticket** | `del-confirm` → `del-ticket` | Two-step confirm; generates transcript before delete                                                                                                                                                                                                                                                               |
+| **Reply**         | `reply`                      | Shows saved reply select menu; supports variable fill-in modal for unknown vars                                                                                                                                                                                                                                    |
+| **Set Clan**      | `set-clan`                   | Clan select menu (inline collector); updates `clanTag`/`clanName` on ticket and re-edits the embed via `interaction.message.edit`                                                                                                                                                                                  |
+| **View Account**  | routes to `player` cmd       | Link button in ticket header (only shown when `accountTag` set); no in-file handler                                                                                                                                                                                                                                |
+| **Notify Me**     | `notify`                     | Toggles `notifyMeUserIds` array on ticket                                                                                                                                                                                                                                                                          |
+| **Claim**         | `claim`                      | Sets `claimedBy`. Gives the claimer a user overwrite that includes Manage Channels (staff checks use channel Manage Channels, so without it the claimer would lose access to staff actions). Removes all `pingRoleIds` + `viewOnlyRoleIds` overwrites and rebuilds the embed. Only shown if `btn.allowClaim=true`. |
+| **Unclaim**       | `unclaim`                    | Clears `claimedBy`. Deletes the claimer's overwrite, or strips its staff permissions when the claimer is the creator. Restores all role overwrites and rebuilds the embed. Only the claimer can unclaim.                                                                                                           |
 
 ---
 
@@ -479,14 +499,14 @@ All buttons in the ticket channel send CV2-format responses (no `content` field 
 
 Set per application type via `namingConvention`. Supported tokens:
 
-| Token            | Resolves to                                             |
-| ---------------- | ------------------------------------------------------- |
-| `{count}`        | Zero-padded ticket number (e.g. `0042`)                 |
-| `{user}`         | Creator's Discord username (alphanumeric, max 16 chars) |
-| `{account_name}` | Linked Clash of Clans account name (alphanumeric, max 16 chars)    |
-| `{account_th}`   | Linked account Town Hall level                          |
-| `{status}`       | Always `open` at creation                               |
-| `{emoji_status}` | Empty string at creation                                |
+| Token            | Resolves to                                                     |
+| ---------------- | --------------------------------------------------------------- |
+| `{count}`        | Zero-padded ticket number (e.g. `0042`)                         |
+| `{user}`         | Creator's Discord username (alphanumeric, max 16 chars)         |
+| `{account_name}` | Linked Clash of Clans account name (alphanumeric, max 16 chars) |
+| `{account_th}`   | Linked account Town Hall level                                  |
+| `{status}`       | Always `open` at creation                                       |
+| `{emoji_status}` | Empty string at creation                                        |
 
 The resolved name is further sanitized: non-alphanumeric chars become `-`, consecutive dashes collapsed, lowercased, max 100 chars.
 
@@ -498,11 +518,19 @@ The resolved name is further sanitized: non-alphanumeric chars become `-`, conse
 
 Three optional log channels per panel, configured in the **Logging** dashboard section:
 
-| Event         | Log channel key | Fires when                                                      |
-| ------------- | --------------- | --------------------------------------------------------------- |
-| Button click  | `buttonClick`   | User clicks "Create Ticket"                                     |
-| Status change | `statusChange`  | Ticket opened / closed / slept / reopened / claimed / unclaimed |
-| Ticket close  | `ticketClose`   | Ticket deleted (transcript attached)                            |
+| Event         | Log channel key | Fires when                                                                                                           |
+| ------------- | --------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Button click  | `buttonClick`   | User clicks "Create Ticket"                                                                                          |
+| Status change | `statusChange`  | Ticket opened / closed / slept / reopened / claimed / unclaimed. `By: ClashPerk` for auto-sleep and deleted channels |
+| Ticket close  | `ticketClose`   | Ticket closed by staff (transcript attached)                                                                         |
+
+## Auto-sleep
+
+`autoSleepHours` on a type sets `autoSleepAt` on new tickets and a Redis key `ticket:autosleep:<channelId>` with that TTL. Each message from the creator pushes the key's expiry out (`resetAutoSleep`). Every 5 minutes, each cluster sweeps due tickets in its own guilds. A ticket whose key is still alive gets its `autoSleepAt` moved to match. Otherwise it's slept with `sleepTicket(..., null)`, or closed with `markChannelDeleted` if its channel is gone.
+
+## Indexes
+
+Created in `src/struct/database.ts`: `Tickets` on `channelId`, `{guildId, count}`, `{guildId, creatorId, panelId, buttonId, status}` and `{status, autoSleepAt}`. `TicketSettings` on `guildId`.
 
 ---
 

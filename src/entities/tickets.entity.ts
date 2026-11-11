@@ -83,6 +83,8 @@ export interface TicketGuildSettingsEntity {
   _id: ObjectId;
   guildId: string;
   savedReplies: { name: string; content: string }[];
+  /** The last ticket number handed out in this guild. */
+  ticketCount?: number;
   updatedAt: Date;
 }
 
