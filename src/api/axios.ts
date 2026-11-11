@@ -4,6 +4,7 @@ import { Agent as HttpAgent } from 'http';
 import { Agent as HttpsAgent } from 'https';
 import { container } from 'tsyringe';
 import { Client } from '../struct/client.js';
+import { userAgent } from '../util/user-agent.js';
 import { Api, HttpClient } from './generated.js';
 
 /** Endpoints that answer with 404 as a normal "no data" result, not as a failure. */
@@ -42,6 +43,7 @@ const httpClient = new HttpClient({
 
 httpClient.instance.interceptors.request.use((config: RetryableConfig) => {
   config.startedAt ??= performance.now();
+  config.headers.set('User-Agent', userAgent(container.resolve(Client).user?.id));
   return config;
 });
 

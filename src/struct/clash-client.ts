@@ -6,12 +6,16 @@ import {
   APIClanWarAttack,
   APIClanWarLeagueGroup,
   APIWarClan,
+  OverrideOptions,
   RequestHandler,
   RestManager
 } from 'clashofclans.js';
+import { getInfo } from 'discord-hybrid-sharding';
 import moment from 'moment';
 import { isWinner } from '../helper/cwl.helper.js';
+import { userAgent } from '../util/user-agent.js';
 import { Client } from './client.js';
+import { HotPlayerTracer } from './hot-player-tracer.js';
 
 export function timeoutSignal(timeout: number, path: string) {
   if (!Number.isInteger(timeout)) {
@@ -32,6 +36,7 @@ export function timeoutSignal(timeout: number, path: string) {
 export class ClashClient extends RestManager {
   private bearerToken!: string;
   private linkApiURL = 'https://cocdiscord.link';
+  private hotPlayers = new HotPlayerTracer(getInfo().CLUSTER);
 
   public constructor(private readonly client: Client) {
     const keys = process.env.CLASH_OF_CLANS_API_KEYS?.split(',') ?? [];
@@ -51,6 +56,7 @@ export class ClashClient extends RestManager {
       retryOn: { statusCodes: [], errorCodes: ['ECONNRESET', 'EPIPE', 'UND_ERR_SOCKET'] },
       keys: [...keys],
       baseURL: process.env.CLASH_OF_CLANS_API_BASE_URL,
+      userAgent: userAgent(),
       onError: ({ path, status, body, retries, elapsed }) => {
         if (retries) {
           this.client.logger.debug(`${status} ${path} after ${retries} retry in ${elapsed} ms`, {
@@ -72,6 +78,13 @@ export class ClashClient extends RestManager {
         }
       }
     });
+  }
+
+  public override getPlayer(playerTag: string, options?: OverrideOptions) {
+    if (this.client.isFeatureEnabled(FeatureFlags.HOT_PLAYER_TRACE, 'global')) {
+      this.hotPlayers.record(this.fixTag(playerTag), this.getPlayer);
+    }
+    return super.getPlayer(playerTag, options);
   }
 
   public getClanURL(clanTag: string) {

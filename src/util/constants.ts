@@ -228,7 +228,8 @@ export enum FeatureFlags {
   CLAN_RULES_BUTTON = 'clan-rules-button',
   LAYOUT_VOTING = 'layout-voting',
   USE_DISCORD_LINK_API = 'use-discord-link-api',
-  AUTO_SYNC_PATREON = 'auto-sync-patreon'
+  AUTO_SYNC_PATREON = 'auto-sync-patreon',
+  HOT_PLAYER_TRACE = 'hot-player-trace'
 }
 
 export const enum Flags {

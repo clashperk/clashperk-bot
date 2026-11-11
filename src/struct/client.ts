@@ -40,6 +40,7 @@ import { StorageHandler } from './storage-handler.js';
 import { Subscribers } from './subscribers.js';
 import { TicketHandler } from './ticket-handler.js';
 import { startMetrics } from '../util/metrics.js';
+import { userAgent } from '../util/user-agent.js';
 
 export class Client extends DiscordClient<true> {
   public commandHandler = new CommandHandler(this, {
@@ -250,6 +251,7 @@ export class Client extends DiscordClient<true> {
     this.once('clientReady', async (client) => {
       // @ts-expect-error cluster typings
       client.cluster.triggerReady();
+      this.coc.requestHandler.userAgent = userAgent(client.user.id);
 
       await this.analytics.flush();
       await this.settings.init({ globalOnly: false });
