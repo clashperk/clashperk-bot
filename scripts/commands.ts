@@ -50,6 +50,7 @@ import { SUMMARY_COMMAND } from './commands/summary_command.js';
 import { TICKET_COMMAND } from './commands/ticket_command.js';
 import { TIMEZONE_COMMAND } from './commands/timezone_command.js';
 import { TRANSLATE_COMMAND } from './commands/translate_command.js';
+import { EXPAND_LINKS_COMMAND } from './commands/expand_links_command.js';
 import { UNITS_COMMAND } from './commands/units_command.js';
 import { UPGRADES_COMMAND } from './commands/upgrades_command.js';
 import { USAGE_COMMAND } from './commands/usage_command.js';
@@ -121,7 +122,8 @@ export const COMMANDS: RESTPostAPIApplicationCommandsJSONBody[] = [
   // -------- CONTEXT MENU COMMANDS--------
 
   WHOIS_COMMAND,
-  TRANSLATE_COMMAND
+  TRANSLATE_COMMAND,
+  EXPAND_LINKS_COMMAND
 ];
 
 export const MAIN_BOT_ONLY_COMMANDS: RESTPostAPIApplicationCommandsJSONBody[] = [

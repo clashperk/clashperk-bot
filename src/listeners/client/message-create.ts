@@ -1,24 +1,12 @@
 import { Settings } from '@app/constants';
 import { Message, PermissionFlagsBits } from 'discord.js';
+import {
+  findClashLinks,
+  linkParsingFor,
+  renderClashLinks,
+  takeLinkReply
+} from '../../helper/clash-links.helper.js';
 import { Command, Listener } from '../../lib/handlers.js';
-
-const IN_GAME_REGEX = /\bhttps:\/\/link\.clashofclans\.com\S+/gi;
-
-// const SHORT_LINK_REGEX = /\bhttps?:\/\/cprk\.us\S+/gi;
-
-// https://link.clashofclans.com/en?action=OpenPlayerProfile&tag=
-
-// https://link.clashofclans.com/en?action=OpenClanProfile&tag=
-
-// https://link.clashofclans.com/en?action=SupportCreator&id=
-
-// https://link.clashofclans.com/en?action=OpenMoreSettings
-
-// https://link.clashofclans.com/en?action=openhelpshift
-
-// https://link.clashofclans.com/en?action=OpenLayout&id=
-
-// https://link.clashofclans.com/en?action=CopyArmy&army=
 
 export default class MessageCreateListener extends Listener {
   public constructor() {
@@ -52,9 +40,8 @@ export default class MessageCreateListener extends Listener {
     )
       return;
 
-    if (IN_GAME_REGEX.test(message.content)) {
-      return this.linkParser(message);
-    }
+    const links = findClashLinks(message.content);
+    if (links.length) return this.expandLinks(message, links);
 
     const parsed = [`<@${this.client.user.id}>`, `<@!${this.client.user.id}>`]
       .map((mention) => this.parseWithPrefix(message.content, mention))
@@ -98,41 +85,25 @@ export default class MessageCreateListener extends Listener {
     }
   }
 
-  private linkParser(message: Message) {
-    const matches = (message.content.match(IN_GAME_REGEX) ?? []).slice(0, 3);
+  /** A mention asks for every link. Otherwise the server's setting picks channels and types. */
+  private async expandLinks(message: Message<true>, found: ReturnType<typeof findClashLinks>) {
+    if (this.client.settings.hasCustomBot(message.guild) && !this.client.isCustom()) return;
 
-    for (const text of matches) {
-      const url = new URL(text);
-      const action = url.searchParams.get('action')?.toLowerCase();
-      if (!action) continue;
+    const mentioned = message.mentions.users.has(this.client.user.id);
+    const config = mentioned ? null : linkParsingFor(this.client, message.channel);
+    if (!mentioned && !config) return;
 
-      switch (action) {
-        case 'openplayerprofile': {
-          const tag = url.searchParams.get('tag');
-          if (!tag) continue;
-          return this.client.commandHandler.getCommand('player')?.run(message, { tag });
-        }
-        case 'openclanprofile': {
-          const tag = url.searchParams.get('tag');
-          return this.client.commandHandler.getCommand('clan')?.run(message, { tag });
-        }
-        case 'supportcreator':
-          break;
-        case 'openmoresettings':
-          break;
-        case 'openhelpshift':
-          break;
-        case 'openlayout':
-          break;
-        case 'copyarmy': {
-          const army = url.searchParams.get('army');
-          if (!army) continue;
-          return this.client.commandHandler.getCommand('army')?.run(message, { link: url.href });
-        }
-        default:
-          break;
-      }
-    }
+    const links = config ? found.filter((link) => config.types.includes(link.type)) : found;
+    if (!links.length || !takeLinkReply(message.channelId)) return;
+
+    const payload = await renderClashLinks(
+      this.client,
+      message.guild,
+      message.guild.preferredLocale,
+      links
+    );
+    if (!payload.embeds.length) return;
+    return message.reply({ ...payload, allowedMentions: { repliedUser: false } }).catch(() => null);
   }
 
   private parseWithPrefix(messageContent: string, prefix: string) {

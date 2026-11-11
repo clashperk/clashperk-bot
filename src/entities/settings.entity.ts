@@ -19,6 +19,14 @@ export interface WelcomeLogConfig {
   embedColor: number | null;
 }
 
+/** Where Clash of Clans share links pasted in chat get a card. Written by the API. */
+export interface LinkParsingConfig {
+  enabled: boolean;
+  channelIds: string[];
+  categoryIds: string[];
+  types: ('player' | 'clan' | 'army' | 'base')[];
+}
+
 export interface SettingsEntity {
   guildId: string;
   commandWhitelist?: {

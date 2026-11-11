@@ -148,7 +148,7 @@ export default class PlayerCommand extends Command {
     });
   }
 
-  private async embed(data: APIPlayer) {
+  public async embed(data: APIPlayer) {
     const aggregated = await this.client.db
       .collection(Collections.PLAYERS)
       .findOne({ tag: data.tag }, { projection: { tag: 1, lastSeen: 1 } });
