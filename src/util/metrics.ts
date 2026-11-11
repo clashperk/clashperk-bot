@@ -1,8 +1,5 @@
 import { collectDefaultMetrics, Counter, Histogram, register } from '@prometheus-io/client';
 import { getInfo } from 'discord-hybrid-sharding';
-import diagnostics from 'node:diagnostics_channel';
-import type { EventEmitter } from 'node:events';
-import type { Socket } from 'node:net';
 import {
   Events,
   Interaction,
@@ -66,33 +63,6 @@ const commandReplySeconds = new Counter({
   labelNames: ['command']
 });
 
-// Temporary, to find why CoC requests open new connections. Remove once known.
-const COC_ORIGIN = 'https://api.clashofclans.com';
-const cocRequests = new Counter({
-  name: 'coc_api_requests_total',
-  help: 'CoC API requests by whether they reused an open connection or opened a new one',
-  labelNames: ['connection']
-});
-const cocPhases = new Histogram({
-  name: 'coc_api_request_phase_seconds',
-  help: 'CoC API request time by phase: wait (created until sent), server (sent until headers), body (headers until done)',
-  labelNames: ['phase', 'connection'],
-  buckets: [0.01, 0.025, 0.05, 0.1, 0.2, 0.3, 0.5, 1, 2]
-});
-const cocDisconnects = new Counter({
-  name: 'coc_api_disconnects_total',
-  help: 'CoC API connections closed, by reason',
-  labelNames: ['reason']
-});
-
-function disconnectReason(error: unknown) {
-  const { code, message = '' } = (error ?? {}) as { code?: string; message?: string };
-  if (/idle timeout/i.test(message)) return 'idle_timeout';
-  if (/other side closed/i.test(message)) return 'server_closed';
-  if (/abort/i.test(message) || code === 'UND_ERR_ABORTED') return 'aborted';
-  return code ?? 'unknown';
-}
-
 /** Command name with its subcommand group and subcommand, e.g. "history clan-games"; null if not a command. */
 function commandOf(interaction: Interaction) {
   if (interaction.isChatInputCommand()) {
@@ -119,47 +89,6 @@ export function startMetrics(client: Client) {
   }
 
   collectDefaultMetrics();
-
-  const usedSockets = new WeakSet<Socket>();
-  const timings = new WeakMap<
-    object,
-    { created: number; sent?: number; headers?: number; connection?: string }
-  >();
-  const isCoc = (request: { origin?: unknown }) => String(request.origin) === COC_ORIGIN;
-  diagnostics.subscribe('undici:request:create', (message) => {
-    const { request } = message as { request: { origin?: unknown } };
-    if (isCoc(request)) timings.set(request, { created: performance.now() });
-  });
-  diagnostics.subscribe('undici:client:sendHeaders', (message) => {
-    const { request, socket } = message as { request: { origin?: unknown }; socket: Socket };
-    if (!isCoc(request)) return;
-    const connection = usedSockets.has(socket) ? 'reused' : 'new';
-    cocRequests.inc({ connection });
-    usedSockets.add(socket);
-    const t = timings.get(request);
-    if (!t) return;
-    t.sent = performance.now();
-    t.connection = connection;
-    cocPhases.observe({ phase: 'wait', connection }, (t.sent - t.created) / 1000);
-  });
-  diagnostics.subscribe('undici:request:headers', (message) => {
-    const t = timings.get((message as { request: object }).request);
-    if (!t?.sent || !t.connection) return;
-    t.headers = performance.now();
-    cocPhases.observe({ phase: 'server', connection: t.connection }, (t.headers - t.sent) / 1000);
-  });
-  diagnostics.subscribe('undici:request:trailers', (message) => {
-    const t = timings.get((message as { request: object }).request);
-    if (!t?.headers || !t.connection) return;
-    cocPhases.observe(
-      { phase: 'body', connection: t.connection },
-      (performance.now() - t.headers) / 1000
-    );
-  });
-  const { dispatcher } = client.coc.requestHandler as unknown as { dispatcher: EventEmitter };
-  dispatcher.on('disconnect', (_origin, _targets, error) => {
-    cocDisconnects.inc({ reason: disconnectReason(error) });
-  });
 
   // The callback request only carries the interaction id, so keep each id's details until it is answered.
   const pending = new Map<string, { type: string; command: string | null; token: string }>();
