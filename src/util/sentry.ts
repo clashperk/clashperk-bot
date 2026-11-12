@@ -19,6 +19,8 @@ export const sentryConfig: NodeOptions = {
 
   ignoreSpans: [{ op: /^(?!command_executed|http\.client|db)/ }],
   beforeSendTransaction(event) {
+    // Work a command doesn't await can end after its trace is sent and arrive as a trace of its own.
+    if (event.contexts?.trace?.op !== 'command_executed') return null;
     if (Math.random() >= CHILD_SPAN_RATE) event.spans = [];
     return event;
   },
