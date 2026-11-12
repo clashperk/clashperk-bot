@@ -12,6 +12,7 @@ import {
 } from 'discord.js';
 import { Command } from '../../lib/handlers.js';
 import { EMOJIS } from '../../util/emojis.js';
+import { createModalCollector } from '../../util/pagination.js';
 
 export default class LinkAddCommand extends Command {
   public constructor() {
@@ -134,22 +135,28 @@ export default class LinkAddCommand extends Command {
       modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(tokenInput));
     }
 
-    await this.showModal(interaction, modal, async (modalSubmit) => {
-      const tag = modalSubmit.fields.getTextInputValue(customIds.tag);
-      const token =
-        token_field === 'hidden' ? null : modalSubmit.fields.getTextInputValue(customIds.token);
-      await modalSubmit.deferReply({ flags: MessageFlags.Ephemeral });
+    await interaction.showModal(modal);
 
-      const { body: data, res } = await this.client.coc.getPlayer(tag);
-      if (!res.ok) {
-        return modalSubmit.editReply({ content: 'Invalid player tag was provided.' });
+    createModalCollector({
+      customId: customIds.modal,
+      interaction,
+      onSubmit: async (modalSubmit) => {
+        const tag = modalSubmit.fields.getTextInputValue(customIds.tag);
+        const token =
+          token_field === 'hidden' ? null : modalSubmit.fields.getTextInputValue(customIds.token);
+        await modalSubmit.deferReply({ flags: MessageFlags.Ephemeral });
+
+        const { body: data, res } = await this.client.coc.getPlayer(tag);
+        if (!res.ok) {
+          return modalSubmit.editReply({ content: 'Invalid player tag was provided.' });
+        }
+
+        if (token) {
+          return this.verify(modalSubmit, data, token);
+        }
+
+        return this.playerLink(modalSubmit, { player: data, member: interaction.member });
       }
-
-      if (token) {
-        return this.verify(modalSubmit, data, token);
-      }
-
-      return this.playerLink(modalSubmit, { player: data, member: interaction.member });
     });
   }
 

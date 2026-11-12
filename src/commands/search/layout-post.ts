@@ -27,6 +27,7 @@ import { shake } from 'radash';
 import { Command, CommandOptions } from '../../lib/handlers.js';
 import { layoutLabel } from '../../helper/layouts.helper.js';
 import { EMOJIS } from '../../util/emojis.js';
+import { createModalCollector } from '../../util/pagination.js';
 import { Util } from '../../util/toolkit.js';
 
 const LAYOUT_REGEX =
@@ -142,22 +143,28 @@ export default class LayoutCommand extends Command {
         )
     );
 
-    await this.showModal(interaction, modal, async (submit) => {
-      args.layout_link = submit.fields.getTextInputValue(customIds.link);
-      args.notes = submit.fields.getTextInputValue(customIds.notes);
-      const image = submit.fields.getUploadedFiles(customIds.screenshot)?.first();
+    await interaction.showModal(modal);
 
-      await submit.deferUpdate();
+    createModalCollector({
+      customId: modalCustomId,
+      interaction,
+      onSubmit: async (submit) => {
+        args.layout_link = submit.fields.getTextInputValue(customIds.link);
+        args.notes = submit.fields.getTextInputValue(customIds.notes);
+        const image = submit.fields.getUploadedFiles(customIds.screenshot)?.first();
 
-      if (image && !image.contentType?.startsWith('image/')) {
-        return submit.followUp({
-          flags: MessageFlags.Ephemeral,
-          content: 'The screenshot must be an image. Nothing was changed.'
-        });
+        await submit.deferUpdate();
+
+        if (image && !image.contentType?.startsWith('image/')) {
+          return submit.followUp({
+            flags: MessageFlags.Ephemeral,
+            content: 'The screenshot must be an image. Nothing was changed.'
+          });
+        }
+        if (image) args.screenshot = image.url;
+
+        return this.handleSubmit(interaction, args);
       }
-      if (image) args.screenshot = image.url;
-
-      return this.handleSubmit(interaction, args);
     });
   }
 
@@ -293,7 +300,8 @@ export default class LayoutCommand extends Command {
         )
       );
 
-    await this.showModal(interaction, modal, (submit) => submit.deferUpdate());
+    await interaction.showModal(modal);
+    createModalCollector({ customId, interaction, onSubmit: (submit) => submit.deferUpdate() });
 
     await this.collection.updateOne(filter, { $addToSet: { downloader: interaction.user.id } });
     const isNew = !layout.downloader.includes(interaction.user.id);

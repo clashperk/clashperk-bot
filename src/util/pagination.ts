@@ -5,10 +5,13 @@ import {
   ButtonStyle,
   ChannelSelectMenuInteraction,
   CommandInteraction,
+  DiscordjsError,
+  DiscordjsErrorCodes,
   EmbedBuilder,
   InteractionEditReplyOptions,
   Message,
   MessageComponentInteraction,
+  ModalSubmitInteraction,
   RoleSelectMenuInteraction,
   StringSelectMenuInteraction,
   UserSelectMenuInteraction
@@ -337,4 +340,29 @@ export const createInteractionCollector = ({
   );
 
   return collector;
+};
+
+/** Handles a modal submit without blocking the command, so its span doesn't time the user filling it in. */
+export const createModalCollector = ({
+  customId,
+  interaction,
+  onSubmit
+}: {
+  customId: string;
+  interaction: CommandInteraction<'cached'> | MessageComponentInteraction<'cached'>;
+  onSubmit: (interaction: ModalSubmitInteraction<'cached'>) => unknown;
+}) => {
+  interaction
+    .awaitModalSubmit({ time: 10 * 60 * 1000, filter: (action) => action.customId === customId })
+    .then(
+      logFailures('modal', async (action: ModalSubmitInteraction<'cached'>) => onSubmit(action))
+    )
+    .catch((error) => {
+      if (
+        error instanceof DiscordjsError &&
+        error.code === DiscordjsErrorCodes.InteractionCollectorError
+      )
+        return;
+      container.resolve(Client).logger.error(`modal ~ ${error.message}`, { label: 'COLLECTOR' });
+    });
 };

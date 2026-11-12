@@ -4,14 +4,11 @@ import {
   ApplicationCommandOptionType,
   AutocompleteInteraction,
   BaseInteraction,
-  CacheType,
   ChatInputCommandInteraction,
   ClientEvents,
   Collection,
   CommandInteraction,
   CommandInteractionOption,
-  DiscordjsError,
-  DiscordjsErrorCodes,
   Events,
   GuildBasedChannel,
   Interaction,
@@ -20,8 +17,6 @@ import {
   MessageComponentInteraction,
   MessageContextMenuCommandInteraction,
   MessageFlags,
-  ModalBuilder,
-  ModalSubmitInteraction,
   PermissionsString,
   RestEvents,
   StringSelectMenuInteraction,
@@ -70,8 +65,6 @@ export type Args = Record<
     default?: unknown | ((value: unknown) => unknown);
   } | null
 >;
-
-const MODAL_TIMEOUT_MS = 10 * 60 * 1000;
 
 const deferredDisallowed = ['link-add'];
 
@@ -766,34 +759,6 @@ export class Command implements CommandOptions {
 
   public createId(payload: CustomIdProps) {
     return this.client.redis.createCustomId(payload);
-  }
-
-  /**
-   * Shows the modal and handles its submit without blocking `exec`,
-   * so the command span doesn't time the user filling it in.
-   */
-  public async showModal<Cached extends CacheType>(
-    interaction: CommandInteraction<Cached> | MessageComponentInteraction<Cached>,
-    modal: ModalBuilder,
-    listener: (submit: ModalSubmitInteraction<Cached>) => Promise<unknown>
-  ) {
-    await interaction.showModal(modal);
-
-    const customId = modal.data.custom_id;
-    interaction
-      .awaitModalSubmit({
-        time: MODAL_TIMEOUT_MS,
-        filter: (submit) => submit.customId === customId
-      })
-      .then(listener)
-      .catch((error) => {
-        if (
-          error instanceof DiscordjsError &&
-          error.code === DiscordjsErrorCodes.InteractionCollectorError
-        )
-          return;
-        this.handler.emit(CommandHandlerEvents.ERROR, error, interaction, this);
-      });
   }
 
   public reply(text: string): InteractionEditReplyOptions {
