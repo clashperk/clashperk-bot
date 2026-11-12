@@ -134,33 +134,23 @@ export default class LinkAddCommand extends Command {
       modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(tokenInput));
     }
 
-    await interaction.showModal(modal);
+    await this.showModal(interaction, modal, async (modalSubmit) => {
+      const tag = modalSubmit.fields.getTextInputValue(customIds.tag);
+      const token =
+        token_field === 'hidden' ? null : modalSubmit.fields.getTextInputValue(customIds.token);
+      await modalSubmit.deferReply({ flags: MessageFlags.Ephemeral });
 
-    this.onModalSubmit(
-      interaction,
-      {
-        time: 10 * 60 * 1000,
-        dispose: true,
-        filter: (action) => action.customId === customIds.modal
-      },
-      async (modalSubmit) => {
-        const tag = modalSubmit.fields.getTextInputValue(customIds.tag);
-        const token =
-          token_field === 'hidden' ? null : modalSubmit.fields.getTextInputValue(customIds.token);
-        await modalSubmit.deferReply({ flags: MessageFlags.Ephemeral });
-
-        const { body: data, res } = await this.client.coc.getPlayer(tag);
-        if (!res.ok) {
-          return modalSubmit.editReply({ content: 'Invalid player tag was provided.' });
-        }
-
-        if (token) {
-          return this.verify(modalSubmit, data, token);
-        }
-
-        return this.playerLink(modalSubmit, { player: data, member: interaction.member });
+      const { body: data, res } = await this.client.coc.getPlayer(tag);
+      if (!res.ok) {
+        return modalSubmit.editReply({ content: 'Invalid player tag was provided.' });
       }
-    );
+
+      if (token) {
+        return this.verify(modalSubmit, data, token);
+      }
+
+      return this.playerLink(modalSubmit, { player: data, member: interaction.member });
+    });
   }
 
   private async verify(

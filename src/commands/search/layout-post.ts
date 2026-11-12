@@ -142,29 +142,23 @@ export default class LayoutCommand extends Command {
         )
     );
 
-    await interaction.showModal(modal);
+    await this.showModal(interaction, modal, async (submit) => {
+      args.layout_link = submit.fields.getTextInputValue(customIds.link);
+      args.notes = submit.fields.getTextInputValue(customIds.notes);
+      const image = submit.fields.getUploadedFiles(customIds.screenshot)?.first();
 
-    this.onModalSubmit(
-      interaction,
-      { time: 10 * 60 * 1000, filter: (action) => action.customId === modalCustomId },
-      async (submit) => {
-        args.layout_link = submit.fields.getTextInputValue(customIds.link);
-        args.notes = submit.fields.getTextInputValue(customIds.notes);
-        const image = submit.fields.getUploadedFiles(customIds.screenshot)?.first();
+      await submit.deferUpdate();
 
-        await submit.deferUpdate();
-
-        if (image && !image.contentType?.startsWith('image/')) {
-          return submit.followUp({
-            flags: MessageFlags.Ephemeral,
-            content: 'The screenshot must be an image. Nothing was changed.'
-          });
-        }
-        if (image) args.screenshot = image.url;
-
-        return this.handleSubmit(interaction, args);
+      if (image && !image.contentType?.startsWith('image/')) {
+        return submit.followUp({
+          flags: MessageFlags.Ephemeral,
+          content: 'The screenshot must be an image. Nothing was changed.'
+        });
       }
-    );
+      if (image) args.screenshot = image.url;
+
+      return this.handleSubmit(interaction, args);
+    });
   }
 
   public async handleSubmit(
@@ -299,7 +293,7 @@ export default class LayoutCommand extends Command {
         )
       );
 
-    await interaction.showModal(modal);
+    await this.showModal(interaction, modal, (submit) => submit.deferUpdate());
 
     await this.collection.updateOne(filter, { $addToSet: { downloader: interaction.user.id } });
     const isNew = !layout.downloader.includes(interaction.user.id);
@@ -309,12 +303,6 @@ export default class LayoutCommand extends Command {
       downloads: layout.downloader.length + (isNew ? 1 : 0)
     });
     await interaction.editReply({ components: [row] });
-
-    this.onModalSubmit(
-      interaction,
-      { time: 10 * 60 * 1000, filter: (action) => action.customId === customId },
-      (submit) => submit.deferUpdate()
-    );
   }
 
   private async viewDownloader(interaction: ButtonInteraction<'cached'>) {

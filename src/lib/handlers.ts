@@ -3,7 +3,6 @@ import { startSpan } from '@sentry/node';
 import {
   ApplicationCommandOptionType,
   AutocompleteInteraction,
-  AwaitModalSubmitOptions,
   BaseInteraction,
   CacheType,
   ChatInputCommandInteraction,
@@ -21,6 +20,7 @@ import {
   MessageComponentInteraction,
   MessageContextMenuCommandInteraction,
   MessageFlags,
+  ModalBuilder,
   ModalSubmitInteraction,
   PermissionsString,
   RestEvents,
@@ -70,6 +70,8 @@ export type Args = Record<
     default?: unknown | ((value: unknown) => unknown);
   } | null
 >;
+
+const MODAL_TIMEOUT_MS = 10 * 60 * 1000;
 
 const deferredDisallowed = ['link-add'];
 
@@ -766,14 +768,23 @@ export class Command implements CommandOptions {
     return this.client.redis.createCustomId(payload);
   }
 
-  /** Handles a modal submit without blocking `exec`, so the command span doesn't time the user filling it in. */
-  public onModalSubmit<Cached extends CacheType>(
+  /**
+   * Shows the modal and handles its submit without blocking `exec`,
+   * so the command span doesn't time the user filling it in.
+   */
+  public async showModal<Cached extends CacheType>(
     interaction: CommandInteraction<Cached> | MessageComponentInteraction<Cached>,
-    options: AwaitModalSubmitOptions<ModalSubmitInteraction>,
+    modal: ModalBuilder,
     listener: (submit: ModalSubmitInteraction<Cached>) => Promise<unknown>
   ) {
+    await interaction.showModal(modal);
+
+    const customId = modal.data.custom_id;
     interaction
-      .awaitModalSubmit(options)
+      .awaitModalSubmit({
+        time: MODAL_TIMEOUT_MS,
+        filter: (submit) => submit.customId === customId
+      })
       .then(listener)
       .catch((error) => {
         if (
