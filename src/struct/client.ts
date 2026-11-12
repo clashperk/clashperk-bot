@@ -4,6 +4,7 @@ import { ClusterClient, getInfo } from 'discord-hybrid-sharding';
 import {
   BaseInteraction,
   Client as DiscordClient,
+  DefaultRestOptions,
   GatewayIntentBits,
   Message,
   Options,
@@ -40,6 +41,7 @@ import { StorageHandler } from './storage-handler.js';
 import { Subscribers } from './subscribers.js';
 import { TicketHandler } from './ticket-handler.js';
 import { startMetrics } from '../util/metrics.js';
+import { diagnoseRequests } from '../util/rest-diagnostics.js';
 import { userAgent } from '../util/user-agent.js';
 
 export class Client extends DiscordClient<true> {
@@ -99,6 +101,7 @@ export class Client extends DiscordClient<true> {
     super({
       shardCount: getInfo().TOTAL_SHARDS,
       shards: getInfo().SHARD_LIST,
+      rest: { makeRequest: diagnoseRequests(DefaultRestOptions.makeRequest) },
 
       intents: [
         GatewayIntentBits.Guilds,
