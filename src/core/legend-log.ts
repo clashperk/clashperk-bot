@@ -10,12 +10,19 @@ import {
 } from 'discord.js';
 import moment from 'moment';
 import { ObjectId, WithId } from 'mongodb';
+import { parallel } from 'radash';
 import { BattleLogDto } from '../api/generated.js';
 import { getLegendBattleLog } from '../helper/legends.helper.js';
 import { padStart } from '../util/helper.js';
 import { Season, Util } from '../util/toolkit.js';
 import { Enqueuer } from './enqueuer.js';
 import { RootLog } from './root-log.js';
+
+// Every cluster posts right after the legend reset, so each clan's fetches stay few at a time.
+const BATTLE_LOG_CONCURRENCY = 3;
+// The day's last battles can be ingested a little after the reset, so an empty day is final only after this.
+const EMPTY_DAY_SETTLE_MS = 60 * 60 * 1000;
+const NOTHING_TO_POST = Symbol('nothing-to-post');
 
 export class LegendLog extends RootLog {
   declare public cached: Collection<string, Cache>;
@@ -41,6 +48,13 @@ export class LegendLog extends RootLog {
     if (cache.logType !== data.logType) return null;
 
     const embed = await this.embed(cache);
+    if (embed === NOTHING_TO_POST) {
+      const { startTime } = Util.getCurrentLegendTimestamp();
+      if (Date.now() - startTime < EMPTY_DAY_SETTLE_MS) return null;
+      // Marked as posted so the refresh stops fetching this clan until the next day.
+      await this.collection.updateOne({ _id: cache._id }, { $set: { lastPostedAt: new Date() } });
+      return null;
+    }
     if (!embed) return null;
 
     const msg = await this.send(cache, webhook, {
@@ -73,9 +87,16 @@ export class LegendLog extends RootLog {
     const legendMembers = clan.memberList.filter(
       (mem) => mem.leagueTier && mem.leagueTier.id === LEGEND_LEAGUE_ID
     );
-    const battleLogResults = await Promise.all(
-      legendMembers.map((m) => getLegendBattleLog(m.tag).catch(() => [] as BattleLogDto[]))
+    let failed = 0;
+    const battleLogResults = await parallel(BATTLE_LOG_CONCURRENCY, legendMembers, (m) =>
+      getLegendBattleLog(m.tag).catch(() => {
+        failed++;
+        return [] as BattleLogDto[];
+      })
     );
+    // A partial summary would leave members out, so the next refresh tries again.
+    if (failed) return null;
+
     const logsByTag = new Map<string, BattleLogDto[]>(
       legendMembers.map((m, i) => [m.tag, battleLogResults[i]])
     );
@@ -105,6 +126,7 @@ export class LegendLog extends RootLog {
         currentTrophies
       });
     }
+    if (!members.length) return NOTHING_TO_POST;
     members.sort((a, b) => b.currentTrophies - a.currentTrophies);
 
     const embed = new EmbedBuilder()
@@ -136,7 +158,6 @@ export class LegendLog extends RootLog {
       text: `End of Day ${Util.getPreviousLegendDay()}/${moment(season.endTime).diff(season.startTime, 'days')} (${Util.leagueSeasonLabel(season.id)})`
     });
 
-    if (!members.length) return null;
     return embed;
   }
 
