@@ -112,8 +112,12 @@ export class ClanWarLog extends RootLog {
       if (data.warTag && cache.logType !== ClanLogType.CWL_ATTACK_LOG) return null;
       if (!data.warTag && cache.logType !== ClanLogType.WAR_ATTACK_LOG) return null;
 
-      const content = this.getAttackLogMessage(data);
-      return this.send(cache, webhook, { content, threadId: cache.threadId });
+      // Many attacks at once (a missed poll, a busy CWL round) can pass Discord's 2000 character limit.
+      let msg = null;
+      for (const content of Util.splitMessage(this.getAttackLogMessage(data))) {
+        msg = await this.send(cache, webhook, { content, threadId: cache.threadId });
+      }
+      return msg;
     }
 
     if (data.warTag && cache.logType !== ClanLogType.CWL_EMBED_LOG) return null;
