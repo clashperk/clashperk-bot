@@ -3,12 +3,16 @@ import { startSpan } from '@sentry/node';
 import {
   ApplicationCommandOptionType,
   AutocompleteInteraction,
+  AwaitModalSubmitOptions,
   BaseInteraction,
+  CacheType,
   ChatInputCommandInteraction,
   ClientEvents,
   Collection,
   CommandInteraction,
   CommandInteractionOption,
+  DiscordjsError,
+  DiscordjsErrorCodes,
   Events,
   GuildBasedChannel,
   Interaction,
@@ -17,6 +21,7 @@ import {
   MessageComponentInteraction,
   MessageContextMenuCommandInteraction,
   MessageFlags,
+  ModalSubmitInteraction,
   PermissionsString,
   RestEvents,
   StringSelectMenuInteraction,
@@ -759,6 +764,25 @@ export class Command implements CommandOptions {
 
   public createId(payload: CustomIdProps) {
     return this.client.redis.createCustomId(payload);
+  }
+
+  /** Handles a modal submit without blocking `exec`, so the command span doesn't time the user filling it in. */
+  public onModalSubmit<Cached extends CacheType>(
+    interaction: CommandInteraction<Cached> | MessageComponentInteraction<Cached>,
+    options: AwaitModalSubmitOptions<ModalSubmitInteraction>,
+    listener: (submit: ModalSubmitInteraction<Cached>) => Promise<unknown>
+  ) {
+    interaction
+      .awaitModalSubmit(options)
+      .then(listener)
+      .catch((error) => {
+        if (
+          error instanceof DiscordjsError &&
+          error.code === DiscordjsErrorCodes.InteractionCollectorError
+        )
+          return;
+        this.handler.emit(CommandHandlerEvents.ERROR, error, interaction, this);
+      });
   }
 
   public reply(text: string): InteractionEditReplyOptions {
