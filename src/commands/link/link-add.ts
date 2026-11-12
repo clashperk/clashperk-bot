@@ -12,7 +12,7 @@ import {
 } from 'discord.js';
 import { Command } from '../../lib/handlers.js';
 import { EMOJIS } from '../../util/emojis.js';
-import { createModalCollector } from '../../util/pagination.js';
+import { createModalCollector } from '../../util/collectors.js';
 
 export default class LinkAddCommand extends Command {
   public constructor() {

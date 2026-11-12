@@ -23,7 +23,7 @@ import {
   RosterCommandSortOptions as sortingItems
 } from '../../util/command.options.js';
 import { getExportComponents } from '../../util/helper.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 export default class RosterEditCommand extends Command {
   public constructor() {

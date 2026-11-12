@@ -27,7 +27,7 @@ import { shake } from 'radash';
 import { Command, CommandOptions } from '../../lib/handlers.js';
 import { layoutLabel } from '../../helper/layouts.helper.js';
 import { EMOJIS } from '../../util/emojis.js';
-import { createModalCollector } from '../../util/pagination.js';
+import { createModalCollector } from '../../util/collectors.js';
 import { Util } from '../../util/toolkit.js';
 
 const LAYOUT_REGEX =

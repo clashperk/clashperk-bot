@@ -18,7 +18,7 @@ import {
 import { title } from 'radash';
 import { NicknamingAccountPreference } from '../../core/roles-manager.js';
 import { Command } from '../../lib/handlers.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 // {NAME} | {PLAYER_NAME}
 // {TH} | {TOWN_HALL}

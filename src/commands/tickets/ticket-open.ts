@@ -34,7 +34,7 @@ import { ObjectId, WithId } from 'mongodb';
 import { nanoid } from 'nanoid';
 import { Command } from '../../lib/handlers.js';
 import { EMOJIS } from '../../util/emojis.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 // Buttons inside a ticket that only staff may use; the creator can still open and get notified.
 const STAFF_ACTIONS = ['del-confirm', 'del-ticket', 'reply', 'set-clan', 'claim', 'unclaim'];

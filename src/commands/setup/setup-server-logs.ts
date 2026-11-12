@@ -23,7 +23,7 @@ import {
 import { Args, Command } from '../../lib/handlers.js';
 import { dashboardButton, dashboardRow } from '../../util/helper.js';
 import { resolveColorCode } from '../../lib/util.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 export default class SetupUtilsCommand extends Command {
   public constructor() {

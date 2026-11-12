@@ -9,7 +9,7 @@ import {
   RoleSelectMenuBuilder
 } from 'discord.js';
 import { Command } from '../../lib/handlers.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 export default class RemindersConfigCommand extends Command {
   public constructor() {
