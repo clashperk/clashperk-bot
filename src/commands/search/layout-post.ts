@@ -10,8 +10,6 @@ import {
   ButtonStyle,
   CommandInteraction,
   ComponentType,
-  DiscordjsError,
-  DiscordjsErrorCodes,
   FileUploadBuilder,
   Guild,
   LabelBuilder,
@@ -29,6 +27,7 @@ import { shake } from 'radash';
 import { Command, CommandOptions } from '../../lib/handlers.js';
 import { layoutLabel } from '../../helper/layouts.helper.js';
 import { EMOJIS } from '../../util/emojis.js';
+import { createModalCollector } from '../../util/collectors.js';
 import { Util } from '../../util/toolkit.js';
 
 const LAYOUT_REGEX =
@@ -144,37 +143,29 @@ export default class LayoutCommand extends Command {
         )
     );
 
-    try {
-      await interaction.showModal(modal);
+    await interaction.showModal(modal);
 
-      const modalSubmitInteraction = await interaction.awaitModalSubmit({
-        time: 10 * 60 * 1000,
-        filter: (action) => action.customId === modalCustomId
-      });
+    createModalCollector({
+      customId: modalCustomId,
+      interaction,
+      onSubmit: async (submit) => {
+        args.layout_link = submit.fields.getTextInputValue(customIds.link);
+        args.notes = submit.fields.getTextInputValue(customIds.notes);
+        const image = submit.fields.getUploadedFiles(customIds.screenshot)?.first();
 
-      args.layout_link = modalSubmitInteraction.fields.getTextInputValue(customIds.link);
-      args.notes = modalSubmitInteraction.fields.getTextInputValue(customIds.notes);
-      const image = modalSubmitInteraction.fields.getUploadedFiles(customIds.screenshot)?.first();
+        await submit.deferUpdate();
 
-      await modalSubmitInteraction.deferUpdate();
+        if (image && !image.contentType?.startsWith('image/')) {
+          return submit.followUp({
+            flags: MessageFlags.Ephemeral,
+            content: 'The screenshot must be an image. Nothing was changed.'
+          });
+        }
+        if (image) args.screenshot = image.url;
 
-      if (image && !image.contentType?.startsWith('image/')) {
-        return await modalSubmitInteraction.followUp({
-          flags: MessageFlags.Ephemeral,
-          content: 'The screenshot must be an image. Nothing was changed.'
-        });
+        return this.handleSubmit(interaction, args);
       }
-      if (image) args.screenshot = image.url;
-
-      return await this.handleSubmit(interaction, args);
-    } catch (error) {
-      if (!(
-        error instanceof DiscordjsError &&
-        error.code === DiscordjsErrorCodes.InteractionCollectorError
-      )) {
-        throw error;
-      }
-    }
+    });
   }
 
   public async handleSubmit(
@@ -309,32 +300,17 @@ export default class LayoutCommand extends Command {
         )
       );
 
-    try {
-      await interaction.showModal(modal);
+    await interaction.showModal(modal);
+    createModalCollector({ customId, interaction, onSubmit: (submit) => submit.deferUpdate() });
 
-      await this.collection.updateOne(filter, { $addToSet: { downloader: interaction.user.id } });
-      const isNew = !layout.downloader.includes(interaction.user.id);
-      const row = this.getComponents({
-        ...args,
-        allow_layout_tracking: true,
-        downloads: layout.downloader.length + (isNew ? 1 : 0)
-      });
-      await interaction.editReply({ components: [row] });
-
-      const modalSubmitInteraction = await interaction.awaitModalSubmit({
-        time: 10 * 60 * 1000,
-        filter: (action) => action.customId === customId
-      });
-
-      return await modalSubmitInteraction.deferUpdate();
-    } catch (error) {
-      if (!(
-        error instanceof DiscordjsError &&
-        error.code === DiscordjsErrorCodes.InteractionCollectorError
-      )) {
-        throw error;
-      }
-    }
+    await this.collection.updateOne(filter, { $addToSet: { downloader: interaction.user.id } });
+    const isNew = !layout.downloader.includes(interaction.user.id);
+    const row = this.getComponents({
+      ...args,
+      allow_layout_tracking: true,
+      downloads: layout.downloader.length + (isNew ? 1 : 0)
+    });
+    await interaction.editReply({ components: [row] });
   }
 
   private async viewDownloader(interaction: ButtonInteraction<'cached'>) {

@@ -3,8 +3,6 @@ import { APIPlayer } from 'clashofclans.js';
 import {
   ActionRowBuilder,
   ButtonInteraction,
-  DiscordjsError,
-  DiscordjsErrorCodes,
   GuildMember,
   MessageFlags,
   ModalBuilder,
@@ -14,6 +12,7 @@ import {
 } from 'discord.js';
 import { Command } from '../../lib/handlers.js';
 import { EMOJIS } from '../../util/emojis.js';
+import { createModalCollector } from '../../util/collectors.js';
 
 export default class LinkAddCommand extends Command {
   public constructor() {
@@ -138,37 +137,27 @@ export default class LinkAddCommand extends Command {
 
     await interaction.showModal(modal);
 
-    try {
-      await interaction
-        .awaitModalSubmit({
-          time: 10 * 60 * 1000,
-          dispose: true,
-          filter: (action) => action.customId === customIds.modal
-        })
-        .then(async (modalSubmit) => {
-          const tag = modalSubmit.fields.getTextInputValue(customIds.tag);
-          const token =
-            token_field === 'hidden' ? null : modalSubmit.fields.getTextInputValue(customIds.token);
-          await modalSubmit.deferReply({ flags: MessageFlags.Ephemeral });
+    createModalCollector({
+      customId: customIds.modal,
+      interaction,
+      onSubmit: async (modalSubmit) => {
+        const tag = modalSubmit.fields.getTextInputValue(customIds.tag);
+        const token =
+          token_field === 'hidden' ? null : modalSubmit.fields.getTextInputValue(customIds.token);
+        await modalSubmit.deferReply({ flags: MessageFlags.Ephemeral });
 
-          const { body: data, res } = await this.client.coc.getPlayer(tag);
-          if (!res.ok) {
-            return modalSubmit.editReply({ content: 'Invalid player tag was provided.' });
-          }
+        const { body: data, res } = await this.client.coc.getPlayer(tag);
+        if (!res.ok) {
+          return modalSubmit.editReply({ content: 'Invalid player tag was provided.' });
+        }
 
-          if (token) {
-            return this.verify(modalSubmit, data, token);
-          }
+        if (token) {
+          return this.verify(modalSubmit, data, token);
+        }
 
-          return this.playerLink(modalSubmit, { player: data, member: interaction.member });
-        });
-    } catch (e) {
-      if (!(
-        e instanceof DiscordjsError && e.code === DiscordjsErrorCodes.InteractionCollectorError
-      )) {
-        throw e;
+        return this.playerLink(modalSubmit, { player: data, member: interaction.member });
       }
-    }
+    });
   }
 
   private async verify(

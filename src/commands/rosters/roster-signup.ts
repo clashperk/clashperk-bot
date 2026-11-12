@@ -12,7 +12,7 @@ import { Command } from '../../lib/handlers.js';
 import { RosterLog } from '../../struct/roster-manager.js';
 import { TOWN_HALLS } from '../../util/emojis.js';
 import { sumHeroes } from '../../util/helper.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 export default class RosterSignupCommand extends Command {
   public constructor() {

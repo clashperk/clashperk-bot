@@ -33,7 +33,7 @@ import {
   RosterLog
 } from '../../struct/roster-manager.js';
 import { EMOJIS } from '../../util/emojis.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 import { Util } from '../../util/toolkit.js';
 
 const warStates: Record<string, string> = {

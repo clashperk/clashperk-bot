@@ -31,7 +31,7 @@ import { ObjectId } from 'mongodb';
 import { clanEmbedMaker } from '../../helper/clan-embed.helper.js';
 import { Args, Command } from '../../lib/handlers.js';
 import { ClanEmbedFieldOptions, ClanEmbedFieldValues } from '../../util/command.options.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 export default class ClanEmbedCommand extends Command {
   public constructor() {

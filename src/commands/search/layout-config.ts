@@ -17,7 +17,7 @@ import {
   TextInputStyle
 } from 'discord.js';
 import { Command } from '../../lib/handlers.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 export default class LayoutConfigCommand extends Command {
   public constructor() {

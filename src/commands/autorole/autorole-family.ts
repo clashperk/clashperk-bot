@@ -10,7 +10,7 @@ import {
 } from 'discord.js';
 import { unique } from 'radash';
 import { Command } from '../../lib/handlers.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 export default class AutoFamilyRoleCommand extends Command {
   public constructor() {

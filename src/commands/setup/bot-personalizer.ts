@@ -21,7 +21,7 @@ import moment from 'moment';
 import { Command } from '../../lib/handlers.js';
 import { hasCustomBotAccess } from '../../struct/subscribers.js';
 import { EMOJIS } from '../../util/emojis.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 export default class SetupCustomBotCommand extends Command {
   public constructor() {

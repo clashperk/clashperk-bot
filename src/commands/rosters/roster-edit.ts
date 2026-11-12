@@ -23,7 +23,7 @@ import {
   rosterLayoutMap
 } from '../../struct/roster-manager.js';
 import { RosterCommandSortOptions } from '../../util/command.options.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 export default class RosterEditCommand extends Command {
   public constructor() {

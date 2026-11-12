@@ -21,7 +21,8 @@ import {
   getExportComponents,
   sumHeroes
 } from '../../util/helper.js';
-import { createInteractionCollector, handlePagination } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
+import { handlePagination } from '../../util/pagination.js';
 
 const roles: Record<string, string> = {
   member: 'Member',

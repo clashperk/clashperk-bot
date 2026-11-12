@@ -3,7 +3,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CommandInteraction } from
 import { ObjectId } from 'mongodb';
 import { Command } from '../../lib/handlers.js';
 import { nullsLastSortAlgo } from '../../util/helper.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 import { Util } from '../../util/toolkit.js';
 
 export default class RosterPingCommand extends Command {

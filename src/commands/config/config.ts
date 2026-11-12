@@ -17,7 +17,7 @@ import { title, unique } from 'radash';
 import { Command } from '../../lib/handlers.js';
 import { dashboardButton } from '../../util/helper.js';
 import { command } from '../../util/locales.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 const options = [
   {

@@ -14,7 +14,7 @@ import { title as toTitle } from 'radash';
 import { Args, Command } from '../../lib/handlers.js';
 import { dashboardRow } from '../../util/helper.js';
 import { EMOJIS } from '../../util/emojis.js';
-import { createInteractionCollector } from '../../util/pagination.js';
+import { createInteractionCollector } from '../../util/collectors.js';
 
 function title(str: string) {
   return toTitle(str).replace(/cwl/i, 'CWL');
