@@ -43,7 +43,10 @@ const httpClient = new HttpClient({
 
 httpClient.instance.interceptors.request.use((config: RetryableConfig) => {
   config.startedAt ??= performance.now();
-  config.headers.set('User-Agent', userAgent(container.resolve(Client).user?.id));
+  const client = container.resolve(Client);
+  config.headers.set('User-Agent', userAgent(client.user?.id));
+  // The API then uses this bot's own token for the Discord calls it makes.
+  if (client.user && client.isCustom()) config.headers.set('x-application-id', client.user.id);
   return config;
 });
 

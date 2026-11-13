@@ -637,7 +637,7 @@ export default class TicketOpenCommand extends Command {
     };
 
     try {
-      await this.postTicketEmbed(ticketChannel, ticketDoc, btn);
+      await this.postTicketEmbed(ticketChannel, ticketDoc, panel, btn);
       await this.client.db.collection<TicketEntity>(Collections.TICKETS).insertOne(ticketDoc);
     } catch (error) {
       await ticketChannel.delete('Ticket could not be set up').catch(() => null);
@@ -698,7 +698,12 @@ export default class TicketOpenCommand extends Command {
       .catch(() => null);
   }
 
-  private buildTicketContainer(ticket: TicketEntity, btn: TicketTypeConfig, channelId: string) {
+  private buildTicketContainer(
+    ticket: TicketEntity,
+    panel: TicketPanelEntity,
+    btn: TicketTypeConfig,
+    channelId: string
+  ) {
     const ticketNum = String(ticket.count).padStart(4, '0');
     const headerLines = [
       `## Ticket #${ticketNum}`,
@@ -706,6 +711,9 @@ export default class TicketOpenCommand extends Command {
       `**Created at:** <t:${Math.floor(ticket.createdAt.getTime() / 1000)}:F>`
     ];
     if (ticket.claimedBy) headerLines.push(`**Claimed by:** <@${ticket.claimedBy}>`);
+    if (panel.saveTranscripts !== false && panel.logChannels?.ticketClose) {
+      headerLines.push('-# A transcript of this ticket is saved when it closes.');
+    }
     const headerText = headerLines.join('\n');
 
     const container = new ContainerBuilder();
@@ -874,8 +882,13 @@ export default class TicketOpenCommand extends Command {
     return container;
   }
 
-  private async postTicketEmbed(channel: TextChannel, ticket: TicketEntity, btn: TicketTypeConfig) {
-    const container = this.buildTicketContainer(ticket, btn, channel.id);
+  private async postTicketEmbed(
+    channel: TextChannel,
+    ticket: TicketEntity,
+    panel: TicketPanelEntity,
+    btn: TicketTypeConfig
+  ) {
+    const container = this.buildTicketContainer(ticket, panel, btn, channel.id);
     return channel.send({ components: [container], flags: MessageFlags.IsComponentsV2 });
   }
 
@@ -898,7 +911,7 @@ export default class TicketOpenCommand extends Command {
     const confirmContainer = new ContainerBuilder();
     confirmContainer.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `## Delete Ticket?\nAre you sure you want to delete ticket **#${String(ticket.count).padStart(4, '0')}**?\n\nThis will generate a transcript, log it, and delete the channel.`
+        `## Delete Ticket?\nAre you sure you want to delete ticket **#${String(ticket.count).padStart(4, '0')}**?\n\nThis will save a transcript to the log channel and delete this channel.`
       )
     );
     confirmContainer.addActionRowComponents((row) =>
@@ -953,7 +966,7 @@ export default class TicketOpenCommand extends Command {
     const channel = interaction.guild.channels.cache.get(channelId) as TextChannel | undefined;
     if (!channel) return interaction.editReply(this.reply('Channel not found.'));
 
-    await this.client.tickets.closeTicket(ticket, channel, interaction.user.id, (text) =>
+    await this.client.tickets.closeTicket(ticket, interaction.user.id, (text) =>
       interaction.editReply(this.reply(text))
     );
   }
@@ -1182,9 +1195,9 @@ export default class TicketOpenCommand extends Command {
           .collection<TicketPanelEntity>(Collections.TICKET_PANELS)
           .findOne({ _id: new ObjectId(ticket.panelId) });
         const btn = panel?.ticketTypes.find((b) => b.id === ticket.buttonId);
-        if (btn) {
+        if (panel && btn) {
           const updatedTicket = { ...ticket, clanTag, clanName: clan?.name ?? clanTag };
-          const container = this.buildTicketContainer(updatedTicket, btn, channelId);
+          const container = this.buildTicketContainer(updatedTicket, panel, btn, channelId);
           await interaction.message.edit({
             components: [container],
             flags: MessageFlags.IsComponentsV2
@@ -1240,7 +1253,9 @@ export default class TicketOpenCommand extends Command {
       .collection<TicketPanelEntity>(Collections.TICKET_PANELS)
       .findOne({ _id: new ObjectId(ticket.panelId) });
     const btn = panel?.ticketTypes.find((b) => b.id === ticket.buttonId);
-    if (!btn) return interaction.editReply(this.reply('Could not load panel configuration.'));
+    if (!panel || !btn) {
+      return interaction.editReply(this.reply('Could not load panel configuration.'));
+    }
 
     const channel = interaction.guild!.channels.cache.get(channelId) as TextChannel | undefined;
     if (!channel) return interaction.editReply(this.reply('Channel not found.'));
@@ -1270,7 +1285,7 @@ export default class TicketOpenCommand extends Command {
       );
 
     const updatedTicket = { ...ticket, claimedBy: interaction.user.id };
-    const container = this.buildTicketContainer(updatedTicket, btn, channelId);
+    const container = this.buildTicketContainer(updatedTicket, panel, btn, channelId);
     await interaction.message
       .edit({ components: [container], flags: MessageFlags.IsComponentsV2 })
       .catch(() => null);
@@ -1310,7 +1325,9 @@ export default class TicketOpenCommand extends Command {
       .collection<TicketPanelEntity>(Collections.TICKET_PANELS)
       .findOne({ _id: new ObjectId(ticket.panelId) });
     const btn = panel?.ticketTypes.find((b) => b.id === ticket.buttonId);
-    if (!btn) return interaction.editReply(this.reply('Could not load panel configuration.'));
+    if (!panel || !btn) {
+      return interaction.editReply(this.reply('Could not load panel configuration.'));
+    }
 
     const channel = interaction.guild!.channels.cache.get(channelId) as TextChannel | undefined;
     if (!channel) return interaction.editReply(this.reply('Channel not found.'));
@@ -1326,7 +1343,7 @@ export default class TicketOpenCommand extends Command {
       );
 
     const updatedTicket = { ...ticket, claimedBy: undefined };
-    const container = this.buildTicketContainer(updatedTicket, btn, channelId);
+    const container = this.buildTicketContainer(updatedTicket, panel, btn, channelId);
     await interaction.message
       .edit({ components: [container], flags: MessageFlags.IsComponentsV2 })
       .catch(() => null);

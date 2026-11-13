@@ -9,6 +9,8 @@ import {
   TextDisplayBuilder
 } from 'discord.js';
 import { ObjectId, WithId } from 'mongodb';
+import { AxiosError } from 'axios';
+import { api } from '../api/axios.js';
 import type { Client } from './client.js';
 
 const REDIS_KEY = (channelId: string) => `ticket:autosleep:${channelId}`;
@@ -142,54 +144,26 @@ export class TicketHandler {
     await this.notifySubscribers(guild, ticket, 'was closed (its channel was deleted)');
   }
 
+  /** The API closes it, as the dashboard does: transcript, role changes, DMs and the channel. */
   public async closeTicket(
     ticket: WithId<TicketEntity>,
-    channel: TextChannel,
     closedBy: string,
     reply: (text: string) => Promise<unknown>
   ) {
-    const { panel, btn } = await this.getPanelAndType(ticket);
-    await reply('Closing ticket… generating transcript.');
-
-    const transcript = await this.generateTranscript(channel);
-    await this.tickets.updateOne(
-      { _id: ticket._id },
-      {
-        $set: { status: 'closed', closedAt: new Date(), closedBy, updatedAt: new Date() },
-        $unset: { autoSleepAt: '' }
-      }
-    );
+    await reply('Closing ticket… saving the transcript.');
+    try {
+      await api.tickets.closeTicket(
+        { guildId: ticket.guildId, ticketId: ticket._id.toHexString() },
+        { headers: { 'x-user-id': closedBy } }
+      );
+    } catch (error) {
+      const message = (error as AxiosError<{ message?: string }>).response?.data?.message;
+      await reply(message ?? 'Could not close the ticket. Try again in a minute.').catch(
+        () => null
+      );
+      return;
+    }
     await this.clearAutoSleep(ticket.channelId);
-    await this.revertCreatorRoles(channel.guild, ticket, btn);
-
-    const logChannel = panel?.logChannels.ticketClose
-      ? (channel.guild.channels.cache.get(panel.logChannels.ticketClose) as TextChannel | undefined)
-      : undefined;
-    await logChannel
-      ?.send({
-        components: [
-          new ContainerBuilder().addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(
-              [
-                `## Ticket Closed — #${this.ticketNumber(ticket)}`,
-                `**Created by:** <@${ticket.creatorId}>`,
-                `**Closed by:** <@${closedBy}>`,
-                `**Created at:** <t:${Math.floor(ticket.createdAt.getTime() / 1000)}:F>`
-              ].join('\n')
-            )
-          )
-        ],
-        flags: MessageFlags.IsComponentsV2,
-        files: [
-          { attachment: Buffer.from(transcript, 'utf-8'), name: `ticket-${ticket.count}.txt` }
-        ],
-        allowedMentions: { parse: [] }
-      })
-      .catch(() => null);
-
-    await this.logStatusChange(panel, ticket, 'Closed', ticket.status, 'closed', closedBy);
-    await this.notifySubscribers(channel.guild, ticket, 'was closed');
-    setTimeout(() => channel.delete('Ticket closed').catch(() => null), 3000);
   }
 
   /** `sleptBy` is null for auto-sleep. */
@@ -360,24 +334,6 @@ export class TicketHandler {
         allowedMentions: { parse: [] }
       })
       .catch(() => null);
-  }
-
-  private async generateTranscript(channel: TextChannel) {
-    const messages = await channel.messages.fetch({ limit: 100 }).catch(() => null);
-    if (!messages) return '(could not fetch messages)';
-
-    const lines = [...messages.values()].reverse().map((m) => {
-      const time = m.createdAt.toISOString();
-      const content = m.content || (m.embeds.length ? '[embed]' : '[attachment/sticker]');
-      return `[${time}] ${m.author.username}: ${content}`;
-    });
-
-    return [
-      `Transcript for #${channel.name}`,
-      `Generated: ${new Date().toISOString()}`,
-      '='.repeat(60),
-      ...lines
-    ].join('\n');
   }
 
   private async processSleepQueue() {
