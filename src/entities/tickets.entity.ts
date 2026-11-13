@@ -72,6 +72,8 @@ export interface TicketPanelEntity {
     url?: string;
   }[];
   extraButtonsPlacement?: 'row' | 'col';
+  /** Unset means on. */
+  saveTranscripts?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

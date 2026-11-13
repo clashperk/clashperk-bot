@@ -96,6 +96,7 @@ interface TicketPanelEntity {
     url?: string; // URL for ButtonStyle.Link buttons
   }[]; // max 10; cmd or url is set, not both
   extraButtonsPlacement?: 'row' | 'col'; // default: 'row'
+  saveTranscripts?: boolean; // default: true (unset means on)
   // 'row' → extra buttons fill the Create Ticket row, overflow to next
   // 'col'  → extra buttons always start on a fresh action row
 
@@ -465,14 +466,18 @@ The slash command is `ticket` with subcommands. It's in `HIDDEN_COMMANDS`, so it
 
 ### Shared lifecycle (`TicketHandler`)
 
-- **`closeTicket`**: builds the transcript (last 100 messages), sets `closed` / `closedAt` / `closedBy` and unsets `autoSleepAt`, clears the auto-sleep key, reverts the creator's `addRoleIds` / `removeRoleIds`, posts the transcript to `ticketClose` and a `<old status> → closed` line to `statusChange`, then deletes the channel after 3 s.
+- **`closeTicket`**: calls `POST /tickets/:guildId/:ticketId/close` in the API with `x-user-id` (custom bots also send `x-application-id`, so the API uses their token), then clears the auto-sleep key. If the API fails, the ticket stays open and the error is shown to the member.
 - **`sleepTicket`**: denies the creator Send Messages, moves to `sleepCategoryId`, unsets `autoSleepAt` and clears the key. `sleptBy = null` means auto-sleep.
 - **`reopenTicket`**: restores the creator, moves to `openCategoryId`, drops any claim (staff overwrites restored), and restarts the auto-sleep timer when the type has `autoSleepHours`.
 - **`markChannelDeleted`**: runs from the `channelDelete` listener, from the auto-sleep sweep and from `findLiveTicket`. It closes the record (no `closedBy`), reverts the creator's roles and logs it.
 
-**Transcripts and message content:** the client doesn't request the privileged `MessageContent` intent, so Discord returns empty `content` for other users' messages. Transcripts only carry the text of the bot's own messages and of messages that mention the bot.
+The API's close route (`GuildTicketRecordsService.close` in `clashperk-backend`) is the only close implementation. The bot and the dashboard both call it. It posts the transcript to the panel's `ticketClose` log and a line to `statusChange`, sets `status`, `closedAt` and `closedBy`, unsets `autoSleepAt`, reverts the creator's roles, DMs Notify Me subscribers and deletes the channel. A ticket whose channel is already gone is only marked closed.
 
-The dashboard lists every ticket (`GET /tickets/:guildId/list`, filterable by status) and closes open or sleeping ones through `POST /tickets/:guildId/:ticketId/close` in the API. That route does what `TicketHandler.closeTicket` does: it posts the transcript of the last 100 messages to the panel's `ticketClose` log and a line to `statusChange`, sets `status`, `closedAt` and `closedBy`, unsets `autoSleepAt`, reverts the creator's roles, DMs Notify Me subscribers and deletes the channel. Keep the two in step. A ticket whose channel is already gone is only marked closed.
+**Transcripts:** when the panel has `saveTranscripts` on (the default) and a `ticketClose` log channel, the API pages through every message in the ticket channel and then the staff thread. Each is capped at 5,000 messages, and paging stops after 20 seconds so the close stays inside the API's request timeout. It posts `ticket-NNNN.html` (laid out like the channel) and `ticket-NNNN.txt` (for search). Each message has the author's name and ID, the time, reply and edit marks, the text, embed titles, descriptions and fields, the text of Components V2 messages, and attachment names and sizes. Joins, pins and thread notices are left out. If the files pass Discord's upload limit, the HTML is dropped first. The ticket header tells members a transcript is saved when the panel saves them.
+
+Transcripts live only in the server's Discord log channel. Never store transcripts or message text in MongoDB, Redis, logs or Sentry, and never re-host attachments (their Discord URLs expire, so only names and sizes are kept). The privileged intents answers depend on this.
+
+**Message content:** the client doesn't request the privileged `MessageContent` intent yet, so Discord returns empty `content` for other users' messages. Until it's granted, transcripts only carry the text of the bot's own messages and of messages that mention the bot.
 
 ---
 
@@ -482,7 +487,7 @@ All buttons in the ticket channel send CV2-format responses (no `content` field 
 
 | Button            | Action                       | Notes                                                                                                                                                                                                                                                                                                              |
 | ----------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Delete Ticket** | `del-confirm` → `del-ticket` | Two-step confirm; generates transcript before delete                                                                                                                                                                                                                                                               |
+| **Delete Ticket** | `del-confirm` → `del-ticket` | Two-step confirm, then closes through the API                                                                                                                                                                                                                                                                      |
 | **Reply**         | `reply`                      | Shows saved reply select menu; supports variable fill-in modal for unknown vars                                                                                                                                                                                                                                    |
 | **Set Clan**      | `set-clan`                   | Clan select menu (inline collector); updates `clanTag`/`clanName` on ticket and re-edits the embed via `interaction.message.edit`                                                                                                                                                                                  |
 | **View Account**  | routes to `player` cmd       | Link button in ticket header (only shown when `accountTag` set); no in-file handler                                                                                                                                                                                                                                |

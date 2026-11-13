@@ -128,7 +128,7 @@ export default class TicketInfoCommand extends Command {
       }
     }
 
-    if (!panel.logChannels.ticketClose) {
+    if (panel.saveTranscripts !== false && !panel.logChannels.ticketClose) {
       warnings.push("⚠️ No ticket-close log channel — transcripts won't be saved anywhere.");
     }
 
