@@ -57,15 +57,17 @@ export default class ProfileCommand extends Command {
 
     const whitelist = this.client.settings.get<string[]>('global', 'whitelist', []);
 
-    if (args.player && !whitelist.includes(interaction.user.id)) {
+    const linkedUser =
+      args.player && whitelist.includes(interaction.user.id)
+        ? await this.getUserByTag(args.player)
+        : null;
+
+    if (args.player && !linkedUser) {
       const command = this.handler.getCommand('player')!;
       return command.exec(interaction, { tag: args.player });
     }
 
-    const user =
-      args.player && whitelist.includes(interaction.user.id)
-        ? await this.getUserByTag(interaction, args.player)
-        : (args.user ?? interaction.user);
+    const user = linkedUser ?? args.user ?? interaction.user;
 
     const [data, players] = await Promise.all([
       this.client.db.collection(Collections.USERS).findOne({ userId: user.id }),
@@ -240,16 +242,14 @@ export default class ProfileCommand extends Command {
     });
   }
 
-  private async getUserByTag(interaction: CommandInteraction, playerTag: string) {
+  private async getUserByTag(playerTag: string) {
     playerTag = this.client.coc.fixTag(playerTag);
     const link = await this.client.db
       .collection(Collections.PLAYER_LINKS)
       .findOne({ tag: playerTag });
 
-    const userId = link?.userId;
-    if (!userId) return interaction.user;
-
-    return this.fetchUser(userId).catch(() => interaction.user);
+    if (!link?.userId) return null;
+    return this.fetchUser(link.userId).catch(() => null);
   }
 
   private async fetchUser(userId: string) {
