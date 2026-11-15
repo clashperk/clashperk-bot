@@ -229,7 +229,7 @@ export interface ExclusionConfig {
   wars: string;
   games: string;
   raids: string;
-  raidsExclusionUserIds: string[];
-  gamesExclusionUserIds: string[];
-  warsExclusionUserIds: string[];
+  raidsExclusionUserIds?: string[];
+  gamesExclusionUserIds?: string[];
+  warsExclusionUserIds?: string[];
 }
