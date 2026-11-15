@@ -2,7 +2,7 @@ import { Collections, FeatureFlags } from '@app/constants';
 import { APIPlayerClan } from 'clashofclans.js';
 import { EmbedBuilder, escapeMarkdown, Guild } from 'discord.js';
 import { container } from 'tsyringe';
-import { api } from '../api/axios.js';
+import { api, encode } from '../api/axios.js';
 import { Client } from '../struct/client.js';
 import { BLUE_NUMBERS } from '../util/emojis.js';
 import { padStart } from '../util/helper.js';
@@ -58,23 +58,29 @@ export const getLegendRankingEmbedMaker = async ({
     return record;
   }, {});
 
-  const result = await api.players
-    .getBattleLogLeaderboard({
-      seasonId,
-      playerTags: _players.map(({ tag }) => tag)
-    })
-    .catch(() => null);
+  const results = await Promise.all(
+    clanTags.map((clanTag) =>
+      api.clans
+        .getClanLegendLeaderboard({ clanTag: encode(clanTag), seasonId })
+        .then((res) => res.data.items)
+        .catch(() => [])
+    )
+  );
 
-  let players = (result?.data?.items ?? []).map((legend) => {
-    const player = playersMap[legend.tag];
-    return {
-      name: player.name,
-      tag: legend.tag,
-      clan: player?.clan,
-      trophies: seasonId === Season.leagueId ? player.trophies : legend.trophies,
-      townHallLevel: player.townHallLevel
-    };
-  });
+  // The API reads live members, so skip anyone missing from the cached player list.
+  let players = results
+    .flat()
+    .filter((legend) => playersMap[legend.tag])
+    .map((legend) => {
+      const player = playersMap[legend.tag];
+      return {
+        name: player.name,
+        tag: legend.tag,
+        clan: player.clan,
+        trophies: seasonId === Season.leagueId ? player.trophies : legend.trophies,
+        townHallLevel: player.townHallLevel
+      };
+    });
 
   if (sort_by === 'town_hall_asc') {
     players.sort((a, b) => b.trophies - a.trophies);

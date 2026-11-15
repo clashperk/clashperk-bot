@@ -165,6 +165,13 @@ export enum ClanLogType {
   RANKED_BATTLE_LEAGUE_CHANGE_LOG = 'ranked_battle_league_change_log'
 }
 
+/** Why ClashPerk can't give this role out, or null when it can. */
+export enum RoleProblem {
+  AboveBot = 'above_bot',
+  Managed = 'managed',
+  NoManageRoles = 'no_manage_roles'
+}
+
 export enum RosterSortBy {
   PLAYER_NAME = 'PLAYER_NAME',
   DISCORD_NAME = 'DISCORD_NAME',
@@ -584,6 +591,32 @@ export interface LastSeenDto {
   items: LastSeenMemberDto[];
 }
 
+export interface BattleLogDailyDto {
+  name: string;
+  tag: string;
+  battleDate: string;
+  trophies: number;
+  offenseTrophies: number;
+  defenseTrophies: number;
+  gain: number;
+  attackCount: number;
+  defenseCount: number;
+}
+
+export interface BattleLogAggregateItemsDto {
+  items: BattleLogDailyDto[];
+}
+
+export interface BattleLogLeaderboardItemDto {
+  tag: string;
+  name: string;
+  trophies: number;
+}
+
+export interface BattleLogLeaderboardDto {
+  items: BattleLogLeaderboardItemDto[];
+}
+
 export interface CapitalContributionClanDto {
   name: string;
   tag: string;
@@ -870,8 +903,35 @@ export interface RankedHistoryItemDto {
 export interface RankedDto {
   /** This week's group; null when the player isn't in one (between weeks, or unranked). */
   current: RankedWeekDto | null;
+  /** Last week's group, while this week's has no battles yet. Null otherwise. */
+  lastWeek: RankedWeekDto | null;
   /** Past weeks, newest first. */
   history: RankedHistoryItemDto[];
+}
+
+export interface LegendHeroSetupDto {
+  /** @example "Archer Queen" */
+  name: string;
+  pet: string | null;
+  equipment: string[];
+  /** Share of the attacks with this exact setup, in percent. */
+  share: number;
+}
+
+export interface LegendArmyUnitDto {
+  /** @example "Thrower" */
+  name: string;
+  count: number;
+}
+
+export interface LegendArmyDto {
+  /** Share of the attacks with this exact army, in percent. */
+  share: number;
+  /** Most first. */
+  troops: LegendArmyUnitDto[];
+  /** Most first. */
+  spells: LegendArmyUnitDto[];
+  siege: LegendArmyUnitDto | null;
 }
 
 export interface RankedArmiesDto {
@@ -911,22 +971,6 @@ export interface BattleLogItemsDto {
   items: BattleLogDto[];
 }
 
-export interface BattleLogDailyDto {
-  name: string;
-  tag: string;
-  battleDate: string;
-  trophies: number;
-  offenseTrophies: number;
-  defenseTrophies: number;
-  gain: number;
-  attackCount: number;
-  defenseCount: number;
-}
-
-export interface BattleLogAggregateItemsDto {
-  items: BattleLogDailyDto[];
-}
-
 export interface BattleLogLeaderboardInputDto {
   /**
    * The league season's start date. A legacy `YYYY-MM` season id is still accepted.
@@ -935,16 +979,6 @@ export interface BattleLogLeaderboardInputDto {
    */
   seasonId: string;
   playerTags: string[];
-}
-
-export interface BattleLogLeaderboardItemDto {
-  tag: string;
-  name: string;
-  trophies: number;
-}
-
-export interface BattleLogLeaderboardDto {
-  items: BattleLogLeaderboardItemDto[];
 }
 
 export interface GlobalClanEntity {
@@ -1060,35 +1094,6 @@ export interface LegendRankingThresholdsDto {
   history: LegendRankingThresholdsSnapShotDto[];
 }
 
-export interface GetLegendAttacksInputDto {
-  /**
-   * @maxItems 100
-   * @minItems 1
-   * @example ["#2PP"]
-   */
-  playerTags: string[];
-}
-
-export interface LegendAttackLogDto {
-  timestamp: number;
-  start: number;
-  end: number;
-  diff: number;
-  type: string;
-}
-
-export interface LegendAttacksDto {
-  tag: string;
-  name: string;
-  seasonId: string;
-  trophies: number;
-  logs: LegendAttackLogDto[];
-}
-
-export interface LegendAttacksItemsDto {
-  items: LegendAttacksDto[];
-}
-
 export interface LegendResetDto {
   /** Trophies before the reset. */
   from: number;
@@ -1107,42 +1112,6 @@ export interface LegendDayBattleDto {
    * @format date-time
    */
   battleTime: string;
-}
-
-export interface LegendArmyUnitDto {
-  /** @example "Thrower" */
-  name: string;
-  count: number;
-}
-
-export interface LegendHeroSetupDto {
-  /** @example "Archer Queen" */
-  name: string;
-  pet: string | null;
-  equipment: string[];
-  /** Share of the attacks with this exact setup, in percent. */
-  share: number;
-}
-
-export interface LegendArmyDto {
-  /** Share of the attacks with this exact army, in percent. */
-  share: number;
-  /** Most first. */
-  troops: LegendArmyUnitDto[];
-  /** Most first. */
-  spells: LegendArmyUnitDto[];
-  siege: LegendArmyUnitDto | null;
-}
-
-export interface LegendArmiesDto {
-  tag: string;
-  seasonId: string;
-  /** Legend attacks with an army code. */
-  attacks: number;
-  /** Each hero's most used pet and equipment, most used hero first. */
-  heroes: LegendHeroSetupDto[];
-  /** The most used army, without the clan castle. Null with no attacks. */
-  army: LegendArmyDto | null;
 }
 
 export interface LegendDayDto {
@@ -1177,6 +1146,17 @@ export interface LegendDaysDto {
   seasonId: string;
   /** Days with a battle or a tracked trophy change, oldest first. */
   items: LegendDayDto[];
+}
+
+export interface LegendArmiesDto {
+  tag: string;
+  seasonId: string;
+  /** Legend attacks with an army code. */
+  attacks: number;
+  /** Each hero's most used pet and equipment, most used hero first. */
+  heroes: LegendHeroSetupDto[];
+  /** The most used army, without the clan castle. Null with no attacks. */
+  army: LegendArmyDto | null;
 }
 
 export interface LegendSeasonDto {
@@ -2089,6 +2069,8 @@ export interface GuildChannelDto {
   selectable: boolean;
   /** ClashPerk already has a webhook here (a thread's is its channel's), so no Discord sign-in is needed. */
   hasWebhook: boolean;
+  /** Permissions `/debug` checks that ClashPerk lacks here (a thread's are its channel's), e.g. `Send Messages`. */
+  missingPermissions: string[];
 }
 
 export interface GuildCategoryDto {
@@ -2106,10 +2088,17 @@ export interface MentionChannelDto {
 }
 
 export interface GuildRoleDto {
+  /** Why ClashPerk can't give this role out, or null when it can. */
+  problem: RoleProblem | null;
   id: string;
   name: string;
   color: number;
   position: number;
+}
+
+export interface BotPermissionsDto {
+  /** `Manage Roles` (auto-roles) and `Manage Nicknames` (auto-nickname) when the bot lacks them. */
+  missingPermissions: string[];
 }
 
 export interface GuildEmojiDto {
@@ -2134,6 +2123,13 @@ export interface GuildClanLogDto {
   channelName: string | null;
   /** The channel a thread is in; null for channels. */
   parentChannelName: string | null;
+  /** Permissions `/debug` checks that ClashPerk lacks in the channel, e.g. `Send Messages`. */
+  missingPermissions: string[];
+  /**
+   * When the bot last posted this log. Null before its first post.
+   * @format date-time
+   */
+  lastPostedAt: string | null;
   isEnabled: boolean;
   roleId: string | null;
   color: number | null;
@@ -2217,6 +2213,13 @@ export interface ClanLogDto {
   channelName: string | null;
   /** The channel a thread is in; null for channels. */
   parentChannelName: string | null;
+  /** Permissions `/debug` checks that ClashPerk lacks in the channel, e.g. `Send Messages`. */
+  missingPermissions: string[];
+  /**
+   * When the bot last posted this log. Null before its first post.
+   * @format date-time
+   */
+  lastPostedAt: string | null;
   isEnabled: boolean;
   roleId: string | null;
   color: number | null;
@@ -2447,18 +2450,24 @@ export interface FlagAlertLogDto {
   channelId: string;
   /** Null when the bot can't see the channel any more. */
   channelName: string | null;
+  /** Permissions `/debug` checks that ClashPerk lacks in the channel, e.g. `Send Messages`. */
+  missingPermissions: string[];
 }
 
 export interface ServerLogChannelDto {
   channelId: string;
   /** Null when the bot can't see the channel any more. */
   channelName: string | null;
+  /** Permissions `/debug` checks that ClashPerk lacks in the channel, e.g. `Send Messages`. */
+  missingPermissions: string[];
 }
 
 export interface WelcomeLogDto {
   channelId: string;
   /** Null when the bot can't see the channel any more. */
   channelName: string | null;
+  /** Permissions `/debug` checks that ClashPerk lacks in the channel, e.g. `Send Messages`. */
+  missingPermissions: string[];
   enabled: boolean;
   welcomeText: string;
   description: string;
@@ -2588,6 +2597,58 @@ export interface ManagerRolesInput {
   flagsManagerRoles?: string[];
   /** @maxItems 25 */
   linksManagerRoles?: string[];
+}
+
+export interface LinkParsingChannelDto {
+  status: 'ok' | 'archived' | 'locked' | 'deleted' | 'noAccess' | 'unknown';
+  id: string;
+  /** Null when the channel was deleted or ClashPerk can't see it. */
+  name: string | null;
+  /** Permissions ClashPerk lacks here, e.g. `Send Messages`. */
+  missingPermissions: string[];
+}
+
+export interface LinkParsingRuleDto {
+  mode: 'reply' | 'message' | 'replace';
+  enabled: boolean;
+  channels: LinkParsingChannelDto[];
+  categories: LinkParsingChannelDto[];
+}
+
+export interface LinkParsingDto {
+  player: LinkParsingRuleDto;
+  clan: LinkParsingRuleDto;
+  army: LinkParsingRuleDto;
+  base: LinkParsingRuleDto;
+}
+
+export interface LinkParsingRuleInput {
+  mode: 'reply' | 'message' | 'replace';
+  /** Needs at least one channel or category when on. */
+  enabled: boolean;
+  /**
+   * Text, announcement, forum or media channels. Threads and forum posts follow their channel.
+   * @maxItems 100
+   * @uniqueItems true
+   */
+  channelIds: string[];
+  /**
+   * Every channel in these categories, including ones added later.
+   * @maxItems 25
+   * @uniqueItems true
+   */
+  categoryIds: string[];
+}
+
+export interface LinkParsingInput {
+  /** `action=OpenPlayerProfile` */
+  player: LinkParsingRuleInput;
+  /** `action=OpenClanProfile` */
+  clan: LinkParsingRuleInput;
+  /** `action=CopyArmy` */
+  army: LinkParsingRuleInput;
+  /** `action=OpenLayout` */
+  base: LinkParsingRuleInput;
 }
 
 export interface SubscriptionDto {
@@ -3199,6 +3260,196 @@ export interface ClanGamesReminderInput {
   clans: string[];
 }
 
+export interface ServerInfoDto {
+  id: string;
+  /** Null when the bot can't see the server. */
+  name: string | null;
+  iconUrl: string | null;
+  memberCount: number | null;
+  /** False when the bot that serves this server has left it or was never added. */
+  botPresent: boolean;
+  /** Server-wide permissions the bot lacks: `Manage Roles` for auto-roles, `Manage Nicknames` for auto-nickname. */
+  missingPermissions: string[];
+  customBot: {
+    name: string;
+    isLive: boolean;
+  };
+}
+
+export interface CategoryClanCountDto {
+  /** Null for clans without a category. */
+  id: string | null;
+  name: string;
+  clans: number;
+}
+
+export interface LinkedClanDto {
+  tag: string;
+  name: string;
+  alias: string | null;
+  paused: boolean;
+  /** When the bot last fetched the clan, the sync time `/debug` shows. Null before the first. */
+  lastSyncedAt: string | null;
+  /** One of `categories`, or null when the clan has none. */
+  categoryId: string | null;
+}
+
+export interface LinkedClansDto {
+  total: number;
+  active: number;
+  paused: number;
+  /** Clans the server can link, from its subscription. */
+  limit: number;
+  categories: CategoryClanCountDto[];
+  /** Every linked clan, in the server's order. */
+  list: LinkedClanDto[];
+}
+
+export interface LogTypeCountDto {
+  logType: string;
+  total: number;
+  enabled: number;
+}
+
+export interface ClanLogChannelDto {
+  logType: string;
+  clanTag: string;
+  /** The channel or thread it posts to. */
+  channelId: string;
+  /** The thread's parent channel, for logs posted in a thread or forum post. */
+  parentId: string | null;
+  enabled: boolean;
+  /** When the bot last posted this log. Null before its first post. */
+  lastPostedAt: string | null;
+}
+
+export interface ClanLogsSummaryDto {
+  total: number;
+  enabled: number;
+  /** Clans with at least one log. */
+  clans: number;
+  types: LogTypeCountDto[];
+  logs: ClanLogChannelDto[];
+}
+
+export interface KeyCountDto {
+  key: string;
+  count: number;
+}
+
+export interface RemindersSummaryDto {
+  total: number;
+  enabled: number;
+  /** Clans at least one reminder covers. */
+  clans: number;
+  /** Count per time left in the event when the reminder fires, in milliseconds. */
+  timings: KeyCountDto[];
+  /** Clan war reminders only: count per war type list, e.g. `cwl,normal`. */
+  warTypes: KeyCountDto[];
+}
+
+export interface RosterSummaryDto {
+  id: string;
+  name: string;
+  clan: {
+    tag: string;
+    name: string;
+  };
+  closed: boolean;
+  members: number;
+  maxMembers: number | null;
+  /** Given to everyone signed up. */
+  roleId: string | null;
+  /** Where this roster's sign-ups and changes are posted. */
+  logChannelId: string | null;
+}
+
+export interface RosterCategoryRoleDto {
+  name: string;
+  /** Given to members placed in this category. */
+  roleId: string | null;
+  /** Members can pick it when signing up. */
+  selectable: boolean;
+}
+
+export interface RostersSummaryDto {
+  rosters: RosterSummaryDto[];
+  categories: RosterCategoryRoleDto[];
+  /** The server's defaults for new rosters, as the bot stores them; null when never set. */
+  defaults: Record<string, any> | null;
+}
+
+export interface ServerLogChannelsDto {
+  welcomeChannelId: string | null;
+  welcomeEnabled: boolean;
+  rosterChangelogChannelId: string | null;
+  flagAlertChannelId: string | null;
+  /** Where the bot posts maintenance breaks. */
+  eventsChannelId: string | null;
+}
+
+export interface ServerExtrasDto {
+  ticketPanels: number;
+  openTickets: number;
+  flags: number;
+  autoBoards: number;
+  /** Members with delayed role changes waiting to apply. */
+  pendingRoleDelays: number;
+  /** Commands opened to specific users or roles. */
+  commandWhitelist: number;
+  /** Button messages set up: `link`, `refresh` and `my-rosters`. */
+  buttons: string[];
+}
+
+export interface RoleNameDto {
+  /** Why ClashPerk can't give this role out, or null when it can. */
+  problem: RoleProblem | null;
+  id: string;
+  name: string;
+  color: number;
+}
+
+export interface ChannelNameDto {
+  id: string;
+  name: string;
+  /** Discord's channel type, for the icon: text, forum, thread and so on. */
+  type: number;
+  /** Permissions `/debug` checks that the bot lacks here, e.g. `Manage Webhooks`. */
+  missingPermissions: string[];
+}
+
+export interface ChannelStateDto {
+  status: ChannelStatus;
+  id: string;
+  /** Null when the channel is gone or ClashPerk can't see it. */
+  name: string | null;
+  /** The channel a thread is in; null for channels. */
+  parentName: string | null;
+  missingPermissions: string[];
+}
+
+export interface ServerSetupDto {
+  server: ServerInfoDto;
+  config: ServerConfigDto;
+  clans: LinkedClansDto;
+  autoRoles: AutoRolesDto;
+  managers: ManagerRolesDto;
+  clanLogs: ClanLogsSummaryDto;
+  clanWarReminders: RemindersSummaryDto;
+  capitalRaidReminders: RemindersSummaryDto;
+  clanGamesReminders: RemindersSummaryDto;
+  rosters: RostersSummaryDto;
+  serverLogs: ServerLogChannelsDto;
+  extras: ServerExtrasDto;
+  /** Names for the role and channel IDs above; empty when the bot can't see the server. */
+  roles: RoleNameDto[];
+  channels: ChannelNameDto[];
+  /** The channels the server's logs post to, with whether ClashPerk can post there. */
+  channelStates: ChannelStateDto[];
+  /** The raw `Settings` record with webhooks and tokens removed, for debugging. */
+  settings: Record<string, any> | null;
+}
+
 export interface ExportMembersInput {
   /**
    * @maxItems 100
@@ -3496,6 +3747,34 @@ export type GetClanLastSeenData = LastSeenDto;
 
 export type GetClanLastSeenError = ErrorResponseDto;
 
+export interface GetClanDailyLegendBattlesParams {
+  /**
+   * The battle day, which starts at 05:00 UTC.
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   * @example "2026-11-15"
+   */
+  battleDate: string;
+  clanTag: string;
+}
+
+export type GetClanDailyLegendBattlesData = BattleLogAggregateItemsDto;
+
+export type GetClanDailyLegendBattlesError = ErrorResponseDto;
+
+export interface GetClanLegendLeaderboardParams {
+  /**
+   * The league season's start date. Defaults to the current season.
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   * @example "2026-10-05"
+   */
+  seasonId?: string;
+  clanTag: string;
+}
+
+export type GetClanLegendLeaderboardData = BattleLogLeaderboardDto;
+
+export type GetClanLegendLeaderboardError = ErrorResponseDto;
+
 export interface GetClanCapitalContributionsParams {
   /**
    * @pattern ^\d{4}-\d{2}$
@@ -3678,28 +3957,6 @@ export type GetPlayerClanWarLeagueTotalsError = ErrorResponseDto;
 export type GetLegendRankingThresholdsData = LegendRankingThresholdsDto;
 
 export type GetLegendRankingThresholdsError = ErrorResponseDto;
-
-export type GetLegendAttacksData = LegendAttacksItemsDto;
-
-export type GetLegendAttacksError = ErrorResponseDto;
-
-export type GetLegendAttacksViaPostData = LegendAttacksItemsDto;
-
-export type GetLegendAttacksViaPostError = ErrorResponseDto;
-
-export interface GetPlayerLegendAttacksParams {
-  /**
-   * The league season's start date; the current season when left out.
-   * @pattern ^\d{4}-\d{2}-\d{2}$
-   * @example "2026-10-05"
-   */
-  seasonId?: string;
-  playerTag: string;
-}
-
-export type GetPlayerLegendAttacksData = LegendAttacksDto;
-
-export type GetPlayerLegendAttacksError = ErrorResponseDto;
 
 export interface GetLegendDaysParams {
   /**
@@ -4219,6 +4476,14 @@ export type ListRolesData = GuildRoleDto[];
 
 export type ListRolesError = ErrorResponseDto;
 
+export interface GetBotPermissionsParams {
+  guildId: string;
+}
+
+export type GetBotPermissionsData = BotPermissionsDto;
+
+export type GetBotPermissionsError = ErrorResponseDto;
+
 export interface ListEmojisParams {
   guildId: string;
 }
@@ -4465,6 +4730,22 @@ export type UpdateManagerRolesData = ManagerRolesDto;
 
 export type UpdateManagerRolesError = ErrorResponseDto;
 
+export interface GetLinkParsingParams {
+  guildId: string;
+}
+
+export type GetLinkParsingData = LinkParsingDto;
+
+export type GetLinkParsingError = ErrorResponseDto;
+
+export interface SaveLinkParsingParams {
+  guildId: string;
+}
+
+export type SaveLinkParsingData = LinkParsingDto;
+
+export type SaveLinkParsingError = ErrorResponseDto;
+
 export interface GetGuildConfigParams {
   guildId: string;
 }
@@ -4691,6 +4972,14 @@ export type DeleteClanGamesReminderData = any;
 
 export type DeleteClanGamesReminderError = ErrorResponseDto;
 
+export interface GetServerSetupParams {
+  guildId: string;
+}
+
+export type GetServerSetupData = ServerSetupDto;
+
+export type GetServerSetupError = ErrorResponseDto;
+
 export type ExportClanMembersData = ExportMembersOutputDto;
 
 export type ExportClanMembersError = ErrorResponseDto;
@@ -4888,7 +5177,7 @@ export namespace Auth {
 
 export namespace Links {
   /**
-   * @description To link a player to someone else, you need to be a verified Leader or Co-Leader of the player's clan. If the player is already linked to another user, you also need the player's in-game API token.
+   * @description To link a player to someone else, you need to be a verified Leader or Co-Leader of the player's clan, or hold the `manage:links` role. If the player is already linked to another user, you also need the player's in-game API token.
    * @tags Links
    * @name CreateLink
    * @summary Link a player to a Discord user
@@ -4984,7 +5273,7 @@ export namespace Links {
   }
 
   /**
-   * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
+   * @description Deprecated: send the same request with the `QUERY` method. This route is removed on 2026-11-25.
    * @tags Links
    * @name GetLinksViaPost
    * @summary Get links by player tags or user IDs
@@ -5023,7 +5312,7 @@ export namespace Clans {
   }
 
   /**
-   * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
+   * @description Deprecated: send the same request with the `QUERY` method. This route is removed on 2026-11-25.
    * @tags Clans
    * @name GetClanActivityViaPost
    * @summary List recent activity in clans
@@ -5079,6 +5368,60 @@ export namespace Clans {
     export type RequestBody = never;
     export type RequestHeaders = {};
     export type ResponseBody = GetClanLastSeenData;
+  }
+
+  /**
+   * @description Covers members in Legend League. Members with no battles logged that day are left out.
+   * @tags Clans
+   * @name GetClanDailyLegendBattles
+   * @summary Get a clan's legend battle totals for one day
+   * @request GET:/clans/{clanTag}/legend-battles/daily
+   * @secure
+   * @response `200` `GetClanDailyLegendBattlesData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetClanDailyLegendBattles {
+    export type RequestParams = {
+      clanTag: string;
+    };
+    export type RequestQuery = {
+      /**
+       * The battle day, which starts at 05:00 UTC.
+       * @pattern ^\d{4}-\d{2}-\d{2}$
+       * @example "2026-11-15"
+       */
+      battleDate: string;
+    };
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetClanDailyLegendBattlesData;
+  }
+
+  /**
+   * @description Uses the current members. For a past season, each member's trophies are where they finished it.
+   * @tags Clans
+   * @name GetClanLegendLeaderboard
+   * @summary Rank a clan's members by Legend League trophies
+   * @request GET:/clans/{clanTag}/legend-battles/leaderboard
+   * @secure
+   * @response `200` `GetClanLegendLeaderboardData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetClanLegendLeaderboard {
+    export type RequestParams = {
+      clanTag: string;
+    };
+    export type RequestQuery = {
+      /**
+       * The league season's start date. Defaults to the current season.
+       * @pattern ^\d{4}-\d{2}-\d{2}$
+       * @example "2026-10-05"
+       */
+      seasonId?: string;
+    };
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetClanLegendLeaderboardData;
   }
 
   /**
@@ -5318,11 +5661,12 @@ export namespace Players {
   }
 
   /**
-   * @description Trophies, attacks and defenses for each battle day, oldest first.
+   * @description Deprecated: use `GET /v1/legends/{playerTag}/days` for one player, or `GET /v1/clans/{clanTag}/legend-battles/daily` for a clan. This route is removed on 2026-12-15.
    * @tags Players
    * @name GetPlayerDailyBattles
    * @summary Get a player's daily battle totals
    * @request GET:/players/{playerTag}/battle-log/aggregate
+   * @deprecated
    * @secure
    * @response `200` `GetPlayerDailyBattlesData`
    * @response `500` `ErrorResponseDto`
@@ -5338,11 +5682,12 @@ export namespace Players {
   }
 
   /**
-   * No description
+   * @description Deprecated: use `GET /v1/clans/{clanTag}/legend-battles/leaderboard`, once per clan. This route is removed on 2026-12-15.
    * @tags Players
    * @name GetBattleLogLeaderboard
    * @summary Rank players by Legend League trophies
    * @request QUERY:/players/battle-log/leaderboard
+   * @deprecated
    * @secure
    * @response `200` `GetBattleLogLeaderboardData`
    * @response `500` `ErrorResponseDto`
@@ -5356,7 +5701,7 @@ export namespace Players {
   }
 
   /**
-   * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
+   * @description Deprecated: send the same request with the `QUERY` method. This route is removed on 2026-11-25.
    * @tags Players
    * @name GetBattleLogLeaderboardViaPost
    * @summary Rank players by Legend League trophies
@@ -5497,70 +5842,6 @@ export namespace Legends {
     export type RequestBody = never;
     export type RequestHeaders = {};
     export type ResponseBody = GetLegendRankingThresholdsData;
-  }
-
-  /**
-   * @description Only covers the current season. Players with no attacks logged are left out.
-   * @tags Legends
-   * @name GetLegendAttacks
-   * @summary Get legend attack logs for players
-   * @request QUERY:/legends/attacks/query
-   * @secure
-   * @response `200` `GetLegendAttacksData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace GetLegendAttacks {
-    export type RequestParams = {};
-    export type RequestQuery = {};
-    export type RequestBody = GetLegendAttacksInputDto;
-    export type RequestHeaders = {};
-    export type ResponseBody = GetLegendAttacksData;
-  }
-
-  /**
-   * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
-   * @tags Legends
-   * @name GetLegendAttacksViaPost
-   * @summary Get legend attack logs for players
-   * @request POST:/legends/attacks/query
-   * @deprecated
-   * @secure
-   * @response `200` `GetLegendAttacksViaPostData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace GetLegendAttacksViaPost {
-    export type RequestParams = {};
-    export type RequestQuery = {};
-    export type RequestBody = GetLegendAttacksInputDto;
-    export type RequestHeaders = {};
-    export type ResponseBody = GetLegendAttacksViaPostData;
-  }
-
-  /**
-   * @description Returns 404 if the player has no attacks logged in that season.
-   * @tags Legends
-   * @name GetPlayerLegendAttacks
-   * @summary Get a player's legend attack log
-   * @request GET:/legends/{playerTag}/attacks
-   * @secure
-   * @response `200` `GetPlayerLegendAttacksData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace GetPlayerLegendAttacks {
-    export type RequestParams = {
-      playerTag: string;
-    };
-    export type RequestQuery = {
-      /**
-       * The league season's start date; the current season when left out.
-       * @pattern ^\d{4}-\d{2}-\d{2}$
-       * @example "2026-10-05"
-       */
-      seasonId?: string;
-    };
-    export type RequestBody = never;
-    export type RequestHeaders = {};
-    export type ResponseBody = GetPlayerLegendAttacksData;
   }
 
   /**
@@ -6247,7 +6528,7 @@ export namespace Rosters {
   }
 
   /**
-   * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
+   * @description Deprecated: send the same request with the `QUERY` method. This route is removed on 2026-11-25.
    * @tags Rosters
    * @name CheckRosterMembersViaPost
    * @summary Check which players can join a roster
@@ -6877,6 +7158,26 @@ export namespace Guilds {
   }
 
   /**
+   * @description Only the permissions its features need across the server: Manage Roles for auto-roles and Manage Nicknames for auto-nickname.
+   * @tags Guilds
+   * @name GetBotPermissions
+   * @summary List server permissions ClashPerk is missing
+   * @request GET:/guilds/{guildId}/bot-permissions
+   * @secure
+   * @response `200` `GetBotPermissionsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetBotPermissions {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetBotPermissionsData;
+  }
+
+  /**
    * @description Includes the server's own emojis and the bot's emojis.
    * @tags Guilds
    * @name ListEmojis
@@ -7475,6 +7776,46 @@ export namespace Guilds {
   /**
    * No description
    * @tags Guilds
+   * @name GetLinkParsing
+   * @summary Get where ClashPerk expands Clash of Clans links pasted in chat
+   * @request GET:/guilds/{guildId}/link-parsing
+   * @secure
+   * @response `200` `GetLinkParsingData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetLinkParsing {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetLinkParsingData;
+  }
+
+  /**
+   * @description Replaces the setting: one rule per link type (player, clan, army, base), each with its own channels and categories. Everything is off by default.
+   * @tags Guilds
+   * @name SaveLinkParsing
+   * @summary Choose where ClashPerk expands Clash of Clans links pasted in chat
+   * @request PUT:/guilds/{guildId}/link-parsing
+   * @secure
+   * @response `200` `SaveLinkParsingData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace SaveLinkParsing {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = LinkParsingInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = SaveLinkParsingData;
+  }
+
+  /**
+   * No description
+   * @tags Guilds
    * @name GetGuildConfig
    * @summary Get the server's embed color, webhook limit and subscription
    * @request GET:/guilds/{guildId}/config
@@ -7579,7 +7920,7 @@ export namespace Tickets {
   }
 
   /**
-   * @description Does the same as the Close button in Discord. The last 100 messages are saved to the ticket log, and the channel is deleted.
+   * @description Does the same as the Close button in Discord. The last 100 messages are saved to the ticket log, the ticket type's role changes are undone, Notify Me subscribers get a DM, and the channel is deleted.
    * @tags Tickets
    * @name CloseTicket
    * @summary Close an opened ticket
@@ -8016,26 +8357,27 @@ export namespace Reminders {
   }
 }
 
-export namespace Exports {
+export namespace Admin {
   /**
-   * @description For a scheduled export, the sheet already made for the same server and clans is returned instead of a new one.
-   * @tags Internal
-   * @name ExportClanMembers
-   * @summary Export clan members to a Google Sheet
-   * @request POST:/exports/members
-   * @response `201` `ExportClanMembersData`
+   * @description Clans, auto-roles, logs, reminders, rosters and other settings, with role and channel names when the bot can see the server.
+   * @tags Admin
+   * @name GetServerSetup
+   * @summary Get everything a server has set up
+   * @request GET:/admin/guilds/{guildId}/setup
+   * @secure
+   * @response `200` `GetServerSetupData`
    * @response `500` `ErrorResponseDto`
    */
-  export namespace ExportClanMembers {
-    export type RequestParams = {};
+  export namespace GetServerSetup {
+    export type RequestParams = {
+      guildId: string;
+    };
     export type RequestQuery = {};
-    export type RequestBody = ExportMembersInput;
+    export type RequestBody = never;
     export type RequestHeaders = {};
-    export type ResponseBody = ExportClanMembersData;
+    export type ResponseBody = GetServerSetupData;
   }
-}
 
-export namespace Admin {
   /**
    * No description
    * @tags Admin
@@ -8225,6 +8567,25 @@ export namespace Admin {
   }
 }
 
+export namespace Exports {
+  /**
+   * @description For a scheduled export, the sheet already made for the same server and clans is returned instead of a new one.
+   * @tags Internal
+   * @name ExportClanMembers
+   * @summary Export clan members to a Google Sheet
+   * @request POST:/exports/members
+   * @response `201` `ExportClanMembersData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace ExportClanMembers {
+    export type RequestParams = {};
+    export type RequestQuery = {};
+    export type RequestBody = ExportMembersInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = ExportClanMembersData;
+  }
+}
+
 export namespace BetaGuilds {
   /**
    * No description
@@ -8407,7 +8768,7 @@ export class HttpClient<SecurityDataType = unknown> {
 
 /**
  * @title ClashPerk Discord Bot API
- * @version v2.0.130
+ * @version v2.0.163
  * @baseUrl /v1
  * @contact
  *
@@ -8573,7 +8934,7 @@ export class Api<SecurityDataType extends unknown> {
   };
   links = {
     /**
-     * @description To link a player to someone else, you need to be a verified Leader or Co-Leader of the player's clan. If the player is already linked to another user, you also need the player's in-game API token.
+     * @description To link a player to someone else, you need to be a verified Leader or Co-Leader of the player's clan, or hold the `manage:links` role. If the player is already linked to another user, you also need the player's in-game API token.
      *
      * @tags Links
      * @name CreateLink
@@ -8683,7 +9044,7 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
+     * @description Deprecated: send the same request with the `QUERY` method. This route is removed on 2026-11-25.
      *
      * @tags Links
      * @name GetLinksViaPost
@@ -8729,7 +9090,7 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
+     * @description Deprecated: send the same request with the `QUERY` method. This route is removed on 2026-11-25.
      *
      * @tags Clans
      * @name GetClanActivityViaPost
@@ -8786,6 +9147,54 @@ export class Api<SecurityDataType extends unknown> {
       this.http.request<GetClanLastSeenData, GetClanLastSeenError>({
         path: `/clans/${clanTag}/lastseen`,
         method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Covers members in Legend League. Members with no battles logged that day are left out.
+     *
+     * @tags Clans
+     * @name GetClanDailyLegendBattles
+     * @summary Get a clan's legend battle totals for one day
+     * @request GET:/clans/{clanTag}/legend-battles/daily
+     * @secure
+     * @response `200` `GetClanDailyLegendBattlesData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getClanDailyLegendBattles: (
+      { clanTag, ...query }: GetClanDailyLegendBattlesParams,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<GetClanDailyLegendBattlesData, GetClanDailyLegendBattlesError>({
+        path: `/clans/${clanTag}/legend-battles/daily`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Uses the current members. For a past season, each member's trophies are where they finished it.
+     *
+     * @tags Clans
+     * @name GetClanLegendLeaderboard
+     * @summary Rank a clan's members by Legend League trophies
+     * @request GET:/clans/{clanTag}/legend-battles/leaderboard
+     * @secure
+     * @response `200` `GetClanLegendLeaderboardData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getClanLegendLeaderboard: (
+      { clanTag, ...query }: GetClanLegendLeaderboardParams,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<GetClanLegendLeaderboardData, GetClanLegendLeaderboardError>({
+        path: `/clans/${clanTag}/legend-battles/leaderboard`,
+        method: 'GET',
+        query: query,
         secure: true,
         format: 'json',
         ...params
@@ -9007,12 +9416,13 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description Trophies, attacks and defenses for each battle day, oldest first.
+     * @description Deprecated: use `GET /v1/legends/{playerTag}/days` for one player, or `GET /v1/clans/{clanTag}/legend-battles/daily` for a clan. This route is removed on 2026-12-15.
      *
      * @tags Players
      * @name GetPlayerDailyBattles
      * @summary Get a player's daily battle totals
      * @request GET:/players/{playerTag}/battle-log/aggregate
+     * @deprecated
      * @secure
      * @response `200` `GetPlayerDailyBattlesData`
      * @response `500` `ErrorResponseDto`
@@ -9030,12 +9440,13 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * No description
+     * @description Deprecated: use `GET /v1/clans/{clanTag}/legend-battles/leaderboard`, once per clan. This route is removed on 2026-12-15.
      *
      * @tags Players
      * @name GetBattleLogLeaderboard
      * @summary Rank players by Legend League trophies
      * @request QUERY:/players/battle-log/leaderboard
+     * @deprecated
      * @secure
      * @response `200` `GetBattleLogLeaderboardData`
      * @response `500` `ErrorResponseDto`
@@ -9052,7 +9463,7 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
+     * @description Deprecated: send the same request with the `QUERY` method. This route is removed on 2026-11-25.
      *
      * @tags Players
      * @name GetBattleLogLeaderboardViaPost
@@ -9182,75 +9593,6 @@ export class Api<SecurityDataType extends unknown> {
       this.http.request<GetLegendRankingThresholdsData, GetLegendRankingThresholdsError>({
         path: `/legends/ranking-thresholds`,
         method: 'GET',
-        secure: true,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * @description Only covers the current season. Players with no attacks logged are left out.
-     *
-     * @tags Legends
-     * @name GetLegendAttacks
-     * @summary Get legend attack logs for players
-     * @request QUERY:/legends/attacks/query
-     * @secure
-     * @response `200` `GetLegendAttacksData`
-     * @response `500` `ErrorResponseDto`
-     */
-    getLegendAttacks: (data: GetLegendAttacksInputDto, params: RequestParams = {}) =>
-      this.http.request<GetLegendAttacksData, GetLegendAttacksError>({
-        path: `/legends/attacks/query`,
-        method: 'QUERY',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
-     *
-     * @tags Legends
-     * @name GetLegendAttacksViaPost
-     * @summary Get legend attack logs for players
-     * @request POST:/legends/attacks/query
-     * @deprecated
-     * @secure
-     * @response `200` `GetLegendAttacksViaPostData`
-     * @response `500` `ErrorResponseDto`
-     */
-    getLegendAttacksViaPost: (data: GetLegendAttacksInputDto, params: RequestParams = {}) =>
-      this.http.request<GetLegendAttacksViaPostData, GetLegendAttacksViaPostError>({
-        path: `/legends/attacks/query`,
-        method: 'POST',
-        body: data,
-        secure: true,
-        type: ContentType.Json,
-        format: 'json',
-        ...params
-      }),
-
-    /**
-     * @description Returns 404 if the player has no attacks logged in that season.
-     *
-     * @tags Legends
-     * @name GetPlayerLegendAttacks
-     * @summary Get a player's legend attack log
-     * @request GET:/legends/{playerTag}/attacks
-     * @secure
-     * @response `200` `GetPlayerLegendAttacksData`
-     * @response `500` `ErrorResponseDto`
-     */
-    getPlayerLegendAttacks: (
-      { playerTag, ...query }: GetPlayerLegendAttacksParams,
-      params: RequestParams = {}
-    ) =>
-      this.http.request<GetPlayerLegendAttacksData, GetPlayerLegendAttacksError>({
-        path: `/legends/${playerTag}/attacks`,
-        method: 'GET',
-        query: query,
         secure: true,
         format: 'json',
         ...params
@@ -9920,7 +10262,7 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description Deprecated: send the same request with the `QUERY` method. This POST is removed on 2026-11-25.
+     * @description Deprecated: send the same request with the `QUERY` method. This route is removed on 2026-11-25.
      *
      * @tags Rosters
      * @name CheckRosterMembersViaPost
@@ -10638,6 +10980,26 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
+     * @description Only the permissions its features need across the server: Manage Roles for auto-roles and Manage Nicknames for auto-nickname.
+     *
+     * @tags Guilds
+     * @name GetBotPermissions
+     * @summary List server permissions ClashPerk is missing
+     * @request GET:/guilds/{guildId}/bot-permissions
+     * @secure
+     * @response `200` `GetBotPermissionsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getBotPermissions: ({ guildId }: GetBotPermissionsParams, params: RequestParams = {}) =>
+      this.http.request<GetBotPermissionsData, GetBotPermissionsError>({
+        path: `/guilds/${guildId}/bot-permissions`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
      * @description Includes the server's own emojis and the bot's emojis.
      *
      * @tags Guilds
@@ -11285,6 +11647,52 @@ export class Api<SecurityDataType extends unknown> {
      * No description
      *
      * @tags Guilds
+     * @name GetLinkParsing
+     * @summary Get where ClashPerk expands Clash of Clans links pasted in chat
+     * @request GET:/guilds/{guildId}/link-parsing
+     * @secure
+     * @response `200` `GetLinkParsingData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getLinkParsing: ({ guildId }: GetLinkParsingParams, params: RequestParams = {}) =>
+      this.http.request<GetLinkParsingData, GetLinkParsingError>({
+        path: `/guilds/${guildId}/link-parsing`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * @description Replaces the setting: one rule per link type (player, clan, army, base), each with its own channels and categories. Everything is off by default.
+     *
+     * @tags Guilds
+     * @name SaveLinkParsing
+     * @summary Choose where ClashPerk expands Clash of Clans links pasted in chat
+     * @request PUT:/guilds/{guildId}/link-parsing
+     * @secure
+     * @response `200` `SaveLinkParsingData`
+     * @response `500` `ErrorResponseDto`
+     */
+    saveLinkParsing: (
+      { guildId }: SaveLinkParsingParams,
+      data: LinkParsingInput,
+      params: RequestParams = {}
+    ) =>
+      this.http.request<SaveLinkParsingData, SaveLinkParsingError>({
+        path: `/guilds/${guildId}/link-parsing`,
+        method: 'PUT',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Guilds
      * @name GetGuildConfig
      * @summary Get the server's embed color, webhook limit and subscription
      * @request GET:/guilds/{guildId}/config
@@ -11390,7 +11798,7 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description Does the same as the Close button in Discord. The last 100 messages are saved to the ticket log, and the channel is deleted.
+     * @description Does the same as the Close button in Discord. The last 100 messages are saved to the ticket log, the ticket type's role changes are undone, Notify Me subscribers get a DM, and the channel is deleted.
      *
      * @tags Tickets
      * @name CloseTicket
@@ -11899,28 +12307,27 @@ export class Api<SecurityDataType extends unknown> {
         ...params
       })
   };
-  exports = {
+  admin = {
     /**
-     * @description For a scheduled export, the sheet already made for the same server and clans is returned instead of a new one.
+     * @description Clans, auto-roles, logs, reminders, rosters and other settings, with role and channel names when the bot can see the server.
      *
-     * @tags Internal
-     * @name ExportClanMembers
-     * @summary Export clan members to a Google Sheet
-     * @request POST:/exports/members
-     * @response `201` `ExportClanMembersData`
+     * @tags Admin
+     * @name GetServerSetup
+     * @summary Get everything a server has set up
+     * @request GET:/admin/guilds/{guildId}/setup
+     * @secure
+     * @response `200` `GetServerSetupData`
      * @response `500` `ErrorResponseDto`
      */
-    exportClanMembers: (data: ExportMembersInput, params: RequestParams = {}) =>
-      this.http.request<ExportClanMembersData, ExportClanMembersError>({
-        path: `/exports/members`,
-        method: 'POST',
-        body: data,
-        type: ContentType.Json,
+    getServerSetup: ({ guildId }: GetServerSetupParams, params: RequestParams = {}) =>
+      this.http.request<GetServerSetupData, GetServerSetupError>({
+        path: `/admin/guilds/${guildId}/setup`,
+        method: 'GET',
+        secure: true,
         format: 'json',
         ...params
-      })
-  };
-  admin = {
+      }),
+
     /**
      * No description
      *
@@ -12135,6 +12542,27 @@ export class Api<SecurityDataType extends unknown> {
         path: `/admin/developers/${userId}`,
         method: 'DELETE',
         secure: true,
+        format: 'json',
+        ...params
+      })
+  };
+  exports = {
+    /**
+     * @description For a scheduled export, the sheet already made for the same server and clans is returned instead of a new one.
+     *
+     * @tags Internal
+     * @name ExportClanMembers
+     * @summary Export clan members to a Google Sheet
+     * @request POST:/exports/members
+     * @response `201` `ExportClanMembersData`
+     * @response `500` `ErrorResponseDto`
+     */
+    exportClanMembers: (data: ExportMembersInput, params: RequestParams = {}) =>
+      this.http.request<ExportClanMembersData, ExportClanMembersError>({
+        path: `/exports/members`,
+        method: 'POST',
+        body: data,
+        type: ContentType.Json,
         format: 'json',
         ...params
       })

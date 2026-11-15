@@ -26,11 +26,10 @@ import pluralize from 'pluralize';
 import { api, encode } from '../../api/axios.js';
 import { LegendDayDto } from '../../api/generated.js';
 import {
-  aggregateLegendBattleLog,
-  getLegendBattleLogAggregate,
   getLegendArmies,
   getRankedArmies,
   getLegendDays,
+  summarizeLegendSeasons,
   getLegendTimestampAgainstDay,
   getRankedBattleLog,
   getTournament,
@@ -330,15 +329,13 @@ export default class LegendDaysCommand extends Command {
   }
 
   private async graph(data: APIPlayer, legendDays: LegendDayDto[]) {
-    const dailyItems = await getLegendBattleLogAggregate(data.tag);
-    if (!dailyItems.length) return null;
-
+    const lastDays = await getLegendDays(data.tag, Season.getLastLeagueSeason().id).catch(() => []);
     const {
       items: result,
       seasonStart,
       seasonEnd,
       lastSeasonEnd
-    } = aggregateLegendBattleLog(dailyItems);
+    } = summarizeLegendSeasons(legendDays, lastDays);
     if (!result.length) return null;
 
     const season = result.at(0)!;
