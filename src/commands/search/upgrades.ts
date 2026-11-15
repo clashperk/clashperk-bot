@@ -150,6 +150,12 @@ export default class UpgradesCommand extends Command {
       if (unit.hero === 'Royal Champion') {
         return 'Blacksmith_rc';
       }
+      if (unit.hero === 'Minion Prince') {
+        return 'Blacksmith_mp';
+      }
+      if (unit.hero === 'Dragon Duke') {
+        return 'Blacksmith_dd';
+      }
       return 'Blacksmith';
     };
 
@@ -216,7 +222,9 @@ export default class UpgradesCommand extends Command {
       Blacksmith_bk: `${EMOJIS.EQUIPMENT} Equipment (BK)`,
       Blacksmith_aq: `${EMOJIS.EQUIPMENT} Equipment (AQ)`,
       Blacksmith_gw: `${EMOJIS.EQUIPMENT} Equipment (GW)`,
-      Blacksmith_rc: `${EMOJIS.EQUIPMENT} Equipment (RC)`
+      Blacksmith_rc: `${EMOJIS.EQUIPMENT} Equipment (RC)`,
+      Blacksmith_mp: `${EMOJIS.EQUIPMENT} Equipment (MP)`,
+      Blacksmith_dd: `${EMOJIS.EQUIPMENT} Equipment (DD)`
     };
     const _builderBase: Record<string, string> = {
       'Builder Barracks': `${EMOJIS.BUILDER_ELIXIR} Builder Troops`,
