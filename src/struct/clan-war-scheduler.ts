@@ -492,12 +492,14 @@ export class ClanWarScheduler {
 
     const guild = this.client.guilds.cache.get(reminder.guild);
     if (!config.wars || !guild) return { parse: ['users'] };
+    // Unset until /reminders config finishes building the list for the picked role.
+    const excluded = config.warsExclusionUserIds ?? [];
 
     if (config.type === 'optIn') {
-      return { parse: [], users: userIds.filter((id) => config.warsExclusionUserIds.includes(id)) };
+      return { parse: [], users: userIds.filter((id) => excluded.includes(id)) };
     }
 
-    return { parse: [], users: userIds.filter((id) => !config.warsExclusionUserIds.includes(id)) };
+    return { parse: [], users: userIds.filter((id) => !excluded.includes(id)) };
   }
 
   private getExclusionConfig(guildId: string): ExclusionConfig {

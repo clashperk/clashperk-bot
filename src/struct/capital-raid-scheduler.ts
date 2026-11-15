@@ -436,15 +436,17 @@ export class CapitalRaidScheduler {
 
     const guild = this.client.guilds.cache.get(reminder.guild);
     if (!config.raids || !guild) return { parse: ['users'] };
+    // Unset until /reminders config finishes building the list for the picked role.
+    const excluded = config.raidsExclusionUserIds ?? [];
 
     if (config.type === 'optIn') {
       return {
         parse: [],
-        users: userIds.filter((id) => config.raidsExclusionUserIds.includes(id))
+        users: userIds.filter((id) => excluded.includes(id))
       };
     }
 
-    return { parse: [], users: userIds.filter((id) => !config.raidsExclusionUserIds.includes(id)) };
+    return { parse: [], users: userIds.filter((id) => !excluded.includes(id)) };
   }
 
   private getExclusionConfig(guildId: string): ExclusionConfig {
