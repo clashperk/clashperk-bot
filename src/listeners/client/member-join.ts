@@ -79,9 +79,10 @@ export default class GuildMemberAddListener extends Listener {
     const channel = this.client.util.getTextBasedChannel(log.channelId);
     if (!channel) return null;
 
-    const webhook = await this.client.storage.getWebhook(
-      channel.isThread() ? channel.parent! : channel
-    );
+    const target = channel.isThread() ? channel.parent! : channel;
+    if (!this.client.util.hasWebhookPermission(target)) return null;
+
+    const webhook = await this.client.storage.getWebhook(target);
     if (!webhook) return null;
 
     await this.client.settings.set(member.guild.id, Settings.WELCOME_LOG, {
