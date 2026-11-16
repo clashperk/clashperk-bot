@@ -377,7 +377,22 @@ export const UNITS_MAP_BY_NAME: Record<string, number> = {
   'Ruin Witch': 148,
   'Angry Spell': 149,
   'Revenge Deck': 150,
-  'Portal Pendant': 151
+  'Portal Pendant': 151,
+  'Barch Squad': 152,
+  'Giant Wizard Squad': 153,
+  'Wall Breaker Squad': 154,
+  'Minion Squad': 155,
+  'Balloon Squad': 156,
+  'Golem Witch Squad': 157,
+  'Hog Rider Squad': 158,
+  'Miner Squad': 159,
+  'Healer Squad': 160,
+  'P.E.K.K.A Titan Squad': 161,
+  'Dragons Squad': 162,
+  'Baby Dragon Squad': 163,
+  'Heroic Spell': 164,
+  'Shield Brooch': 165,
+  'Blizzard Axe': 166
 };
 
 const ACHIEVEMENT_LIST = Object.entries(ACHIEVEMENTS_MAP_BY_NAME).reduce<

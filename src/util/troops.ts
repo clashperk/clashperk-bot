@@ -93,6 +93,16 @@ export const ARMY_CAPACITY = [
     hall: 16,
     troops: 320,
     spells: 11
+  },
+  {
+    hall: 17,
+    troops: 340,
+    spells: 11
+  },
+  {
+    hall: 18,
+    troops: 352,
+    spells: 11
   }
 ];
 

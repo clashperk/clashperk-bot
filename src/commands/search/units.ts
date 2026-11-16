@@ -173,6 +173,7 @@ export default class UnitsCommand extends Command {
       'Blacksmith': 'Equipment',
       'Pet House': 'Pets',
       'Workshop': 'Siege Machines',
+      'Squad Barracks': 'Squads',
       'Builder Hall': 'Builder Base Hero',
       'Builder Barracks': 'Builder Troops'
     };
