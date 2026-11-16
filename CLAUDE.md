@@ -56,6 +56,10 @@ Log handlers (clan-log, clan-war-log, capital-log, donation-log, etc.) process g
 - `src/util/constants.ts` — Feature flags, collection names, magic numbers
 - `src/api/` — Auto-generated Swagger types for Clash of Clans API
 
+### Emojis
+
+Unit, Town Hall and league emojis are guild emojis on dedicated emoji servers, mapped in `src/util/emojis.ts`. To add them for a game update (and use the animated slots when the static ones are full), follow [`docs/emojis.md`](docs/emojis.md).
+
 ### Localization
 
 - `locales/` is a git submodule (`clashperk/locales`) with 32+ language translations
