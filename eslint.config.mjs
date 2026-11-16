@@ -22,7 +22,7 @@ const compat = new FlatCompat({
 export default [
   includeIgnoreFile(gitignorePath),
   {
-    ignores: ['**/dist/*', '**/node_modules', 'eslint.config.*']
+    ignores: ['**/dist/*', '**/node_modules', 'eslint.config.*', '.claude/**']
   },
   ...compat.extends('plugin:@typescript-eslint/recommended', 'plugin:prettier/recommended'),
   {
