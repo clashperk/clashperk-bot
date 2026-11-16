@@ -87,7 +87,9 @@ export const HERO_EQUIPMENT: Record<string, string> = {
   'Electro Fangs': '<:ElectroFangs:1498392822158721214>',
   'Monolith Arrow': '<:monolith_arrow:1546061610651615233>',
   'Revenge Deck': '<:revenge_deck:1546061642830319756>',
-  'Portal Pendant': '<:portal_pendant:1558735000654970950>'
+  'Portal Pendant': '<:portal_pendant:1558735000654970950>',
+  'Shield Brooch': '<:shield_brooch:1571901969243570287>',
+  'Blizzard Axe': '<a:blizzard_axe:1571901980711059586>'
 };
 
 export const DARK_ELIXIR_TROOPS: Record<string, string> = {
@@ -118,7 +120,20 @@ export const SIEGE_MACHINES: Record<string, string> = {
   'Sky Wagon': '<:SkyWagon:1498392948340162623>'
 };
 
-export const SQUADS: Record<string, string> = {};
+export const SQUADS: Record<string, string> = {
+  'Barch Squad': '<a:barch_squad:1571901809101111417>',
+  'Giant Wizard Squad': '<a:giant_wizard_squad:1571901821335904418>',
+  'Wall Breaker Squad': '<a:wall_breaker_squad:1571901833834790982>',
+  'Minion Squad': '<a:minion_squad:1571901848221388914>',
+  'Balloon Squad': '<a:balloon_squad:1571901860804034621>',
+  'Golem Witch Squad': '<a:golem_witch_squad:1571901872581775411>',
+  'Hog Rider Squad': '<a:hog_rider_squad:1571901884044677274>',
+  'Miner Squad': '<a:miner_squad:1571901896052969555>',
+  'Healer Squad': '<a:healer_squad:1571901908635881552>',
+  'P.E.K.K.A Titan Squad': '<a:pekka_titan_squad:1571901920145051661>',
+  'Dragons Squad': '<a:dragons_squad:1571901932665176115>',
+  'Baby Dragon Squad': '<a:baby_dragon_squad:1571901944744911019>'
+};
 
 export const ELIXIR_SPELLS: Record<string, string> = {
   'Lightning Spell': '<:Lightning:785740412010364958>',
@@ -130,7 +145,8 @@ export const ELIXIR_SPELLS: Record<string, string> = {
   'Invisibility Spell': '<:Invisible:787186410032463882>',
   'Recall Spell': '<:Recall:1029115194552623227>',
   'Revive Spell': '<:Revive:1310678415707475999>',
-  'Totem Spell': '<:Totem:1440588711493369866>'
+  'Totem Spell': '<:Totem:1440588711493369866>',
+  'Heroic Spell': '<:heroic_spell:1571901957264904193>'
 };
 
 export const DARK_SPELLS: Record<string, string> = {
@@ -230,7 +246,8 @@ export const TOWN_HALLS: Record<string, string> = {
   15: '<:TownHall15:1029109199105425530>',
   16: '<:TownHall16:1184211259130925166>',
   17: '<:TownHall17:1310678877194158132>',
-  18: '<:TownHall18:1439918692988358656>'
+  18: '<:TownHall18:1439918692988358656>',
+  19: '<a:TownHall19:1571901731682394162>'
 };
 
 export const BUILDER_HALLS: Record<string, string> = {
