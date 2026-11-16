@@ -23,7 +23,7 @@ import {
 } from '../../util/emojis.js';
 import { ARMY_CAPACITY, RAW_SUPER_TROOPS, RAW_TROOPS } from '../../util/troops.js';
 
-const [TOTAL_UNITS, TOTAL_SPELLS] = [340, 11];
+const [TOTAL_UNITS, TOTAL_SPELLS] = [352, 11];
 const ARMY_URL_REGEX =
   /^https?:\/\/link\.clashofclans\.com\/[a-z]{1,2}[\/]?\?action=CopyArmy&army=\S+$/;
 

@@ -118,6 +118,8 @@ export const SIEGE_MACHINES: Record<string, string> = {
   'Sky Wagon': '<:SkyWagon:1498392948340162623>'
 };
 
+export const SQUADS: Record<string, string> = {};
+
 export const ELIXIR_SPELLS: Record<string, string> = {
   'Lightning Spell': '<:Lightning:785740412010364958>',
   'Healing Spell': '<:Healing:696302035913670737>',
@@ -192,6 +194,7 @@ export const HOME_TROOPS: Record<string, string> = {
   ...ELIXIR_TROOPS,
   ...DARK_ELIXIR_TROOPS,
   ...SIEGE_MACHINES,
+  ...SQUADS,
   ...ELIXIR_SPELLS,
   ...DARK_SPELLS,
   ...HERO_PETS,
