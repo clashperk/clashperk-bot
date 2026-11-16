@@ -5,15 +5,14 @@ import {
   PermissionsString,
   User
 } from 'discord.js';
+import { MAX_BUILDER_HALL_LEVEL, MAX_TOWN_HALL_LEVEL } from 'clashofclans.js';
 import i18next from 'i18next';
 
 export const BOOST_DURATION = 3 * 24 * 60 * 60 * 1000;
 
 export const INACTIVE_GUILD_DURATION = 365 * 24 * 60 * 60 * 1000;
 
-export const MAX_TOWN_HALL_LEVEL = 19;
-
-export const MAX_BUILDER_HALL_LEVEL = 10;
+export { MAX_BUILDER_HALL_LEVEL, MAX_TOWN_HALL_LEVEL };
 
 export const MAX_CLAN_SIZE = 50;
 
