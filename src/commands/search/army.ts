@@ -19,6 +19,7 @@ import {
   HERO_PETS,
   HOME_HEROES,
   SIEGE_MACHINES,
+  SQUADS,
   SUPER_TROOPS
 } from '../../util/emojis.js';
 import { ARMY_CAPACITY, RAW_SUPER_TROOPS, RAW_TROOPS } from '../../util/troops.js';
@@ -31,6 +32,7 @@ const ARMY_URL_REGEX =
 const GLOBAL_ID_BASE: Record<string, number> = {
   troop: 4_000_000,
   siege: 4_000_000,
+  squad: 4_000_000,
   pet: 73_000_000,
   spell: 26_000_000,
   hero: 28_000_000,
@@ -239,6 +241,12 @@ export default class ArmyCommand extends Command {
       emojiRecords: SIEGE_MACHINES,
       parts: troopList
     });
+    const squads = findUnits({
+      category: 'troop',
+      subCategory: 'squad',
+      emojiRecords: SQUADS,
+      parts: troopList
+    });
     const ccTroops = findUnits({ category: 'troop', emojiRecords: CC_TROOPS, parts: ccTroopList });
     const ccSpells = findUnits({ category: 'spell', emojiRecords: SPELLS, parts: ccSpellList });
 
@@ -307,7 +315,13 @@ export default class ArmyCommand extends Command {
         };
       });
 
-    if (!spells.length && !troops.length && !superTroops.length && !siegeMachines.length) {
+    if (
+      !spells.length &&
+      !troops.length &&
+      !superTroops.length &&
+      !siegeMachines.length &&
+      !squads.length
+    ) {
       return { embeds: [], content: this.i18n('command.army.invalid_link', { lng: locale }) };
     }
 
@@ -315,12 +329,12 @@ export default class ArmyCommand extends Command {
       ...troops.map((en) => en.hallLevel),
       ...spells.map((en) => en.hallLevel),
       ...siegeMachines.map((en) => en.hallLevel),
-      ...superTroops.map((en) => en.hallLevel)
+      ...superTroops.map((en) => en.hallLevel),
+      ...squads.map((en) => en.hallLevel)
     );
 
     const [totalTroop, totalSpell] = [
-      troops.reduce((pre, cur) => pre + cur.housing * cur.total, 0) +
-        superTroops.reduce((pre, curr) => pre + curr.housing * curr.total, 0),
+      [...troops, ...superTroops, ...squads].reduce((pre, cur) => pre + cur.housing * cur.total, 0),
       spells.reduce((pre, cur) => pre + cur.housing * cur.total, 0),
       siegeMachines.reduce((pre, cur) => pre + cur.housing * cur.total, 0)
     ];
@@ -399,6 +413,20 @@ export default class ArmyCommand extends Command {
               .map(
                 (en) => `\u200e\`${this.padding(en.total)}\` ${SUPER_TROOPS[en.name]}  ${en.name}`
               )
+              .join('\n')
+          ].join('\n')
+        }
+      ]);
+    }
+
+    if (squads.length) {
+      embed.addFields([
+        {
+          name: '\u200b',
+          value: [
+            '**Squads**',
+            squads
+              .map((en) => `\u200e\`${this.padding(en.total)}\` ${SQUADS[en.name]}  ${en.name}`)
               .join('\n')
           ].join('\n')
         }
