@@ -5,15 +5,20 @@ import { Agent as HttpsAgent } from 'https';
 import { container } from 'tsyringe';
 import { Client } from '../struct/client.js';
 import { userAgent } from '../util/user-agent.js';
-import { Api, HttpClient } from './generated.js';
+import { Api, ErrorResponseDto, HttpClient } from './generated.js';
 
 /** Endpoints that answer with 404 as a normal "no data" result, not as a failure. */
 const EXPECTED_NOT_FOUND = [/^\/legends\/[^/]+\/estimate-rank$/];
 
-const isExpectedError = (error: AxiosError) => {
-  if (error.response?.status !== 404) return false;
+/** Only `error` goes to Sentry Issues. The caller sees the failure at every level. */
+const logLevelOf = (error: AxiosError<Partial<ErrorResponseDto>>) => {
   const url = error.config?.url ?? '';
-  return EXPECTED_NOT_FOUND.some((pattern) => pattern.test(url));
+  if (error.response?.status === 404 && EXPECTED_NOT_FOUND.some((pattern) => pattern.test(url))) {
+    return 'debug';
+  }
+  // The API answers 503 only when the CoC API failed. A Cloudflare 503 has no JSON body.
+  if (error.response?.data?.statusCode === 503) return 'warn';
+  return 'error';
 };
 
 // Cloudflare resets open connections when it moves them between data centers. Reads are safe to send
@@ -49,7 +54,7 @@ httpClient.instance.interceptors.request.use((config: RetryableConfig) => {
 
 httpClient.instance.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError<{ message: string }>) => {
+  async (error: AxiosError<Partial<ErrorResponseDto>>) => {
     const client = container.resolve(Client);
 
     const config = error.config as RetryableConfig | undefined;
@@ -73,13 +78,13 @@ httpClient.instance.interceptors.response.use(
       return response;
     }
 
-    const expected = isExpectedError(error);
-    client.logger[expected ? 'debug' : 'error'](
+    const level = logLevelOf(error);
+    client.logger[level](
       `${error.config?.method?.toUpperCase()} ${error.config?.url} ${JSON.stringify(error.response?.data || error.code, null, 0)}`,
       { label: 'AXIOS' }
     );
 
-    if (!expected) {
+    if (level === 'error') {
       setContext('http_call_errored', {
         response: error.response?.data || {},
         url: error.config?.url,
