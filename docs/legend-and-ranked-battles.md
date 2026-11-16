@@ -83,6 +83,7 @@ For Legend, the amount is `trunc(sum of the defense changes of both days / their
 A Legend player gets 8 attacks and 8 defenses per game day (Supercell).
 
 - **Game day.** A game day runs from 05:00 to 05:00 the next day. A battle at 03:00 on a Tuesday belongs to Monday.
+- **Attack block.** No Legend attack can start in the game's 300 s block at day end (`LEGENDS_SECONDS_ATTACKS_DISABLED_BEFORE_DAY_END`). In Nov 2026 none started between 05:00:36 and about 05:04:30. A battle started just before the block can end up to about 3.5 min after 05:00 and still counts for the day before. radar stores each battle's day in `battle_date` (end − `battleTime` − 150 s), so group by that, never by the end time. The daily summary log waits 10 minutes after 05:00 so those battles are in.
 - **Season.** A season is 28 game days, a 4-week tournament, and starts on a Monday at 05:00. Seasons follow every 28 days from 2025-10-06 05:00. A season's id is its start date, for example `2026-11-02`.
 - **Season helpers.** `Season.leagueId` and `Season.getLeagueSeasonById()` (from `clashofclans.js` in the bot and `@app/clash-client` in the backend) work out the current season, and the `battle_season` column uses the same anchor.
 
