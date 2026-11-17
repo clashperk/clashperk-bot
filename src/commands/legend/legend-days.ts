@@ -24,7 +24,7 @@ import moment from 'moment';
 import ms from 'ms';
 import pluralize from 'pluralize';
 import { api, encode } from '../../api/axios.js';
-import { LegendDayDto } from '../../api/generated.js';
+import { LegendDayChangeDto, LegendDayChangeType, LegendDayDto } from '../../api/generated.js';
 import {
   getLegendArmies,
   getRankedArmies,
@@ -54,6 +54,15 @@ import { Season, Util } from '../../util/toolkit.js';
 
 const MIN_LAST_SEASON_DAYS = 7;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const CHANGE_LABELS: Record<LegendDayChangeType, string> = {
+  [LegendDayChangeType.Reset]: 'Reset to 5000',
+  [LegendDayChangeType.MissedDefenses]: 'Missed defenses',
+  [LegendDayChangeType.Untracked]: 'Untracked changes'
+};
+
+const signed = (value: number) => `${value > 0 ? '+' : ''}${value}`;
+const describeChange = (change: LegendDayChangeDto) =>
+  `${CHANGE_LABELS[change.type]} (${signed(change.trophies)} trophies)`;
 
 export default class LegendDaysCommand extends Command {
   public constructor() {
@@ -233,7 +242,6 @@ export default class LegendDaysCommand extends Command {
 
     const trophiesFromAttacks = legendDay?.attackTrophies ?? 0;
     const trophiesFromDefenses = legendDay?.defenseTrophies ?? 0;
-    const netTrophies = trophiesFromAttacks + trophiesFromDefenses;
 
     let streak = 0;
     for (const b of [...attacks].reverse()) {
@@ -243,6 +251,7 @@ export default class LegendDaysCommand extends Command {
 
     const initialTrophies = legendDay?.initialTrophies ?? data.trophies;
     const currentTrophies = legendDay?.currentTrophies ?? data.trophies;
+    const netTrophies = currentTrophies - initialTrophies;
 
     const { globalRank, countryRank } = await this.rankings(data.tag);
 
@@ -265,13 +274,11 @@ export default class LegendDaysCommand extends Command {
       {
         name: '**Overview**',
         value: [
-          ...(legendDay?.reset
-            ? [`- Reset to ${legendDay.reset.to} (from ${legendDay.reset.from})`]
-            : []),
           `- Initial Trophies: ${initialTrophies}`,
           `- Current Trophies: ${currentTrophies}`,
           `- ${attacks.length} attack${attacks.length === 1 ? '' : 's'} (+${trophiesFromAttacks} trophies)`,
           `- ${defenses.length} defense${defenses.length === 1 ? '' : 's'} (${trophiesFromDefenses} trophies)`,
+          ...(legendDay?.changes ?? []).map((change) => `- ${describeChange(change)}`),
           `- ${Math.abs(netTrophies)} trophies ${netTrophies >= 0 ? 'gained' : 'lost'}`,
           `- Streak: ${streak}`
         ].join('\n')
@@ -440,7 +447,8 @@ export default class LegendDaysCommand extends Command {
         loss,
         net: initial && final ? final - initial : gain + loss,
         final: final || '-',
-        initial: initial || '-'
+        initial: initial || '-',
+        changes: legendDay?.changes ?? []
       };
     });
 
@@ -473,7 +481,10 @@ export default class LegendDaysCommand extends Command {
           const n = padStart(i + 1, 2);
           return `\`\u200e${n} \` \`${atk} \` \`${def} \` \`${ng} \` \`${init}\` \`${final}\``;
         })
-      ].join('\n')
+      ].join('\n'),
+      ...perDayLogs.flatMap((day, i) =>
+        day.changes.map((change) => `- Day ${i + 1}: ${describeChange(change)}`)
+      )
     ].join('\n');
 
     const embed = new EmbedBuilder();

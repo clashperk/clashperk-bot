@@ -118,33 +118,23 @@ radar-service's `legend_logs` service polls each player's trophies. It writes ev
 
 ### How the API tells them apart
 
-The backend does this in `apps/api/src/legends/services/legend-days.service.ts`. Nothing else re-implements it. Only the **first** logged change after 05:00 can hold what the game did at 05:00.
+The backend does this in `apps/api/src/legends/services/legend-days.service.ts`. Nothing else re-implements it. Each day starts at the previous day's final trophies, and every trophy change the stored battles don't explain goes in the day's `changes`, so every day adds up: end = start + attack trophies + defense trophies + changes.
 
-A change is a **reset** (`findResets`) when:
+A change is labelled from what the logs show:
 
-1. It's the first change after a Monday 05:00, logged within 90 minutes of it.
-2. It starts below 5000, or anywhere but 5000 on a season's first Monday.
-3. No stored battle in it ended before 05:00.
-4. Its end equals 5000 plus the stored battles it holds. With no battles, it ends at exactly 5000.
-
-A change is a **missing-defense deduction** (`findMissedDefenses`) when:
-
-1. It's the first change after any 05:00, logged within 90 minutes of it, and it goes down.
-2. No stored battle is in it.
-3. The day before had 1 to 7 stored defenses, and the drop equals the deduction for them exactly.
-
-Anything else is treated as battles. A change that's close but not exact is left alone rather than guessed at.
+- **`reset`:** on a season's first day, the move from the previous final to 5000. On a Monday, a logged change from below 5000 to exactly 5000 plus the stored battles it holds. It can come hours after 05:00, because the game lifts the player when they next play, and it never comes for players the game demoted.
+- **`missedDefenses`:** a drop with no stored battle behind it, logged within 90 minutes of 05:00 and before any change that belongs to the new day, after a day with 1 to 7 stored defenses. It counts on the day it was for, the day before.
+- **`untracked`:** whatever is left, mostly battles radar didn't store.
 
 ### How they're shown
 
-A reset day starts after the reset. A deduction counts as defense trophies of the day it was for, the day before. Both days then add up: end = start + attack trophies + defense trophies.
-
-| Where                             | What it shows                                                                                                     |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `GET /legends/:playerTag/days`    | `initialTrophies` after the reset, with `reset: { from, to }`. `defenseTrophies` includes `missedDefenseTrophies` |
-| `GET /legends/:playerTag/seasons` | Season attack and defense totals without resets. Deductions count as defense trophies                             |
-| Bot `/legend days`                | "Reset to 5000 (from 4931)" above Initial Trophies                                                                |
-| Dashboard Legends tab             | Start, attacks, defenses, net and end for each day, with "Reset from" under a reset day's start                   |
+| Where                             | What it shows                                                                                                          |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `GET /legends/:playerTag/days`    | `initialTrophies` is the day before's end. `changes` lists `{ type, trophies }`. `defenseTrophies` counts battles only |
+| `GET /legends/:playerTag/seasons` | Season attack and defense totals without resets. Deductions count as defense trophies                                  |
+| Bot `/legend days`                | A line for each change under the defenses, such as "Missed defenses (-32 trophies)"                                    |
+| Bot season logs                   | The day table, with "Day 1: Missed defenses (-32 trophies)" under it for each change                                   |
+| Dashboard Legends tab             | Start, attacks, defenses, net and end for each day, with "Reset from" under a reset day's start                        |
 
 ## Ranked Battles
 
