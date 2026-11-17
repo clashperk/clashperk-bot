@@ -446,7 +446,8 @@ export default class LegendDaysCommand extends Command {
       )
       .map(({ number, legendDay }) => {
         const gain = legendDay?.attackTrophies ?? 0;
-        const loss = legendDay?.defenseTrophies ?? 0;
+        // The table has no column for it, so missed defenses count in DEF and the row adds up.
+        const loss = (legendDay?.defenseTrophies ?? 0) + (legendDay?.missedDefenseTrophies ?? 0);
         const initial = legendDay?.initialTrophies ?? lastTrophies;
         const final = legendDay?.currentTrophies ?? lastTrophies;
         lastTrophies = final;
@@ -460,7 +461,11 @@ export default class LegendDaysCommand extends Command {
           net: initial && final ? final - initial : gain + loss,
           final: final || '-',
           initial: initial || '-',
-          changes: legendDay?.changes ?? []
+          notes: (legendDay?.changes ?? []).map((change) => {
+            if (change.type !== LegendDayChangeType.MissedDefenses) return describeChange(change);
+            const missed = Math.max(1, 8 - (legendDay?.defenseCount ?? 0));
+            return `DEF includes ${change.trophies} for ${missed} missed ${pluralize('defense', missed)}`;
+          })
         };
       });
 
@@ -494,9 +499,7 @@ export default class LegendDaysCommand extends Command {
           return `\`\u200e${n} \` \`${atk} \` \`${def} \` \`${ng} \` \`${init}\` \`${final}\``;
         })
       ].join('\n'),
-      ...perDayLogs.flatMap((day) =>
-        day.changes.map((change) => `- Day ${day.number}: ${describeChange(change)}`)
-      )
+      ...perDayLogs.flatMap((day) => day.notes.map((note) => `- Day ${day.number}: ${note}`))
     ].join('\n');
 
     const embed = new EmbedBuilder();
