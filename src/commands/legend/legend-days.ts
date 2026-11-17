@@ -63,6 +63,12 @@ const CHANGE_LABELS: Record<LegendDayChangeType, string> = {
 const signed = (value: number) => `${value > 0 ? '+' : ''}${value}`;
 const describeChange = (change: LegendDayChangeDto) =>
   `${CHANGE_LABELS[change.type]} (${signed(change.trophies)} trophies)`;
+const changeNote = (change: LegendDayChangeDto, defenseCount: number) => {
+  if (change.type === LegendDayChangeType.Reset) return 'for the reset to 5000';
+  if (change.type === LegendDayChangeType.Untracked) return 'that no stored battle explains';
+  const missed = Math.max(1, 8 - defenseCount);
+  return `for ${missed} missed ${pluralize('defense', missed)}`;
+};
 
 export default class LegendDaysCommand extends Command {
   public constructor() {
@@ -445,9 +451,13 @@ export default class LegendDaysCommand extends Command {
         )
       )
       .map(({ number, legendDay }) => {
-        const gain = legendDay?.attackTrophies ?? 0;
-        // The table has no column for it, so missed defenses count in DEF and the row adds up.
-        const loss = (legendDay?.defenseTrophies ?? 0) + (legendDay?.missedDefenseTrophies ?? 0);
+        const changes = legendDay?.changes ?? [];
+        const sumOf = (sign: number) =>
+          changes.reduce((sum, c) => (Math.sign(c.trophies) === sign ? sum + c.trophies : sum), 0);
+        // The table has no column for changes battles don't explain, so each counts in ATK or DEF
+        // by its sign and the row adds up. A note under the table says what's included.
+        const gain = (legendDay?.attackTrophies ?? 0) + sumOf(1);
+        const loss = (legendDay?.defenseTrophies ?? 0) + sumOf(-1);
         const initial = legendDay?.initialTrophies ?? lastTrophies;
         const final = legendDay?.currentTrophies ?? lastTrophies;
         lastTrophies = final;
@@ -461,11 +471,10 @@ export default class LegendDaysCommand extends Command {
           net: initial && final ? final - initial : gain + loss,
           final: final || '-',
           initial: initial || '-',
-          notes: (legendDay?.changes ?? []).map((change) => {
-            if (change.type !== LegendDayChangeType.MissedDefenses) return describeChange(change);
-            const missed = Math.max(1, 8 - (legendDay?.defenseCount ?? 0));
-            return `DEF includes ${change.trophies} for ${missed} missed ${pluralize('defense', missed)}`;
-          })
+          notes: changes.map(
+            (change) =>
+              `${change.trophies > 0 ? 'ATK' : 'DEF'} includes ${signed(change.trophies)} ${changeNote(change, legendDay!.defenseCount)}`
+          )
         };
       });
 

@@ -128,13 +128,13 @@ A change is labelled from what the logs show:
 
 ### How they're shown
 
-| Where                             | What it shows                                                                                                          |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `GET /legends/:playerTag/days`    | `initialTrophies` is the day before's end. `changes` lists `{ type, trophies }`. `defenseTrophies` counts battles only |
-| `GET /legends/:playerTag/seasons` | Season attack and defense totals without resets. Deductions count as defense trophies                                  |
-| Bot `/legend days`                | A line for each change under the defenses, such as "Missed defenses (-32 trophies)"                                    |
-| Bot season logs                   | The day table, with "Day 1: Missed defenses (-32 trophies)" under it for each change                                   |
-| Dashboard Legends tab             | Start, attacks, defenses, net and end for each day, with "Reset from" under a reset day's start                        |
+| Where                             | What it shows                                                                                                                                                      |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /legends/:playerTag/days`    | `initialTrophies` is the day before's end. `changes` lists `{ type, trophies }`. `defenseTrophies` counts battles only                                             |
+| `GET /legends/:playerTag/seasons` | Season attack and defense totals without resets. Deductions count as defense trophies                                                                              |
+| Bot `/legend days`                | A line for each change under the defenses, such as "Missed defenses (-32 trophies)"                                                                                |
+| Bot season logs                   | The day table. Each change counts in ATK (gains) or DEF (losses) so every row adds up, with a note under the table such as "DEF includes -30 for 1 missed defense" |
+| Dashboard Legends tab             | Start, attacks, defenses, net and end for each day, with "Reset from" under a reset day's start                                                                    |
 
 ## Ranked Battles
 
