@@ -209,6 +209,16 @@ export enum ClanActivityType {
   CapitalLeagueChange = 'capital_league_change'
 }
 
+/**
+ * `reset`: the Monday or season start reset to 5000. `missedDefenses`: what the game took at the
+ * end of the day for defenses the player didn't get. `untracked`: anything no tracked battle explains.
+ */
+export enum LegendDayChangeType {
+  Reset = 'reset',
+  MissedDefenses = 'missedDefenses',
+  Untracked = 'untracked'
+}
+
 export enum UserRoles {
   USER = 'user',
   ADMIN = 'admin',
@@ -1114,13 +1124,22 @@ export interface LegendDayBattleDto {
   battleTime: string;
 }
 
+export interface LegendDayChangeDto {
+  /**
+   * `reset`: the Monday or season start reset to 5000. `missedDefenses`: what the game took at the
+   * end of the day for defenses the player didn't get. `untracked`: anything no tracked battle explains.
+   */
+  type: LegendDayChangeType;
+  trophies: number;
+}
+
 export interface LegendDayDto {
   /**
    * The game day, which starts at 05:00 UTC.
    * @example "2026-10-12"
    */
   date: string;
-  /** Trophies at the start of the day, after any reset. Null when no trophy change was tracked. */
+  /** Trophies at the end of the day before, or the first tracked trophies. Null when none were tracked. */
   initialTrophies: number | null;
   /** Trophies after the day's last tracked change. Null when no trophy change was tracked. */
   currentTrophies: number | null;
@@ -1130,13 +1149,15 @@ export interface LegendDayDto {
   defenseCount: number;
   /** Trophies gained from attacks. */
   attackTrophies: number;
-  /** Trophies lost to defenses, as a negative number, including `missedDefenseTrophies`. */
+  /** Trophies lost to defenses, as a negative number. */
   defenseTrophies: number;
   /**
    * Trophies the game took at the end of the day for defenses the player didn't get (fewer than
-   * 8), as a negative number. Absent when none were taken.
+   * 8), as a negative number. Absent when none were taken. Also in `changes`.
    */
   missedDefenseTrophies?: number;
+  /** Trophy changes no battle explains. Initial + attacks + defenses + changes = current. */
+  changes: LegendDayChangeDto[];
   /** Oldest first. */
   battles: LegendDayBattleDto[];
 }
