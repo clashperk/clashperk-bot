@@ -11,7 +11,7 @@ import {
 import moment from 'moment';
 import { ObjectId, WithId } from 'mongodb';
 import { cluster, title } from 'radash';
-import { PLAYER_LEAGUE_TIERS } from '../util/emojis.js';
+import { HOME_BASE_LEAGUES } from '../util/emojis.js';
 import { padStart } from '../util/helper.js';
 import { Util } from '../util/toolkit.js';
 import { Enqueuer } from './enqueuer.js';
@@ -111,7 +111,6 @@ export class RankedBattleLog extends RootLog {
       .filter((player) => result[player.tag])
       .map((player) => {
         const leagueId = player.leagueTier?.id || UNRANKED_TIER_ID;
-        const league = player.leagueTier?.name || 'Unranked';
         const trophies = result[player.tag].trophies;
 
         const status =
@@ -123,7 +122,7 @@ export class RankedBattleLog extends RootLog {
 
         return {
           player,
-          league,
+          leagueId,
           trophies,
           status
         };
@@ -134,7 +133,7 @@ export class RankedBattleLog extends RootLog {
         string,
         {
           player: APIClanMember;
-          league: string;
+          leagueId: number;
           trophies: number;
           status: string;
         }[]
@@ -164,7 +163,7 @@ export class RankedBattleLog extends RootLog {
             players
               .map(
                 (player) =>
-                  `${PLAYER_LEAGUE_TIERS[player.league]} \`${padStart(player.trophies, 4)}\` \u200e${player.player.name}`
+                  `${HOME_BASE_LEAGUES[player.leagueId]} \`${padStart(player.trophies, 4)}\` \u200e${player.player.name}`
               )
               .join('\n')
           )
