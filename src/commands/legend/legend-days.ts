@@ -63,12 +63,6 @@ const CHANGE_LABELS: Record<LegendDayChangeType, string> = {
 const signed = (value: number) => `${value > 0 ? '+' : ''}${value}`;
 const describeChange = (change: LegendDayChangeDto) =>
   `${CHANGE_LABELS[change.type]} (${signed(change.trophies)} trophies)`;
-const changeNote = (change: LegendDayChangeDto, defenseCount: number) => {
-  if (change.type === LegendDayChangeType.Reset) return 'for the reset to 5000';
-  if (change.type === LegendDayChangeType.Untracked) return 'that no stored battle explains';
-  const missed = Math.max(1, 8 - defenseCount);
-  return `for ${missed} missed ${pluralize('defense', missed)}`;
-};
 
 export default class LegendDaysCommand extends Command {
   public constructor() {
@@ -455,7 +449,7 @@ export default class LegendDaysCommand extends Command {
         const sumOf = (sign: number) =>
           changes.reduce((sum, c) => (Math.sign(c.trophies) === sign ? sum + c.trophies : sum), 0);
         // The table has no column for changes battles don't explain, so each counts in ATK or DEF
-        // by its sign and the row adds up. A note under the table says what's included.
+        // by its sign and the row adds up.
         const gain = (legendDay?.attackTrophies ?? 0) + sumOf(1);
         const loss = (legendDay?.defenseTrophies ?? 0) + sumOf(-1);
         const initial = legendDay?.initialTrophies ?? lastTrophies;
@@ -470,11 +464,7 @@ export default class LegendDaysCommand extends Command {
           loss,
           net: initial && final ? final - initial : gain + loss,
           final: final || '-',
-          initial: initial || '-',
-          notes: changes.map(
-            (change) =>
-              `${change.trophies > 0 ? 'ATK' : 'DEF'} includes ${signed(change.trophies)} ${changeNote(change, legendDay!.defenseCount)}`
-          )
+          initial: initial || '-'
         };
       });
 
@@ -507,8 +497,7 @@ export default class LegendDaysCommand extends Command {
           const n = padStart(day.number, 2);
           return `\`\u200e${n} \` \`${atk} \` \`${def} \` \`${ng} \` \`${init}\` \`${final}\``;
         })
-      ].join('\n'),
-      ...perDayLogs.flatMap((day) => day.notes.map((note) => `- Day ${day.number}: ${note}`))
+      ].join('\n')
     ].join('\n');
 
     const embed = new EmbedBuilder();
