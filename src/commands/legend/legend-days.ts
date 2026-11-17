@@ -431,26 +431,38 @@ export default class LegendDaysCommand extends Command {
   private async logs(data: APIPlayer, legendDays: LegendDayDto[]) {
     const days = Util.getLegendDays();
 
-    const perDayLogs = days.map(({ startTime }) => {
-      const battleDate = new Date(startTime).toISOString().slice(0, 10);
-      const legendDay = legendDays.find((d) => d.date === battleDate);
+    const dayLogs = days.map(({ startTime }, i) => ({
+      number: i + 1,
+      legendDay: legendDays.find((d) => d.date === new Date(startTime).toISOString().slice(0, 10))
+    }));
+    // Days before the player was tracked are left out, and a quiet day keeps the last trophies.
+    let lastTrophies: number | null = null;
+    const perDayLogs = dayLogs
+      .slice(
+        Math.max(
+          0,
+          dayLogs.findIndex(({ legendDay }) => legendDay)
+        )
+      )
+      .map(({ number, legendDay }) => {
+        const gain = legendDay?.attackTrophies ?? 0;
+        const loss = legendDay?.defenseTrophies ?? 0;
+        const initial = legendDay?.initialTrophies ?? lastTrophies;
+        const final = legendDay?.currentTrophies ?? lastTrophies;
+        lastTrophies = final;
 
-      const gain = legendDay?.attackTrophies ?? 0;
-      const loss = legendDay?.defenseTrophies ?? 0;
-      const initial = legendDay?.initialTrophies;
-      const final = legendDay?.currentTrophies;
-
-      return {
-        attackCount: legendDay?.attackCount ?? 0,
-        defenseCount: legendDay?.defenseCount ?? 0,
-        gain,
-        loss,
-        net: initial && final ? final - initial : gain + loss,
-        final: final || '-',
-        initial: initial || '-',
-        changes: legendDay?.changes ?? []
-      };
-    });
+        return {
+          number,
+          attackCount: legendDay?.attackCount ?? 0,
+          defenseCount: legendDay?.defenseCount ?? 0,
+          gain,
+          loss,
+          net: initial && final ? final - initial : gain + loss,
+          final: final || '-',
+          initial: initial || '-',
+          changes: legendDay?.changes ?? []
+        };
+      });
 
     const totalAttacks = perDayLogs.reduce((acc, cur) => acc + cur.attackCount, 0);
     const weaponLevel = data.townHallWeaponLevel ? ATTACK_COUNTS[data.townHallWeaponLevel] : '';
@@ -469,7 +481,7 @@ export default class LegendDaysCommand extends Command {
       '',
       [
         '`DAY` `  ATK ` `  DEF ` ` +/- ` `START` ` END`',
-        ...perDayLogs.map((day, i) => {
+        ...perDayLogs.map((day) => {
           const def = padStart(
             `-${Math.abs(day.loss)}${ATTACK_COUNTS[Math.min(8, day.defenseCount)]}`,
             5
@@ -478,12 +490,12 @@ export default class LegendDaysCommand extends Command {
           const ng = padStart(`${day.net > 0 ? '+' : ''}${day.net}`, 4);
           const final = padStart(day.final, 4);
           const init = padStart(day.initial, 5);
-          const n = padStart(i + 1, 2);
+          const n = padStart(day.number, 2);
           return `\`\u200e${n} \` \`${atk} \` \`${def} \` \`${ng} \` \`${init}\` \`${final}\``;
         })
       ].join('\n'),
-      ...perDayLogs.flatMap((day, i) =>
-        day.changes.map((change) => `- Day ${i + 1}: ${describeChange(change)}`)
+      ...perDayLogs.flatMap((day) =>
+        day.changes.map((change) => `- Day ${day.number}: ${describeChange(change)}`)
       )
     ].join('\n');
 
