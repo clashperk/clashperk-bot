@@ -302,48 +302,6 @@ export const HOME_BASE_LEAGUES: Record<string, string> = {
   105000036: '<:Legend1:1502756072803401968>'
 };
 
-export const PLAYER_LEAGUE_TIERS: Record<string, string> = {
-  'Unranked': '<:Unranked:1424720675003830423>',
-  'Skeleton League 1': '<:SkeletonLeague1:1424720650332934224>',
-  'Skeleton League 2': '<:SkeletonLeague2:1424720655982788689>',
-  'Skeleton League 3': '<:SkeletonLeague3:1424720659640094722>',
-  'Barbarian League 4': '<:BarbarianLeague4:1424720571090079819>',
-  'Barbarian League 5': '<:BarbarianLeague5:1424720576466915369>',
-  'Barbarian League 6': '<:BarbarianLeague6:1424720580304834641>',
-  'Archer League 7': '<:ArcherLeague7:1424720558930792471>',
-  'Archer League 8': '<:ArcherLeague8:1424720563317899274>',
-  'Archer League 9': '<:ArcherLeague9:1424720566501511250>',
-  'Wizard League 10': '<:WizardLeague10:1424720705148293180>',
-  'Wizard League 11': '<:WizardLeague11:1424720709803839561>',
-  'Wizard League 12': '<:WizardLeague12:1424720713440559185>',
-  'Valkyrie League 13': '<:ValkyrieLeague13:1424720679554650233>',
-  'Valkyrie League 14': '<:ValkyrieLeague14:1424720684025643059>',
-  'Valkyrie League 15': '<:ValkyrieLeague15:1424720688543170731>',
-  'Witch League 16': '<:WitchLeague16:1424720691412074579>',
-  'Witch League 17': '<:WitchLeague17:1424720695690264667>',
-  'Witch League 18': '<:WitchLeague18:1424720701247455245>',
-  'Golem League 19': '<:GolemLeague19:1424720615063158865>',
-  'Golem League 20': '<:GolemLeague20:1424720619815174307>',
-  'Golem League 21': '<:GolemLeague21:1424720623145582663>',
-  'P.E.K.K.A League 22': '<:PEKKALeague22:1424720636273754122>',
-  'P.E.K.K.A League 23': '<:PEKKALeague23:1424720641830948874>',
-  'P.E.K.K.A League 24': '<:PEKKALeague24:1424720647015235645>',
-  'Titan League 25': '<:TitanLeague25:1424720663083487343>',
-  'Titan League 26': '<:TitanLeague26:1424720667290632203>',
-  'Titan League 27': '<:TitanLeague27:1424720670595485770>',
-  'Dragon League 28': '<:DragonLeague28:1424720585086337125>',
-  'Dragon League 29': '<:DragonLeague29:1424720590140342322>',
-  'Dragon League 30': '<:DragonLeague30:1424720594854875196>',
-  'Electro League 31': '<:ElectroLeague31:1424720598172569693>',
-  'Electro League 32': '<:ElectroLeague32:1424720603721502762>',
-  'Electro League 33': '<:ElectroLeague33:1424720610793361598>',
-
-  'Legend League': '<:LegendLeague:1424720630183497832>',
-  'Legend III': '<:Legend3:1502756189954506886>',
-  'Legend II': '<:Legend2:1502756123974045867>',
-  'Legend I': '<:Legend1:1502756072803401968>'
-};
-
 export const CAPITAL_LEAGUES: Record<string, string> = {
   85000000: '<:no_league:696307595924996107>',
   85000001: '<:Bronze3:696300941011451945>',

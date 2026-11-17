@@ -41,7 +41,7 @@ import {
   createRankedGraph,
   LegendCardStats
 } from '../../struct/image-helper.js';
-import { EMOJIS, HOME_BASE_LEAGUES, PLAYER_LEAGUE_TIERS, TOWN_HALLS } from '../../util/emojis.js';
+import { EMOJIS, HOME_BASE_LEAGUES, TOWN_HALLS } from '../../util/emojis.js';
 import {
   dashboardLink,
   dashboardUrl,
@@ -186,7 +186,7 @@ export default class LegendDaysCommand extends Command {
         description: `${EMOJIS.TROPHY_UNICODE} ${op.trophies}`,
         value: op.tag,
         default: op.tag === data.tag,
-        emoji: PLAYER_LEAGUE_TIERS[PLAYER_LEAGUE_MAP[op.leagueTier?.id ?? UNRANKED_TIER_ID]]
+        emoji: HOME_BASE_LEAGUES[op.leagueTier?.id ?? UNRANKED_TIER_ID]
       }));
 
     if (!(options.length > 1)) return;
