@@ -123,7 +123,7 @@ The backend does this in `apps/api/src/legends/services/legend-days.service.ts`.
 A change is labelled from what the logs show:
 
 - **`reset`:** on a season's first day, the move from the previous final to 5000. On a Monday, a logged change from below 5000 to exactly 5000 plus the stored battles it holds. It can come hours after 05:00, because the game lifts the player when they next play, and it never comes for players the game demoted.
-- **`missedDefenses`:** a drop with no stored battle behind it, logged within 90 minutes of 05:00 and before any change that belongs to the new day, after a day with 1 to 7 stored defenses. It counts on the day it was for, the day before.
+- **`missedDefenses`:** a drop with no stored battle behind it, logged within 90 minutes of 05:00 and before any change that belongs to the new day, after a day with 1 to 7 stored defenses. It counts on the day the game takes it, so the day before ends at the trophies the player had when it closed, as the game shows.
 - **`untracked`:** whatever is left, mostly battles radar didn't store.
 
 ### How they're shown
