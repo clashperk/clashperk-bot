@@ -21,31 +21,16 @@ export default class GiveawayEndCommand extends Command {
     return giveawayAutocomplete(interaction, 'active');
   }
 
+  /** The scheduler sees the draw and updates the message, the same as for a timed or dashboard draw. */
   public async exec(interaction: CommandInteraction<'cached'>, args: { giveaway: string }) {
-    const guildId = interaction.guildId;
     try {
-      const { data: giveaway } = await api.giveaways.getGiveaway({
-        guildId,
+      const { data } = await api.giveaways.drawGiveaway({
+        guildId: interaction.guildId,
         giveawayId: args.giveaway
       });
-      const { data: result } = await api.giveaways.drawGiveaway({
-        guildId,
-        giveawayId: args.giveaway
-      });
-      await this.client.giveawayManager.renderEnded(
-        {
-          guildId,
-          giveawayId: giveaway.id,
-          channelId: giveaway.channelId,
-          messageId: giveaway.messageId,
-          prize: giveaway.prize
-        },
-        result.winners,
-        result.entryCount
-      );
       return interaction.editReply(
-        result.winners.length
-          ? `Drawn. Winners: ${result.winners.map((id) => `<@${id}>`).join(', ')}`
+        data.winners.length
+          ? `Drawn. Winners: ${data.winners.map((id) => `<@${id}>`).join(', ')}`
           : 'Drawn. There were no valid entries.'
       );
     } catch (error) {

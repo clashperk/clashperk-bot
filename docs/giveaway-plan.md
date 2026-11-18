@@ -165,11 +165,10 @@ Commands in `src/commands/giveaway/`, payload `GIVEAWAY_COMMAND` in `scripts/com
 `scripts/commands.ts`, shipped by `npm run deploy`. Manager gate like rosters: `userPermissions:
 ['ManageGuild']` with a `Settings.GIVEAWAY_MANAGER_ROLE` bypass.
 
-- `/giveaway create` — `prize`, `winners` (default 1), `duration` or `ends-at`, `channel`
-  (default current), `mode` (`open` | `boosted` | `restricted`, default `open`), `image` (an
-  attachment or image URL, optional). For boosted / restricted: `clans` (a connected-clan picker,
-  default all guild clans) and, for boosted, `boost-factor` (default 2). A transient config step
-  (ephemeral collector) refines the clan set before posting.
+- `/giveaway create` — `prize`, `duration`, `winners` (default 1), `channel` (default current),
+  `mode` (`open` | `boosted` | `restricted`, default `open`), `boost_factor` (default 2) and an
+  optional `image` upload. It opens a private preview of the message with a clan multi-select for
+  boosted / restricted (default all server clans) and Post / Cancel. Post creates it through the API.
 - `/giveaway end <id>` — draw now.
 - `/giveaway reroll <id>` — reroll winners.
 - `/giveaway cancel <id>` — cancel without drawing.
@@ -195,11 +194,10 @@ Enter button disabled, winners listed).
 memory — it calls the enter endpoint and renders the result. Works across restarts and all clusters
 with no re-binding.
 
-**Images.** The host attaches an image to `/giveaway create`. The bot uploads it as the posted
-message's own attachment and references it from a `MediaGalleryBuilder` with `attachment://`, so the
-banner lives with the message and never breaks — no R2 needed in v1. The attachment URL is also sent
-to the API as `imageUrl` for the record and the future dashboard. The ended message drops the banner.
-(Follow-up: a dashboard upload has no Discord message to host it, so that path will need R2.)
+**Images.** `imageUrl` is a link: the slash command's upload, or a link typed in the dashboard. When
+posting, the bot downloads it and attaches it to the message, referenced with `attachment://`, so the
+banner lives with the message and never expires. A broken link posts the giveaway without a banner.
+The ended message drops it.
 
 **End-time timer**: new `src/struct/giveaway-scheduler.ts` modelled on `clan-war-scheduler.ts` —
 watch `Collections.GIVEAWAYS` via `client.changeStreams` for active giveaways, `setTimeout` to
@@ -208,9 +206,8 @@ call `POST /v1/giveaways/:id/draw` then render. `.init()` next to the other sche
 `src/struct/client.ts`. The backend's atomic claim means several clusters firing the same giveaway is
 harmless — only one draw wins, the rest get 409.
 
-**Entry counter**: v1 does not live-edit the posted message (editing a banner message means
-re-uploading the attachment). The running count is shown in the private "You're in" reply, and the
-final total appears when the giveaway ends. A throttled live counter on the message is a follow-up.
+**Entry counter**: each entry schedules an edit of the posted message's count, at most one every
+5 seconds per giveaway. The edit sends no files, so the message keeps its banner attachment.
 
 ## Winner selection
 
@@ -249,25 +246,32 @@ Backend first (API-first), bot second, because the bot's client is generated fro
 
 ## Status
 
-Built on branch `feat/giveaways` in **clashperk-backend** (2.0.176) and **clashperk-bot** (4.2.199).
-Backend builds + swagger spec passes; bot builds + lint passes; the API client is regenerated.
-Not deployed, not committed. Remaining before it runs: deploy the backend, run the bot's
-`npm run deploy` for the slash commands, and smoke-test in a server.
+Shipped in backend #166 and bot #540 (merged 2026-11-18). The follow-up brings the build back in
+line with this plan and the mockups:
 
-Decisions settled during the build:
+- **One posting path.** The bot posts every active giveaway that has no message yet, whether
+  `/giveaway create` or the dashboard created it. Change-stream insert first, a 5-minute sweep for
+  any it missed. A channel it can't post in cancels the giveaway.
+- **One rendering path.** Draws, rerolls and cancels render from the giveaway's update event (new
+  `winners` on an ended giveaway, or `status` turning `cancelled`). So a dashboard action shows up
+  in Discord too, and the slash commands and the timer only call the API.
+- **Create preview.** `/giveaway create` opens a private preview of the exact message with a clan
+  multi-select (all server clans by default) and Post / Cancel. Nothing is saved until Post.
+- **Live entry count** on the posted message, edited at most every 5 seconds. Edits send no files,
+  so the message keeps its banner.
+- **Images.** Discord's slash command takes an upload, the dashboard takes an image link. Either way
+  the bot downloads it and attaches it to the message when posting, and posts without it if the
+  link fails. No R2.
+- **Entrants.** `GET /giveaways/:guildId/:id/entries` lists winners, then entrants with their
+  Discord name, counting account, clan and tickets, for the dashboard's detail view.
 
-- **One entry per Discord user** (unique index on `{giveawayId, userId}`), not per account.
-- **Boost factor** defaults to 2 and is host-settable per giveaway (2–100).
-- **Clan membership** is read live from the CoC API clan member lists, one call per allowed clan.
-- **Banner** is hosted as the message's own attachment (no R2 in v1).
-- **No winner role reward** in v1.
-- Clan scope in v1 is "all server clans" by default, or **one** clan via the `clan` option. Narrowing
-  to an arbitrary subset is a follow-up (the data model already supports `clanTags[]`).
+Settled decisions: one entry per Discord user, boost factor 2 by default (2–100), clan membership
+read live at the draw (cached 60 seconds for entering and the entrant list), no winner role in v1.
 
 ## Open items
 
-- Deploy order, then smoke-test create → enter (all three modes) → draw → reroll → cancel.
+- Smoke-test in a server: create (all three modes) → enter → live count → draw → reroll → cancel,
+  and a dashboard-created giveaway posting.
+- Confirm a count edit keeps the banner on a live message.
 - `docs.clashperk.com` user-facing page.
-- Dashboard surface (the second front end) — not built this pass.
-- Follow-ups: live entry counter on the message, multi-clan subset picker, R2 for dashboard uploads,
-  winner role reward.
+- Winner role reward.

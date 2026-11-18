@@ -1881,6 +1881,7 @@ export interface GiveawayDto {
   channelId: string;
   messageId: string | null;
   hostUserId: string;
+  hostName: string | null;
   prize: string;
   imageUrl: string | null;
   winnerCount: number;
@@ -1895,6 +1896,35 @@ export interface GiveawayDto {
 
 export interface GiveawaysDto {
   giveaways: GiveawayDto[];
+}
+
+export interface GiveawayEntryPlayerDto {
+  tag: string;
+  name: string | null;
+}
+
+export interface GiveawayEntryClanDto {
+  tag: string;
+  name: string;
+}
+
+export interface GiveawayEntryDto {
+  userId: string;
+  /** The Discord name saved with the user's linked accounts, when they have one. */
+  displayName: string | null;
+  /** The linked account that counts the entrant in a chosen clan. */
+  player: GiveawayEntryPlayerDto | null;
+  clan: GiveawayEntryClanDto | null;
+  /** 0 for a restricted entrant outside the chosen clans, who can't win. */
+  tickets: number;
+  enteredAt: number;
+}
+
+export interface GiveawayEntriesDto {
+  total: number;
+  winners: GiveawayEntryDto[];
+  /** Everyone else, in entry order. */
+  entries: GiveawayEntryDto[];
 }
 
 export interface GiveawayEligibilityInput {
@@ -1920,6 +1950,11 @@ export interface CreateGiveawayInput {
   endsAt: string;
   channelId: string;
   hostUserId: string;
+  /**
+   * The host's Discord name, shown on the dashboard.
+   * @maxLength 100
+   */
+  hostName?: string;
   /**
    * @minLength 1
    * @maxLength 256
@@ -1959,10 +1994,19 @@ export interface UpdateGiveawayInput {
 
 export interface EnterGiveawayInput {
   userId: string;
+  /**
+   * The user's Discord name, shown in the entrant list.
+   * @maxLength 100
+   */
+  displayName?: string;
 }
 
 export interface GiveawayEntryResultDto {
   entryCount: number;
+  /** More than 1 when a boosted giveaway counts the user in a chosen clan. */
+  tickets: number;
+  player: GiveawayEntryPlayerDto | null;
+  clan: GiveawayEntryClanDto | null;
 }
 
 export interface GiveawayDrawResultDto {
@@ -4509,6 +4553,22 @@ export type UpdateGiveawayData = GiveawayDto;
 
 export type UpdateGiveawayError = ErrorResponseDto;
 
+export interface ListGiveawayEntriesParams {
+  /**
+   * @min 1
+   * @max 500
+   */
+  limit?: number;
+  /** @min 0 */
+  offset?: number;
+  guildId: string;
+  giveawayId: string;
+}
+
+export type ListGiveawayEntriesData = GiveawayEntriesDto;
+
+export type ListGiveawayEntriesError = ErrorResponseDto;
+
 export interface EnterGiveawayParams {
   guildId: string;
   giveawayId: string;
@@ -6904,7 +6964,7 @@ export namespace Giveaways {
   }
 
   /**
-   * @description The caller posts the message and then attaches its ID with a PATCH. Set the end time as a date or epoch milliseconds, up to 60 days ahead.
+   * @description ClashPerk posts it in the channel within a few seconds. Set the end time as a date or epoch milliseconds, up to 60 days ahead. The image must be a public link to a picture.
    * @tags Giveaways
    * @name CreateGiveaway
    * @summary Create a giveaway
@@ -6963,6 +7023,35 @@ export namespace Giveaways {
     export type RequestBody = UpdateGiveawayInput;
     export type RequestHeaders = {};
     export type ResponseBody = UpdateGiveawayData;
+  }
+
+  /**
+   * @description Winners come first, then up to `limit` other entrants in the order they entered. Clans and tickets follow who is in the chosen clans right now.
+   * @tags Giveaways
+   * @name ListGiveawayEntries
+   * @summary List a giveaway's entrants
+   * @request GET:/giveaways/{guildId}/{giveawayId}/entries
+   * @secure
+   * @response `200` `ListGiveawayEntriesData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace ListGiveawayEntries {
+    export type RequestParams = {
+      guildId: string;
+      giveawayId: string;
+    };
+    export type RequestQuery = {
+      /**
+       * @min 1
+       * @max 500
+       */
+      limit?: number;
+      /** @min 0 */
+      offset?: number;
+    };
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = ListGiveawayEntriesData;
   }
 
   /**
@@ -9199,7 +9288,7 @@ export class HttpClient<SecurityDataType = unknown> {
 
 /**
  * @title ClashPerk Discord Bot API
- * @version v2.0.176
+ * @version v2.0.177
  * @baseUrl /v1
  * @contact
  *
@@ -10966,7 +11055,7 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description The caller posts the message and then attaches its ID with a PATCH. Set the end time as a date or epoch milliseconds, up to 60 days ahead.
+     * @description ClashPerk posts it in the channel within a few seconds. Set the end time as a date or epoch milliseconds, up to 60 days ahead. The image must be a public link to a picture.
      *
      * @tags Giveaways
      * @name CreateGiveaway
@@ -11036,6 +11125,30 @@ export class Api<SecurityDataType extends unknown> {
         body: data,
         secure: true,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Winners come first, then up to `limit` other entrants in the order they entered. Clans and tickets follow who is in the chosen clans right now.
+     *
+     * @tags Giveaways
+     * @name ListGiveawayEntries
+     * @summary List a giveaway's entrants
+     * @request GET:/giveaways/{guildId}/{giveawayId}/entries
+     * @secure
+     * @response `200` `ListGiveawayEntriesData`
+     * @response `500` `ErrorResponseDto`
+     */
+    listGiveawayEntries: (
+      { guildId, giveawayId, ...query }: ListGiveawayEntriesParams,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<ListGiveawayEntriesData, ListGiveawayEntriesError>({
+        path: `/giveaways/${guildId}/${giveawayId}/entries`,
+        method: "GET",
+        query: query,
+        secure: true,
         format: "json",
         ...params,
       }),

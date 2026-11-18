@@ -56,13 +56,6 @@ export const GIVEAWAY_COMMAND: RESTPostAPIApplicationCommandsJSONBody = {
           ]
         },
         {
-          name: 'clan',
-          description:
-            'For boosted or restricted: limit to one clan. Defaults to all server clans.',
-          type: ApplicationCommandOptionType.String,
-          autocomplete: true
-        },
-        {
           name: 'boost_factor',
           description: 'For boosted mode: how many times the odds for clan members. Default 2.',
           type: ApplicationCommandOptionType.Integer,
