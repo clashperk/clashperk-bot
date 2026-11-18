@@ -3,7 +3,6 @@ import { GiveawaysEntity } from '@app/entities';
 import { Collection } from 'mongodb';
 import { api } from '../api/axios.js';
 import { Client } from './client.js';
-import { refFromDto } from './giveaway-manager.js';
 
 /** A new giveaway is posted from its insert event. The sweep only catches ones that missed it. */
 const UNPOSTED_GRACE = 30 * 1000;
@@ -30,7 +29,18 @@ export class GiveawayScheduler {
 
         this.clear(change.documentKey._id.toHexString());
         const giveaway = change.fullDocument;
-        if (giveaway?.status !== 'active' || !this.owns(giveaway.guild)) return;
+        if (!giveaway || !this.owns(giveaway.guild)) return;
+
+        // Every draw, reroll and cancel renders here, whether the bot or the dashboard made it.
+        const updated =
+          change.operationType === 'update' ? change.updateDescription.updatedFields : {};
+        if (giveaway.status === 'ended' && updated && 'winners' in updated) {
+          this.client.giveawayManager.renderEnded(giveaway);
+        }
+        if (giveaway.status === 'cancelled' && updated?.status === 'cancelled') {
+          this.client.giveawayManager.renderCancelled(giveaway);
+        }
+        if (giveaway.status !== 'active') return;
 
         if (!giveaway.messageId) this.client.giveawayManager.post(giveaway);
         if (giveaway.endsAt.getTime() < Date.now() + this.refreshRate) this.queue(giveaway);
@@ -64,17 +74,11 @@ export class GiveawayScheduler {
     this.queued.delete(id);
   }
 
+  /** Draws it. The draw's update event renders the result, like any other draw. */
   private async trigger(giveawayId: string, guildId: string) {
     this.clear(giveawayId);
     try {
-      const { data } = await api.giveaways.drawGiveaway({ guildId, giveawayId });
-      // Read it again: the timer can be armed before the message was posted.
-      const { data: giveaway } = await api.giveaways.getGiveaway({ guildId, giveawayId });
-      await this.client.giveawayManager.renderEnded(
-        refFromDto(giveaway),
-        data.winners,
-        data.entryCount
-      );
+      await api.giveaways.drawGiveaway({ guildId, giveawayId });
     } catch (error) {
       // 409 means a manual /giveaway end already drew it. Nothing to do.
       const status = (error as { response?: { status?: number } })?.response?.status;

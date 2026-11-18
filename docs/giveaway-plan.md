@@ -252,6 +252,9 @@ line with this plan and the mockups:
 - **One posting path.** The bot posts every active giveaway that has no message yet, whether
   `/giveaway create` or the dashboard created it. Change-stream insert first, a 5-minute sweep for
   any it missed. A channel it can't post in cancels the giveaway.
+- **One rendering path.** Draws, rerolls and cancels render from the giveaway's update event (new
+  `winners` on an ended giveaway, or `status` turning `cancelled`). So a dashboard action shows up
+  in Discord too, and the slash commands and the timer only call the API.
 - **Create preview.** `/giveaway create` opens a private preview of the exact message with a clan
   multi-select (all server clans by default) and Post / Cancel. Nothing is saved until Post.
 - **Live entry count** on the posted message, edited at most every 5 seconds. Edits send no files,

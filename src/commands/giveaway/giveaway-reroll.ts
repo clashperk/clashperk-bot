@@ -2,7 +2,6 @@ import { Settings } from '@app/constants';
 import { AutocompleteInteraction, CommandInteraction } from 'discord.js';
 import { api } from '../../api/axios.js';
 import { Command } from '../../lib/handlers.js';
-import { refFromDto } from '../../struct/giveaway-manager.js';
 import { giveawayAutocomplete } from '../../util/giveaway-autocomplete.js';
 import { giveawayErrorText } from '../../util/giveaways.js';
 
@@ -22,25 +21,16 @@ export default class GiveawayRerollCommand extends Command {
     return giveawayAutocomplete(interaction, 'ended');
   }
 
+  /** The scheduler sees the new winners, updates the message and announces them. */
   public async exec(interaction: CommandInteraction<'cached'>, args: { giveaway: string }) {
-    const guildId = interaction.guildId;
     try {
-      const { data: giveaway } = await api.giveaways.getGiveaway({
-        guildId,
+      const { data } = await api.giveaways.rerollGiveaway({
+        guildId: interaction.guildId,
         giveawayId: args.giveaway
       });
-      const { data: result } = await api.giveaways.rerollGiveaway({
-        guildId,
-        giveawayId: args.giveaway
-      });
-      await this.client.giveawayManager.renderEnded(
-        refFromDto(giveaway),
-        result.winners,
-        result.entryCount
-      );
       return interaction.editReply(
-        result.winners.length
-          ? `Rerolled. New winners: ${result.winners.map((id) => `<@${id}>`).join(', ')}`
+        data.winners.length
+          ? `Rerolled. New winners: ${data.winners.map((id) => `<@${id}>`).join(', ')}`
           : 'Rerolled. There were no valid entries left.'
       );
     } catch (error) {

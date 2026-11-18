@@ -9,9 +9,9 @@ import {
   RESTJSONErrorCodes
 } from 'discord.js';
 import { api } from '../api/axios.js';
-import { GiveawayDto } from '../api/generated.js';
 import {
   buildActiveGiveaway,
+  buildCancelledGiveaway,
   buildEndedGiveaway,
   GIVEAWAY_BANNER_NAME,
   GiveawayView,
@@ -30,26 +30,6 @@ const UNPOSTABLE = new Set<number>([
   RESTJSONErrorCodes.MissingAccess,
   RESTJSONErrorCodes.MissingPermissions
 ]);
-
-export interface GiveawayRef {
-  guildId: string;
-  giveawayId: string;
-  channelId: string;
-  messageId: string | null;
-  prize: string;
-  eligibility: GiveawayEligibility;
-}
-
-export function refFromDto(giveaway: GiveawayDto): GiveawayRef {
-  return {
-    guildId: giveaway.guildId,
-    giveawayId: giveaway.id,
-    channelId: giveaway.channelId,
-    messageId: giveaway.messageId,
-    prize: giveaway.prize,
-    eligibility: viewFromDto(giveaway).eligibility
-  };
-}
 
 export class GiveawayManager {
   private readonly posting = new Set<string>();
@@ -159,34 +139,43 @@ export class GiveawayManager {
     });
   }
 
-  private async fetchMessage(channelId: string, messageId: string): Promise<Message | null> {
+  private async fetchMessage(channelId: string, messageId: string | null): Promise<Message | null> {
+    if (!messageId) return null;
     const channel = this.client.channels.cache.get(channelId);
     if (!channel?.isTextBased() || channel.isDMBased()) return null;
     return channel.messages.fetch(messageId).catch(() => null);
   }
 
-  /** Edits the posted message to its ended state and announces the winners. */
-  public async renderEnded(ref: GiveawayRef, winners: string[], entryCount: number) {
-    const channel = this.client.channels.cache.get(ref.channelId);
+  /** Edits the posted message to its ended state and announces the winners. Runs again on a reroll. */
+  public async renderEnded(giveaway: GiveawaysEntity) {
+    const channel = this.client.channels.cache.get(giveaway.channelId);
     if (!channel?.isTextBased() || channel.isDMBased()) return;
 
-    const message = ref.messageId ? await this.fetchMessage(ref.channelId, ref.messageId) : null;
+    const message = await this.fetchMessage(giveaway.channelId, giveaway.messageId);
     await message
       ?.edit({
-        components: [
-          buildEndedGiveaway(
-            { id: ref.giveawayId, prize: ref.prize, entryCount, eligibility: ref.eligibility },
-            winners
-          )
-        ],
+        components: [buildEndedGiveaway(viewFromEntity(giveaway), giveaway.winners)],
         attachments: [],
         flags: MessageFlags.IsComponentsV2
       })
       .catch(() => null);
 
-    const text = winnerAnnouncement(ref.prize, winners);
+    const text = winnerAnnouncement(giveaway.prize, giveaway.winners);
     if (text) {
-      await channel.send({ content: text, allowedMentions: { users: winners } }).catch(() => null);
+      await channel
+        .send({ content: text, allowedMentions: { users: giveaway.winners } })
+        .catch(() => null);
     }
+  }
+
+  public async renderCancelled(giveaway: GiveawaysEntity) {
+    const message = await this.fetchMessage(giveaway.channelId, giveaway.messageId);
+    await message
+      ?.edit({
+        components: [buildCancelledGiveaway(giveaway.prize)],
+        attachments: [],
+        flags: MessageFlags.IsComponentsV2
+      })
+      .catch(() => null);
   }
 }

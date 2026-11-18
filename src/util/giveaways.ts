@@ -182,6 +182,14 @@ export function buildEndedGiveaway(
   return container;
 }
 
+export function buildCancelledGiveaway(prize: string) {
+  return new ContainerBuilder().addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(
+      `## 🚫 Giveaway cancelled · ${escapeMarkdown(prize)}\n-# No winners were drawn.`
+    )
+  );
+}
+
 export function winnerAnnouncement(prize: string, winners: string[]): string | null {
   if (!winners.length) return null;
   const mentions = joinAnd(winners.map((id) => `<@${id}>`));
