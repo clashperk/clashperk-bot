@@ -11,33 +11,33 @@
  */
 
 export enum PaymentSource {
-  PATREON = 'patreon',
-  KOFI = 'ko-fi',
-  BUY_ME_A_COFFEE = 'buymeacoffee',
-  PAYPAL = 'paypal',
-  OTHER = 'other'
+  PATREON = "patreon",
+  KOFI = "ko-fi",
+  BUY_ME_A_COFFEE = "buymeacoffee",
+  PAYPAL = "paypal",
+  OTHER = "other",
 }
 
 export enum SubscriptionPlan {
-  BRONZE = 'bronze',
-  SILVER = 'silver',
-  GOLD = 'gold',
-  GIFTED = 'gifted',
-  SPONSORED = 'sponsored',
-  SPONSORED_CUSTOM_BOT = 'sponsored_custom_bot',
-  LIFETIME = 'lifetime',
-  LIFETIME_CUSTOM_BOT = 'lifetime_custom_bot'
+  BRONZE = "bronze",
+  SILVER = "silver",
+  GOLD = "gold",
+  GIFTED = "gifted",
+  SPONSORED = "sponsored",
+  SPONSORED_CUSTOM_BOT = "sponsored_custom_bot",
+  LIFETIME = "lifetime",
+  LIFETIME_CUSTOM_BOT = "lifetime_custom_bot",
 }
 
 export enum BillingCadence {
-  MONTHLY = 'monthly',
-  YEARLY = 'yearly',
-  ONE_TIME = 'one_time'
+  MONTHLY = "monthly",
+  YEARLY = "yearly",
+  ONE_TIME = "one_time",
 }
 
 export enum SubscriptionProvider {
-  PATREON = 'patreon',
-  MANUAL = 'manual'
+  PATREON = "patreon",
+  MANUAL = "manual",
 }
 
 export enum RaidAttacksLeft {
@@ -46,205 +46,218 @@ export enum RaidAttacksLeft {
   Three = 3,
   Four = 4,
   Five = 5,
-  Six = 6
+  Six = 6,
 }
 
 export enum ReminderWarType {
-  Normal = 'normal',
-  Friendly = 'friendly',
-  Cwl = 'cwl'
+  Normal = "normal",
+  Friendly = "friendly",
+  Cwl = "cwl",
 }
 
 /** Ping members with this many attacks left; empty pings nobody. */
 export enum WarAttacksLeft {
   One = 1,
-  Two = 2
+  Two = 2,
 }
 
 export enum ReminderClanRole {
-  Leader = 'leader',
-  CoLeader = 'coLeader',
-  Admin = 'admin',
-  Member = 'member'
+  Leader = "leader",
+  CoLeader = "coLeader",
+  Admin = "admin",
+  Member = "member",
 }
 
 export enum TicketStatus {
-  OPEN = 'open',
-  SLEEP = 'sleep',
-  CLOSED = 'closed'
+  OPEN = "open",
+  SLEEP = "sleep",
+  CLOSED = "closed",
 }
 
 export enum TicketExtraButtonKind {
-  LINK_ACCOUNT = 'link-account',
-  URL = 'url'
+  LINK_ACCOUNT = "link-account",
+  URL = "url",
 }
 
 export enum TicketDisplayMode {
-  MENU = 'menu',
-  BUTTONS = 'buttons'
+  MENU = "menu",
+  BUTTONS = "buttons",
 }
 
 export enum ButtonType {
-  Link = 'link',
-  Refresh = 'refresh',
-  MyRosters = 'myRosters'
+  Link = "link",
+  Refresh = "refresh",
+  MyRosters = "myRosters",
 }
 
 /** Set for the link button only. */
 export enum ButtonTokenField {
-  REQUIRED = 'required',
-  OPTIONAL = 'optional',
-  HIDDEN = 'hidden'
+  REQUIRED = "required",
+  OPTIONAL = "optional",
+  HIDDEN = "hidden",
 }
 
 export enum FlagType {
-  BAN = 'ban',
-  STRIKE = 'strike'
+  BAN = "ban",
+  STRIKE = "strike",
 }
 
 export enum NicknameAccount {
-  DEFAULT = 'default-account',
-  BEST = 'best-account',
-  DEFAULT_OR_BEST = 'default-or-best-account'
+  DEFAULT = "default-account",
+  BEST = "best-account",
+  DEFAULT_OR_BEST = "default-or-best-account",
 }
 
 export enum DelayExclusion {
-  TOWN_HALL_ROLES = 'townHallRoles',
-  BUILDER_HALL_ROLES = 'builderHallRoles',
-  LEAGUE_ROLES = 'leagueRoles',
-  BUILDER_LEAGUE_ROLES = 'builderLeagueRoles',
-  GUEST_ROLE = 'guestRole'
+  TOWN_HALL_ROLES = "townHallRoles",
+  BUILDER_HALL_ROLES = "builderHallRoles",
+  LEAGUE_ROLES = "leagueRoles",
+  BUILDER_LEAGUE_ROLES = "builderLeagueRoles",
+  GUEST_ROLE = "guestRole",
 }
 
 export enum ClanEmbedField {
-  ClanLeader = 'clanLeader',
-  Requirements = 'requirements',
-  TrophiesRequired = 'trophiesRequired',
-  Location = 'location',
-  WarPerformance = 'warPerformance',
-  WarFrequency = 'warFrequency',
-  ClanWarLeague = 'clanWarLeague',
-  ClanCapitalLeague = 'clanCapitalLeague',
-  TownHalls = 'townHalls'
+  ClanLeader = "clanLeader",
+  Requirements = "requirements",
+  TrophiesRequired = "trophiesRequired",
+  Location = "location",
+  WarPerformance = "warPerformance",
+  WarFrequency = "warFrequency",
+  ClanWarLeague = "clanWarLeague",
+  ClanCapitalLeague = "clanCapitalLeague",
+  TownHalls = "townHalls",
 }
 
 export enum ChannelStatus {
-  OK = 'ok',
-  ARCHIVED = 'archived',
-  LOCKED = 'locked',
-  DELETED = 'deleted',
-  NO_ACCESS = 'noAccess',
-  UNKNOWN = 'unknown'
+  OK = "ok",
+  ARCHIVED = "archived",
+  LOCKED = "locked",
+  DELETED = "deleted",
+  NO_ACCESS = "noAccess",
+  UNKNOWN = "unknown",
 }
 
 export enum ClanLogType {
-  CLAN_ACHIEVEMENTS_LOG = 'clan_achievements_log',
-  CONTINUOUS_DONATION_LOG = 'continuous_donation_log',
-  DAILY_DONATION_LOG = 'daily_donation_log',
-  WEEKLY_DONATION_LOG = 'weekly_donation_log',
-  MONTHLY_DONATION_LOG = 'monthly_donation_log',
-  CLAN_GAMES_EMBED_LOG = 'clan_games_embed_log',
-  LAST_SEEN_EMBED_LOG = 'last_seen_embed_log',
-  LEGEND_ATTACKS_DAILY_SUMMARY_LOG = 'legend_attacks_daily_summary_log',
-  CLAN_CAPITAL_WEEKLY_SUMMARY_LOG = 'clan_capital_weekly_summary_log',
-  CLAN_CAPITAL_CONTRIBUTION_LOG = 'clan_capital_contribution_log',
-  CLAN_CAPITAL_RAID_LOG = 'clan_capital_raid_log',
-  WAR_ATTACK_LOG = 'war_attack_log',
-  CWL_ATTACK_LOG = 'cwl_attack_log',
-  WAR_EMBED_LOG = 'war_embed_log',
-  WAR_MISSED_ATTACKS_LOG = 'war_missed_attacks_log',
-  CWL_EMBED_LOG = 'cwl_embed_log',
-  CWL_MISSED_ATTACKS_LOG = 'cwl_missed_attacks_log',
-  CWL_LINEUP_CHANGE_LOG = 'cwl_lineup_change_log',
-  CWL_MONTHLY_SUMMARY_LOG = 'cwl_monthly_summary_log',
-  MEMBER_JOIN_LEAVE_LOG = 'member_join_leave_log',
-  ROLE_CHANGE_LOG = 'role_change_log',
-  NAME_CHANGE_LOG = 'name_change_log',
-  TOWN_HALL_UPGRADE_LOG = 'town_hall_upgrade_log',
-  WAR_PREFERENCE_LOG = 'war_preference_log',
-  RANKED_BATTLE_LEAGUE_CHANGE_LOG = 'ranked_battle_league_change_log'
+  CLAN_ACHIEVEMENTS_LOG = "clan_achievements_log",
+  CONTINUOUS_DONATION_LOG = "continuous_donation_log",
+  DAILY_DONATION_LOG = "daily_donation_log",
+  WEEKLY_DONATION_LOG = "weekly_donation_log",
+  MONTHLY_DONATION_LOG = "monthly_donation_log",
+  CLAN_GAMES_EMBED_LOG = "clan_games_embed_log",
+  LAST_SEEN_EMBED_LOG = "last_seen_embed_log",
+  LEGEND_ATTACKS_DAILY_SUMMARY_LOG = "legend_attacks_daily_summary_log",
+  CLAN_CAPITAL_WEEKLY_SUMMARY_LOG = "clan_capital_weekly_summary_log",
+  CLAN_CAPITAL_CONTRIBUTION_LOG = "clan_capital_contribution_log",
+  CLAN_CAPITAL_RAID_LOG = "clan_capital_raid_log",
+  WAR_ATTACK_LOG = "war_attack_log",
+  CWL_ATTACK_LOG = "cwl_attack_log",
+  WAR_EMBED_LOG = "war_embed_log",
+  WAR_MISSED_ATTACKS_LOG = "war_missed_attacks_log",
+  CWL_EMBED_LOG = "cwl_embed_log",
+  CWL_MISSED_ATTACKS_LOG = "cwl_missed_attacks_log",
+  CWL_LINEUP_CHANGE_LOG = "cwl_lineup_change_log",
+  CWL_MONTHLY_SUMMARY_LOG = "cwl_monthly_summary_log",
+  MEMBER_JOIN_LEAVE_LOG = "member_join_leave_log",
+  ROLE_CHANGE_LOG = "role_change_log",
+  NAME_CHANGE_LOG = "name_change_log",
+  TOWN_HALL_UPGRADE_LOG = "town_hall_upgrade_log",
+  WAR_PREFERENCE_LOG = "war_preference_log",
+  RANKED_BATTLE_LEAGUE_CHANGE_LOG = "ranked_battle_league_change_log",
 }
 
 /** Why ClashPerk can't give this role out, or null when it can. */
 export enum RoleProblem {
-  AboveBot = 'above_bot',
-  Managed = 'managed',
-  NoManageRoles = 'no_manage_roles'
+  AboveBot = "above_bot",
+  Managed = "managed",
+  NoManageRoles = "no_manage_roles",
+}
+
+export enum GiveawayMode {
+  Open = "open",
+  Boosted = "boosted",
+  Restricted = "restricted",
 }
 
 export enum RosterSortBy {
-  PLAYER_NAME = 'PLAYER_NAME',
-  DISCORD_NAME = 'DISCORD_NAME',
-  DISCORD_USERNAME = 'DISCORD_USERNAME',
-  TOWN_HALL_LEVEL = 'TOWN_HALL_LEVEL',
-  HERO_LEVEL = 'HERO_LEVEL',
-  TH_HERO_LEVEL = 'TH_HERO_LEVEL',
-  CLAN_NAME = 'CLAN_NAME',
-  SIGNUP_TIME = 'SIGNUP_TIME',
-  TROPHIES = 'TROPHIES',
-  LEAGUES = 'LEAGUES'
+  PLAYER_NAME = "PLAYER_NAME",
+  DISCORD_NAME = "DISCORD_NAME",
+  DISCORD_USERNAME = "DISCORD_USERNAME",
+  TOWN_HALL_LEVEL = "TOWN_HALL_LEVEL",
+  HERO_LEVEL = "HERO_LEVEL",
+  TH_HERO_LEVEL = "TH_HERO_LEVEL",
+  CLAN_NAME = "CLAN_NAME",
+  SIGNUP_TIME = "SIGNUP_TIME",
+  TROPHIES = "TROPHIES",
+  LEAGUES = "LEAGUES",
 }
 
 export enum RosterCategory {
-  GENERAL = 'GENERAL',
-  CWL = 'CWL',
-  WAR = 'WAR',
-  TROPHY = 'TROPHY'
+  GENERAL = "GENERAL",
+  CWL = "CWL",
+  WAR = "WAR",
+  TROPHY = "TROPHY",
+}
+
+/**
+ * `reset`: the Monday or season start reset to 5000. `missedDefenses`: what the game took at the
+ * start of the day for defenses the player didn't get the day before. `untracked`: anything no tracked battle explains.
+ */
+export enum LegendDayChangeType {
+  Reset = "reset",
+  MissedDefenses = "missedDefenses",
+  Untracked = "untracked",
 }
 
 export enum WarTypes {
   REGULAR = 1,
   FRIENDLY = 2,
-  CWL = 3
+  CWL = 3,
 }
 
 /** Only these event types; all of them when omitted. */
 export enum ClanActivityType {
-  TownHallUpgrade = 'town_hall_upgrade',
-  Joined = 'joined',
-  Left = 'left',
-  ClanLevelUp = 'clan_level_up',
-  CapitalHallLevelUp = 'capital_hall_level_up',
-  WarLeagueChange = 'war_league_change',
-  CapitalLeagueChange = 'capital_league_change'
-}
-
-/**
- * `reset`: the Monday or season start reset to 5000. `missedDefenses`: what the game took at the
- * end of the day for defenses the player didn't get. `untracked`: anything no tracked battle explains.
- */
-export enum LegendDayChangeType {
-  Reset = 'reset',
-  MissedDefenses = 'missedDefenses',
-  Untracked = 'untracked'
+  TownHallUpgrade = "town_hall_upgrade",
+  Joined = "joined",
+  Left = "left",
+  ClanLevelUp = "clan_level_up",
+  CapitalHallLevelUp = "capital_hall_level_up",
+  WarLeagueChange = "war_league_change",
+  CapitalLeagueChange = "capital_league_change",
 }
 
 export enum UserRoles {
-  USER = 'user',
-  ADMIN = 'admin',
-  VIEWER = 'viewer',
-  FETCH_WARS = 'fetch:wars',
-  FETCH_CLANS = 'fetch:clans',
-  FETCH_PLAYERS = 'fetch:players',
-  FETCH_LEGENDS = 'fetch:legends',
-  FETCH_LINKS = 'fetch:links',
-  MANAGE_LINKS = 'manage:links',
-  FETCH_ROSTERS = 'fetch:rosters',
-  MANAGE_ROSTERS = 'manage:rosters',
-  MANAGE_REMINDERS = 'manage:reminders'
+  USER = "user",
+  ADMIN = "admin",
+  VIEWER = "viewer",
+  FETCH_WARS = "fetch:wars",
+  FETCH_CLANS = "fetch:clans",
+  FETCH_PLAYERS = "fetch:players",
+  FETCH_LEGENDS = "fetch:legends",
+  FETCH_LINKS = "fetch:links",
+  MANAGE_LINKS = "manage:links",
+  FETCH_ROSTERS = "fetch:rosters",
+  MANAGE_ROSTERS = "manage:rosters",
+  MANAGE_REMINDERS = "manage:reminders",
 }
 
 export enum ErrorCodes {
-  FORBIDDEN = 'FORBIDDEN',
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  NOT_FOUND = 'NOT_FOUND',
-  BAD_REQUEST = 'BAD_REQUEST',
-  INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
-  HANDOFF_TOKEN_EXPIRED = 'HANDOFF_TOKEN_EXPIRED',
-  USER_BLOCKED = 'USER_BLOCKED',
-  INVALID_PASSKEY = 'INVALID_PASSKEY',
-  GUILD_ACCESS_FORBIDDEN = 'GUILD_ACCESS_FORBIDDEN',
-  BOT_NOT_IN_GUILD = 'BOT_NOT_IN_GUILD'
+  FORBIDDEN = "FORBIDDEN",
+  UNAUTHORIZED = "UNAUTHORIZED",
+  NOT_FOUND = "NOT_FOUND",
+  BAD_REQUEST = "BAD_REQUEST",
+  INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR",
+  SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE",
+  HANDOFF_TOKEN_EXPIRED = "HANDOFF_TOKEN_EXPIRED",
+  USER_BLOCKED = "USER_BLOCKED",
+  INVALID_PASSKEY = "INVALID_PASSKEY",
+  GUILD_ACCESS_FORBIDDEN = "GUILD_ACCESS_FORBIDDEN",
+  BOT_NOT_IN_GUILD = "BOT_NOT_IN_GUILD",
+  GIVEAWAY_NOT_FOUND = "GIVEAWAY_NOT_FOUND",
+  GIVEAWAY_NOT_ACTIVE = "GIVEAWAY_NOT_ACTIVE",
+  GIVEAWAY_ALREADY_DRAWN = "GIVEAWAY_ALREADY_DRAWN",
+  GIVEAWAY_ALREADY_ENTERED = "GIVEAWAY_ALREADY_ENTERED",
+  GIVEAWAY_NO_LINKED_ACCOUNT = "GIVEAWAY_NO_LINKED_ACCOUNT",
+  GIVEAWAY_NOT_IN_CLAN = "GIVEAWAY_NOT_IN_CLAN",
 }
 
 export interface ErrorResponseDto {
@@ -520,7 +533,7 @@ export interface PlayerHouseDto {
 }
 
 export interface ClanMemberDto {
-  role: 'member' | 'admin' | 'coLeader' | 'leader';
+  role: "member" | "admin" | "coLeader" | "leader";
   name: string;
   tag: string;
   expLevel: number;
@@ -548,9 +561,14 @@ export interface ClanCapitalDto {
 }
 
 export interface ClanDto {
-  type: 'open' | 'inviteOnly' | 'closed';
+  type: "open" | "inviteOnly" | "closed";
   warFrequency?:
-    'always' | 'moreThanOncePerWeek' | 'oncePerWeek' | 'lessThanOncePerWeek' | 'never' | 'unknown';
+    | "always"
+    | "moreThanOncePerWeek"
+    | "oncePerWeek"
+    | "lessThanOncePerWeek"
+    | "never"
+    | "unknown";
   tag: string;
   name: string;
   description: string;
@@ -747,7 +765,7 @@ export interface LegendStatisticsDto {
 
 export interface PlayerAchievementDto {
   completionInfo: string | null;
-  village: 'home' | 'builderBase';
+  village: "home" | "builderBase";
   name: string;
   stars: number;
   value: number;
@@ -757,7 +775,7 @@ export interface PlayerAchievementDto {
 
 export interface PlayerItemDto {
   equipment?: PlayerItemDto[];
-  village: 'home' | 'builderBase';
+  village: "home" | "builderBase";
   name: string;
   level: number;
   maxLevel: number;
@@ -765,7 +783,7 @@ export interface PlayerItemDto {
 }
 
 export interface PlayerDto {
-  warPreference?: 'in' | 'out';
+  warPreference?: "in" | "out";
   name: string;
   tag: string;
   townHallLevel: number;
@@ -1111,6 +1129,15 @@ export interface LegendResetDto {
   to: number;
 }
 
+export interface LegendDayChangeDto {
+  /**
+   * `reset`: the Monday or season start reset to 5000. `missedDefenses`: what the game took at the
+   * start of the day for defenses the player didn't get the day before. `untracked`: anything no tracked battle explains.
+   */
+  type: LegendDayChangeType;
+  trophies: number;
+}
+
 export interface LegendDayBattleDto {
   isAttack: boolean;
   stars: number;
@@ -1122,15 +1149,6 @@ export interface LegendDayBattleDto {
    * @format date-time
    */
   battleTime: string;
-}
-
-export interface LegendDayChangeDto {
-  /**
-   * `reset`: the Monday or season start reset to 5000. `missedDefenses`: what the game took at the
-   * end of the day for defenses the player didn't get. `untracked`: anything no tracked battle explains.
-   */
-  type: LegendDayChangeType;
-  trophies: number;
 }
 
 export interface LegendDayDto {
@@ -1152,8 +1170,8 @@ export interface LegendDayDto {
   /** Trophies lost to defenses, as a negative number. */
   defenseTrophies: number;
   /**
-   * Trophies the game took at the end of the day for defenses the player didn't get (fewer than
-   * 8), as a negative number. Absent when none were taken. Also in `changes`.
+   * Trophies the game took at the start of the day for defenses the player didn't get the day
+   * before (fewer than 8), as a negative number. Absent when none were taken. Also in `changes`.
    */
   missedDefenseTrophies?: number;
   /** Trophy changes no battle explains. Initial + attacks + defenses + changes = current. */
@@ -1233,7 +1251,12 @@ export interface RankingStandingsInputDto {
 export interface RankingStandingDto {
   tag: string;
   name: string;
-  board: 'players' | 'clans' | 'capital' | 'builder-base-players' | 'builder-base-clans';
+  board:
+    | "players"
+    | "clans"
+    | "capital"
+    | "builder-base-players"
+    | "builder-base-clans";
   location: RankingLocationDto;
   rank: number;
   previousRank: number | null;
@@ -1246,7 +1269,12 @@ export interface RankingStandingsDto {
 }
 
 export interface ClanBoardStandingDto {
-  board: 'players' | 'clans' | 'capital' | 'builder-base-players' | 'builder-base-clans';
+  board:
+    | "players"
+    | "clans"
+    | "capital"
+    | "builder-base-players"
+    | "builder-base-clans";
   location: RankingLocationDto;
   /** Null when the clan isn't in this board's top 200. */
   rank: number | null;
@@ -1301,7 +1329,12 @@ export interface RankingEntryDto {
 
 export interface RankingBoardDto {
   location: RankingLocationDto;
-  board: 'players' | 'clans' | 'capital' | 'builder-base-players' | 'builder-base-clans';
+  board:
+    | "players"
+    | "clans"
+    | "capital"
+    | "builder-base-players"
+    | "builder-base-clans";
   /** The saved season, or null for the live board. */
   season: string | null;
   items: RankingEntryDto[];
@@ -1348,11 +1381,11 @@ export interface WarClanDto {
 }
 
 export interface ClanWarDto {
-  state: 'notInWar' | 'preparation' | 'inWar' | 'warEnded';
+  state: "notInWar" | "preparation" | "inWar" | "warEnded";
   startTime: string;
   preparationStartTime: string;
   endTime: string;
-  battleModifier?: 'none' | 'hardMode';
+  battleModifier?: "none" | "hardMode";
   attacksPerMember?: number | null;
   round?: number | null;
   warTag?: string | null;
@@ -1382,12 +1415,12 @@ export interface ClanWarSideDto {
 export interface ClanWarLeagueRoundDto {
   /** Position in the group's schedule; null when the group wasn't stored. */
   round: number | null;
-  state: 'preparation' | 'inWar' | 'warEnded';
+  state: "preparation" | "inWar" | "warEnded";
   /** @format date-time */
   startTime: string;
   /** @format date-time */
   endTime: string;
-  result: 'win' | 'lose' | 'tie';
+  result: "win" | "lose" | "tie";
   id: number;
   teamSize: number;
   clan: ClanWarSideDto;
@@ -1468,7 +1501,7 @@ export interface ClanWarLeagueStandingsDto {
 
 export interface ClanWarSummaryDto {
   warType: WarTypes;
-  state: 'preparation' | 'inWar' | 'warEnded';
+  state: "preparation" | "inWar" | "warEnded";
   /** @format date-time */
   preparationStartTime: string;
   /** @format date-time */
@@ -1478,7 +1511,7 @@ export interface ClanWarSummaryDto {
   /** Set for CWL rounds only. */
   warTag: string | null;
   /** From the requested clan's side; "tie" while a war is still running and level. */
-  result: 'win' | 'lose' | 'tie';
+  result: "win" | "lose" | "tie";
   id: number;
   teamSize: number;
   attacksPerMember: number;
@@ -1500,8 +1533,8 @@ export interface CurrentWarDto {
 }
 
 export interface GameEventDto {
-  type: 'season' | 'raid_weekend' | 'clan_games' | 'cwl';
-  state: 'ended' | 'active' | 'upcoming';
+  type: "season" | "raid_weekend" | "clan_games" | "cwl";
+  state: "ended" | "active" | "upcoming";
   /** @format date-time */
   startTime: string;
   /** @format date-time */
@@ -1524,7 +1557,7 @@ export interface UpcomingEventsDto {
 }
 
 export interface RosterMemberOfRostersEntity {
-  warPreference: 'in' | 'out';
+  warPreference: "in" | "out";
   categoryId?: string | null;
   name: string;
   tag: string;
@@ -1547,7 +1580,7 @@ export interface RosterMemberOfRostersEntity {
 
 export interface RostersEntity {
   _id: string;
-  category: 'GENERAL' | 'CWL' | 'WAR' | 'TROPHY' | 'NO_CLAN';
+  category: "GENERAL" | "CWL" | "WAR" | "TROPHY" | "NO_CLAN";
   name: string;
   guildId: string;
   maxMembers?: number;
@@ -1639,12 +1672,12 @@ export interface RosterInput {
   maxAccountsPerUser?: number | null;
   /**
    * @min 2
-   * @max 18
+   * @max 19
    */
   minTownHall?: number | null;
   /**
    * @min 2
-   * @max 18
+   * @max 19
    */
   maxTownHall?: number | null;
   /** @min 0 */
@@ -1729,12 +1762,12 @@ export interface RosterUpdateInput {
   maxAccountsPerUser?: number | null;
   /**
    * @min 2
-   * @max 18
+   * @max 19
    */
   minTownHall?: number | null;
   /**
    * @min 2
-   * @max 18
+   * @max 19
    */
   maxTownHall?: number | null;
   /** @min 0 */
@@ -1835,6 +1868,108 @@ export interface TransferRosterMembersDto {
   }[];
 }
 
+export interface GiveawayEligibilityDto {
+  mode: GiveawayMode;
+  allGuildClans: boolean;
+  clanTags: string[];
+  boostFactor: number | null;
+}
+
+export interface GiveawayDto {
+  id: string;
+  guildId: string;
+  channelId: string;
+  messageId: string | null;
+  hostUserId: string;
+  prize: string;
+  imageUrl: string | null;
+  winnerCount: number;
+  eligibility: GiveawayEligibilityDto;
+  status: string;
+  entryCount: number;
+  winners: string[];
+  endsAt: number;
+  endedAt: number | null;
+  createdAt: number;
+}
+
+export interface GiveawaysDto {
+  giveaways: GiveawayDto[];
+}
+
+export interface GiveawayEligibilityInput {
+  mode: GiveawayMode;
+  allGuildClans?: boolean;
+  /**
+   * @maxItems 100
+   * @uniqueItems true
+   */
+  clanTags?: string[];
+  /**
+   * @min 2
+   * @max 100
+   */
+  boostFactor?: number;
+}
+
+export interface CreateGiveawayInput {
+  /**
+   * Date string or timestamp in milliseconds
+   * @format date-time
+   */
+  endsAt: string;
+  channelId: string;
+  hostUserId: string;
+  /**
+   * @minLength 1
+   * @maxLength 256
+   */
+  prize: string;
+  /**
+   * @format uri
+   * @maxLength 2048
+   */
+  imageUrl?: string;
+  /**
+   * @min 1
+   * @max 50
+   */
+  winnerCount: number;
+  eligibility: GiveawayEligibilityInput;
+}
+
+export interface UpdateGiveawayInput {
+  /**
+   * Date string or timestamp in milliseconds
+   * @format date-time
+   */
+  endsAt?: string;
+  messageId?: string;
+  /**
+   * @minLength 1
+   * @maxLength 256
+   */
+  prize?: string;
+  /**
+   * @min 1
+   * @max 50
+   */
+  winnerCount?: number;
+}
+
+export interface EnterGiveawayInput {
+  userId: string;
+}
+
+export interface GiveawayEntryResultDto {
+  entryCount: number;
+}
+
+export interface GiveawayDrawResultDto {
+  winners: string[];
+  entryCount: number;
+}
+
 export interface ClanRefDto {
   tag: string;
   name: string | null;
@@ -1870,7 +2005,7 @@ export interface TaskClanDto {
 export interface WarTaskDto {
   warType: WarTypes;
   /** From the war's times rather than the stored state, which can lag behind. */
-  state: 'preparation' | 'inWar';
+  state: "preparation" | "inWar";
   /** Set for CWL rounds only. */
   warTag: string | null;
   /** The CWL round number; null for other wars. */
@@ -2372,7 +2507,15 @@ export interface AutoRolesInput {
     | 604800000
     | 1036800000;
   additionDelay?:
-    0 | 3600000 | 7200000 | 14400000 | 21600000 | 28800000 | 43200000 | 64800000 | 86400000;
+    | 0
+    | 3600000
+    | 7200000
+    | 14400000
+    | 21600000
+    | 28800000
+    | 43200000
+    | 64800000
+    | 86400000;
   /** @maxLength 100 */
   familyNicknameFormat?: string;
   /** @maxLength 100 */
@@ -2621,7 +2764,7 @@ export interface ManagerRolesInput {
 }
 
 export interface LinkParsingChannelDto {
-  status: 'ok' | 'archived' | 'locked' | 'deleted' | 'noAccess' | 'unknown';
+  status: "ok" | "archived" | "locked" | "deleted" | "noAccess" | "unknown";
   id: string;
   /** Null when the channel was deleted or ClashPerk can't see it. */
   name: string | null;
@@ -2630,7 +2773,7 @@ export interface LinkParsingChannelDto {
 }
 
 export interface LinkParsingRuleDto {
-  mode: 'reply' | 'message' | 'replace';
+  mode: "reply" | "message" | "replace";
   enabled: boolean;
   channels: LinkParsingChannelDto[];
   categories: LinkParsingChannelDto[];
@@ -2644,7 +2787,7 @@ export interface LinkParsingDto {
 }
 
 export interface LinkParsingRuleInput {
-  mode: 'reply' | 'message' | 'replace';
+  mode: "reply" | "message" | "replace";
   /** Needs at least one channel or category when on. */
   enabled: boolean;
   /**
@@ -2939,7 +3082,7 @@ export interface TicketPanelInput {
   /** @maxItems 10 */
   extraButtons?: TicketExtraButtonInput[];
   /** `row` keeps extra buttons beside the type buttons; `col` starts a new row. */
-  extraButtonsPlacement?: 'row' | 'col';
+  extraButtonsPlacement?: "row" | "col";
 }
 
 export interface CreateTicketTypeInput {
@@ -3058,7 +3201,7 @@ export interface ReminderClanDto {
 }
 
 export interface ReminderScheduleDto {
-  warType: 'normal' | 'friendly' | 'cwl';
+  warType: "normal" | "friendly" | "cwl";
   id: string;
   clan: ReminderClanDto;
   /**
@@ -3148,7 +3291,7 @@ export interface GuildRemindersDto {
 
 export interface ReminderPingsDto {
   /** optIn pings only members with the role; optOut skips them. */
-  mode: 'optIn' | 'optOut';
+  mode: "optIn" | "optOut";
   /** @pattern ^\d{17,20}$ */
   clanWarsRole: string | null;
   /** @pattern ^\d{17,20}$ */
@@ -3159,7 +3302,7 @@ export interface ReminderPingsDto {
 
 export interface ReminderPingsInput {
   /** optIn pings only members with the role; optOut skips them. */
-  mode: 'optIn' | 'optOut';
+  mode: "optIn" | "optOut";
   /** @pattern ^\d{17,20}$ */
   clanWarsRole: string | null;
   /** @pattern ^\d{17,20}$ */
@@ -3971,7 +4114,8 @@ export interface GetPlayerClanWarLeagueTotalsParams {
   playerTag: string;
 }
 
-export type GetPlayerClanWarLeagueTotalsData = AggregateClanWarLeagueHistoryItemsDto;
+export type GetPlayerClanWarLeagueTotalsData =
+  AggregateClanWarLeagueHistoryItemsDto;
 
 export type GetPlayerClanWarLeagueTotalsError = ErrorResponseDto;
 
@@ -4063,7 +4207,12 @@ export interface GetRankingBoardParams {
    * @example "IN"
    */
   countryCode: string;
-  board: 'players' | 'clans' | 'capital' | 'builder-base-players' | 'builder-base-clans';
+  board:
+    | "players"
+    | "clans"
+    | "capital"
+    | "builder-base-players"
+    | "builder-base-clans";
 }
 
 export type GetRankingBoardData = RankingBoardDto;
@@ -4105,7 +4254,7 @@ export interface GetClanMemberWarStatsParams {
    * Regular and CWL wars, regular only, or CWL only; friendly wars never count.
    * @default "all"
    */
-  type?: 'all' | 'regular' | 'cwl';
+  type?: "all" | "regular" | "cwl";
   /**
    * How many of the latest ended wars to count, for `all` and `regular`.
    * @min 1
@@ -4324,6 +4473,77 @@ export interface TransferRosterMembersParams {
 export type TransferRosterMembersData = TransferRosterMembersDto;
 
 export type TransferRosterMembersError = ErrorResponseDto;
+
+export interface ListGiveawaysParams {
+  status?: string;
+  guildId: string;
+}
+
+export type ListGiveawaysData = GiveawaysDto;
+
+export type ListGiveawaysError = ErrorResponseDto;
+
+export interface CreateGiveawayParams {
+  guildId: string;
+}
+
+export type CreateGiveawayData = GiveawayDto;
+
+export type CreateGiveawayError = ErrorResponseDto;
+
+export interface GetGiveawayParams {
+  guildId: string;
+  giveawayId: string;
+}
+
+export type GetGiveawayData = GiveawayDto;
+
+export type GetGiveawayError = ErrorResponseDto;
+
+export interface UpdateGiveawayParams {
+  guildId: string;
+  giveawayId: string;
+}
+
+export type UpdateGiveawayData = GiveawayDto;
+
+export type UpdateGiveawayError = ErrorResponseDto;
+
+export interface EnterGiveawayParams {
+  guildId: string;
+  giveawayId: string;
+}
+
+export type EnterGiveawayData = GiveawayEntryResultDto;
+
+export type EnterGiveawayError = ErrorResponseDto;
+
+export interface DrawGiveawayParams {
+  guildId: string;
+  giveawayId: string;
+}
+
+export type DrawGiveawayData = GiveawayDrawResultDto;
+
+export type DrawGiveawayError = ErrorResponseDto;
+
+export interface RerollGiveawayParams {
+  guildId: string;
+  giveawayId: string;
+}
+
+export type RerollGiveawayData = GiveawayDrawResultDto;
+
+export type RerollGiveawayError = ErrorResponseDto;
+
+export interface CancelGiveawayParams {
+  guildId: string;
+  giveawayId: string;
+}
+
+export type CancelGiveawayData = any;
+
+export type CancelGiveawayError = ErrorResponseDto;
 
 export type GetUserSettingsData = UserSettingsDto;
 
@@ -6072,7 +6292,12 @@ export namespace Rankings {
        * @example "IN"
        */
       countryCode: string;
-      board: 'players' | 'clans' | 'capital' | 'builder-base-players' | 'builder-base-clans';
+      board:
+        | "players"
+        | "clans"
+        | "capital"
+        | "builder-base-players"
+        | "builder-base-clans";
     };
     export type RequestQuery = {
       /**
@@ -6175,7 +6400,7 @@ export namespace Wars {
        * Regular and CWL wars, regular only, or CWL only; friendly wars never count.
        * @default "all"
        */
-      type?: 'all' | 'regular' | 'cwl';
+      type?: "all" | "regular" | "cwl";
       /**
        * How many of the latest ended wars to count, for `all` and `regular`.
        * @min 1
@@ -6652,6 +6877,176 @@ export namespace Rosters {
     export type RequestBody = TransferRosterMembersInput;
     export type RequestHeaders = {};
     export type ResponseBody = TransferRosterMembersData;
+  }
+}
+
+export namespace Giveaways {
+  /**
+   * No description
+   * @tags Giveaways
+   * @name ListGiveaways
+   * @summary List the server's giveaways
+   * @request GET:/giveaways/{guildId}
+   * @secure
+   * @response `200` `ListGiveawaysData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace ListGiveaways {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {
+      status?: string;
+    };
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = ListGiveawaysData;
+  }
+
+  /**
+   * @description The caller posts the message and then attaches its ID with a PATCH. Set the end time as a date or epoch milliseconds, up to 60 days ahead.
+   * @tags Giveaways
+   * @name CreateGiveaway
+   * @summary Create a giveaway
+   * @request POST:/giveaways/{guildId}
+   * @secure
+   * @response `201` `CreateGiveawayData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace CreateGiveaway {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = CreateGiveawayInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = CreateGiveawayData;
+  }
+
+  /**
+   * No description
+   * @tags Giveaways
+   * @name GetGiveaway
+   * @summary Get one giveaway
+   * @request GET:/giveaways/{guildId}/{giveawayId}
+   * @secure
+   * @response `200` `GetGiveawayData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetGiveaway {
+    export type RequestParams = {
+      guildId: string;
+      giveawayId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetGiveawayData;
+  }
+
+  /**
+   * @description Attach the posted message ID, or change the prize, winner count or end time.
+   * @tags Giveaways
+   * @name UpdateGiveaway
+   * @summary Update a giveaway
+   * @request PATCH:/giveaways/{guildId}/{giveawayId}
+   * @secure
+   * @response `200` `UpdateGiveawayData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace UpdateGiveaway {
+    export type RequestParams = {
+      guildId: string;
+      giveawayId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = UpdateGiveawayInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = UpdateGiveawayData;
+  }
+
+  /**
+   * @description One entry per user. Restricted giveaways reject a user who is not in a chosen clan.
+   * @tags Giveaways
+   * @name EnterGiveaway
+   * @summary Enter a giveaway
+   * @request POST:/giveaways/{guildId}/{giveawayId}/enter
+   * @secure
+   * @response `201` `EnterGiveawayData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace EnterGiveaway {
+    export type RequestParams = {
+      guildId: string;
+      giveawayId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = EnterGiveawayInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = EnterGiveawayData;
+  }
+
+  /**
+   * @description Picks the winners and ends the giveaway. Fails if it is already drawn.
+   * @tags Giveaways
+   * @name DrawGiveaway
+   * @summary Draw a giveaway
+   * @request POST:/giveaways/{guildId}/{giveawayId}/draw
+   * @secure
+   * @response `201` `DrawGiveawayData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace DrawGiveaway {
+    export type RequestParams = {
+      guildId: string;
+      giveawayId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = DrawGiveawayData;
+  }
+
+  /**
+   * @description Draws a fresh set of winners, skipping the previous ones.
+   * @tags Giveaways
+   * @name RerollGiveaway
+   * @summary Reroll a giveaway
+   * @request POST:/giveaways/{guildId}/{giveawayId}/reroll
+   * @secure
+   * @response `201` `RerollGiveawayData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace RerollGiveaway {
+    export type RequestParams = {
+      guildId: string;
+      giveawayId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = RerollGiveawayData;
+  }
+
+  /**
+   * No description
+   * @tags Giveaways
+   * @name CancelGiveaway
+   * @summary Cancel a giveaway without drawing
+   * @request POST:/giveaways/{guildId}/{giveawayId}/cancel
+   * @secure
+   * @response `204` `CancelGiveawayData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace CancelGiveaway {
+    export type RequestParams = {
+      guildId: string;
+      giveawayId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = CancelGiveawayData;
   }
 }
 
@@ -8632,16 +9027,14 @@ import type {
   AxiosRequestConfig,
   AxiosResponse,
   HeadersDefaults,
-  ResponseType
-} from 'axios';
-import axios from 'axios';
+  ResponseType,
+} from "axios";
+import axios from "axios";
 
 export type QueryParamsType = Record<string | number, any>;
 
-export interface FullRequestParams extends Omit<
-  AxiosRequestConfig,
-  'data' | 'params' | 'url' | 'responseType'
-> {
+export interface FullRequestParams
+  extends Omit<AxiosRequestConfig, "data" | "params" | "url" | "responseType"> {
   /** set parameter to `true` for call `securityWorker` for this request */
   secure?: boolean;
   /** request path */
@@ -8656,31 +9049,32 @@ export interface FullRequestParams extends Omit<
   body?: unknown;
 }
 
-export type RequestParams = Omit<FullRequestParams, 'body' | 'method' | 'query' | 'path'>;
+export type RequestParams = Omit<
+  FullRequestParams,
+  "body" | "method" | "query" | "path"
+>;
 
-export interface ApiConfig<SecurityDataType = unknown> extends Omit<
-  AxiosRequestConfig,
-  'data' | 'cancelToken'
-> {
+export interface ApiConfig<SecurityDataType = unknown>
+  extends Omit<AxiosRequestConfig, "data" | "cancelToken"> {
   securityWorker?: (
-    securityData: SecurityDataType | null
+    securityData: SecurityDataType | null,
   ) => Promise<AxiosRequestConfig | void> | AxiosRequestConfig | void;
   secure?: boolean;
   format?: ResponseType;
 }
 
 export enum ContentType {
-  Json = 'application/json',
-  JsonApi = 'application/vnd.api+json',
-  FormData = 'multipart/form-data',
-  UrlEncoded = 'application/x-www-form-urlencoded',
-  Text = 'text/plain'
+  Json = "application/json",
+  JsonApi = "application/vnd.api+json",
+  FormData = "multipart/form-data",
+  UrlEncoded = "application/x-www-form-urlencoded",
+  Text = "text/plain",
 }
 
 export class HttpClient<SecurityDataType = unknown> {
   public instance: AxiosInstance;
   private securityData: SecurityDataType | null = null;
-  private securityWorker?: ApiConfig<SecurityDataType>['securityWorker'];
+  private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
   private secure?: boolean;
   private format?: ResponseType;
 
@@ -8692,7 +9086,7 @@ export class HttpClient<SecurityDataType = unknown> {
   }: ApiConfig<SecurityDataType> = {}) {
     this.instance = axios.create({
       ...axiosConfig,
-      baseURL: axiosConfig.baseURL || '/v1'
+      baseURL: axiosConfig.baseURL || "/v1",
     });
     this.secure = secure;
     this.format = format;
@@ -8705,7 +9099,7 @@ export class HttpClient<SecurityDataType = unknown> {
 
   protected mergeRequestParams(
     params1: AxiosRequestConfig,
-    params2?: AxiosRequestConfig
+    params2?: AxiosRequestConfig,
   ): AxiosRequestConfig {
     const method = params1.method || (params2 && params2.method);
 
@@ -8715,16 +9109,18 @@ export class HttpClient<SecurityDataType = unknown> {
       ...(params2 || {}),
       headers: {
         ...((method &&
-          this.instance.defaults.headers[method.toLowerCase() as keyof HeadersDefaults]) ||
+          this.instance.defaults.headers[
+            method.toLowerCase() as keyof HeadersDefaults
+          ]) ||
           {}),
         ...(params1.headers || {}),
-        ...((params2 && params2.headers) || {})
-      }
+        ...((params2 && params2.headers) || {}),
+      },
     };
   }
 
   protected stringifyFormItem(formItem: unknown) {
-    if (typeof formItem === 'object' && formItem !== null) {
+    if (typeof formItem === "object" && formItem !== null) {
       return JSON.stringify(formItem);
     } else {
       return `${formItem}`;
@@ -8737,11 +9133,15 @@ export class HttpClient<SecurityDataType = unknown> {
     }
     return Object.keys(input || {}).reduce((formData, key) => {
       const property = input[key];
-      const propertyContent: any[] = property instanceof Array ? property : [property];
+      const propertyContent: any[] =
+        property instanceof Array ? property : [property];
 
       for (const formItem of propertyContent) {
         const isFileType = formItem instanceof Blob || formItem instanceof File;
-        formData.append(key, isFileType ? formItem : this.stringifyFormItem(formItem));
+        formData.append(
+          key,
+          isFileType ? formItem : this.stringifyFormItem(formItem),
+        );
       }
 
       return formData;
@@ -8758,18 +9158,28 @@ export class HttpClient<SecurityDataType = unknown> {
     ...params
   }: FullRequestParams): Promise<AxiosResponse<T>> => {
     const secureParams =
-      ((typeof secure === 'boolean' ? secure : this.secure) &&
+      ((typeof secure === "boolean" ? secure : this.secure) &&
         this.securityWorker &&
         (await this.securityWorker(this.securityData))) ||
       {};
     const requestParams = this.mergeRequestParams(params, secureParams);
     const responseFormat = format || this.format || undefined;
 
-    if (type === ContentType.FormData && body && body !== null && typeof body === 'object') {
+    if (
+      type === ContentType.FormData &&
+      body &&
+      body !== null &&
+      typeof body === "object"
+    ) {
       body = this.createFormData(body as Record<string, unknown>);
     }
 
-    if (type === ContentType.Text && body && body !== null && typeof body !== 'string') {
+    if (
+      type === ContentType.Text &&
+      body &&
+      body !== null &&
+      typeof body !== "string"
+    ) {
       body = JSON.stringify(body);
     }
 
@@ -8777,19 +9187,19 @@ export class HttpClient<SecurityDataType = unknown> {
       ...requestParams,
       headers: {
         ...(requestParams.headers || {}),
-        ...(type ? { 'Content-Type': type } : {})
+        ...(type ? { "Content-Type": type } : {}),
       },
       params: query,
       responseType: responseFormat,
       data: body,
-      url: path
+      url: path,
     });
   };
 }
 
 /**
  * @title ClashPerk Discord Bot API
- * @version v2.0.163
+ * @version v2.0.176
  * @baseUrl /v1
  * @contact
  *
@@ -8818,11 +9228,11 @@ export class Api<SecurityDataType extends unknown> {
     login: (data: LoginInputDto, params: RequestParams = {}) =>
       this.http.request<LoginData, LoginError>({
         path: `/auth/login`,
-        method: 'POST',
+        method: "POST",
         body: data,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -8839,10 +9249,10 @@ export class Api<SecurityDataType extends unknown> {
     getAuthUser: ({ userId }: GetAuthUserParams, params: RequestParams = {}) =>
       this.http.request<GetAuthUserData, GetAuthUserError>({
         path: `/auth/users/${userId}`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -8856,13 +9266,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetHandoffUserData`
      * @response `500` `ErrorResponseDto`
      */
-    getHandoffUser: ({ token }: GetHandoffUserParams, params: RequestParams = {}) =>
+    getHandoffUser: (
+      { token }: GetHandoffUserParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetHandoffUserData, GetHandoffUserError>({
         path: `/auth/handoff/${token}`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -8876,15 +9289,18 @@ export class Api<SecurityDataType extends unknown> {
      * @response `201` `CreateHandoffTokenData`
      * @response `500` `ErrorResponseDto`
      */
-    createHandoffToken: (data: HandoffTokenInputDto, params: RequestParams = {}) =>
+    createHandoffToken: (
+      data: HandoffTokenInputDto,
+      params: RequestParams = {},
+    ) =>
       this.http.request<CreateHandoffTokenData, CreateHandoffTokenError>({
         path: `/auth/handoff`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -8901,12 +9317,12 @@ export class Api<SecurityDataType extends unknown> {
     getBotGuilds: (data: BotGuildsInputDto, params: RequestParams = {}) =>
       this.http.request<GetBotGuildsData, GetBotGuildsError>({
         path: `/auth/bot-guilds`,
-        method: 'QUERY',
+        method: "QUERY",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -8920,15 +9336,18 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetManagedGuildsData`
      * @response `500` `ErrorResponseDto`
      */
-    getManagedGuilds: (data: ManagedGuildsInputDto, params: RequestParams = {}) =>
+    getManagedGuilds: (
+      data: ManagedGuildsInputDto,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetManagedGuildsData, GetManagedGuildsError>({
         path: `/auth/managed-guilds`,
-        method: 'QUERY',
+        method: "QUERY",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -8945,13 +9364,13 @@ export class Api<SecurityDataType extends unknown> {
     getGuildAccess: (data: GuildAccessInputDto, params: RequestParams = {}) =>
       this.http.request<GetGuildAccessData, GetGuildAccessError>({
         path: `/auth/guild-access`,
-        method: 'QUERY',
+        method: "QUERY",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   links = {
     /**
@@ -8968,12 +9387,12 @@ export class Api<SecurityDataType extends unknown> {
     createLink: (data: CreateLinkInputDto, params: RequestParams = {}) =>
       this.http.request<CreateLinkData, CreateLinkError>({
         path: `/links`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -8990,10 +9409,10 @@ export class Api<SecurityDataType extends unknown> {
     deleteLink: ({ playerTag }: DeleteLinkParams, params: RequestParams = {}) =>
       this.http.request<DeleteLinkData, DeleteLinkError>({
         path: `/links/${playerTag}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9007,13 +9426,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `SetDefaultLinkData`
      * @response `500` `ErrorResponseDto`
      */
-    setDefaultLink: ({ playerTag }: SetDefaultLinkParams, params: RequestParams = {}) =>
+    setDefaultLink: (
+      { playerTag }: SetDefaultLinkParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<SetDefaultLinkData, SetDefaultLinkError>({
         path: `/links/${playerTag}/default`,
-        method: 'PUT',
+        method: "PUT",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9030,16 +9452,16 @@ export class Api<SecurityDataType extends unknown> {
     setLinkHidden: (
       { playerTag }: SetLinkHiddenParams,
       data: SetHiddenInputDto,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<SetLinkHiddenData, SetLinkHiddenError>({
         path: `/links/${playerTag}/hidden`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9056,12 +9478,12 @@ export class Api<SecurityDataType extends unknown> {
     getLinks: (data: GetLinksInputDto, params: RequestParams = {}) =>
       this.http.request<GetLinksData, GetLinksError>({
         path: `/links/query`,
-        method: 'QUERY',
+        method: "QUERY",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9079,13 +9501,13 @@ export class Api<SecurityDataType extends unknown> {
     getLinksViaPost: (data: GetLinksInputDto, params: RequestParams = {}) =>
       this.http.request<GetLinksViaPostData, GetLinksViaPostError>({
         path: `/links/query`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   clans = {
     /**
@@ -9102,12 +9524,12 @@ export class Api<SecurityDataType extends unknown> {
     getClanActivity: (data: ClanActivityInputDto, params: RequestParams = {}) =>
       this.http.request<GetClanActivityData, GetClanActivityError>({
         path: `/clans/activity`,
-        method: 'QUERY',
+        method: "QUERY",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9122,15 +9544,21 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetClanActivityViaPostData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanActivityViaPost: (data: ClanActivityInputDto, params: RequestParams = {}) =>
-      this.http.request<GetClanActivityViaPostData, GetClanActivityViaPostError>({
+    getClanActivityViaPost: (
+      data: ClanActivityInputDto,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<
+        GetClanActivityViaPostData,
+        GetClanActivityViaPostError
+      >({
         path: `/clans/activity`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9147,10 +9575,10 @@ export class Api<SecurityDataType extends unknown> {
     getClan: ({ clanTag }: GetClanParams, params: RequestParams = {}) =>
       this.http.request<GetClanData, GetClanError>({
         path: `/clans/${clanTag}`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9164,13 +9592,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetClanLastSeenData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanLastSeen: ({ clanTag }: GetClanLastSeenParams, params: RequestParams = {}) =>
+    getClanLastSeen: (
+      { clanTag }: GetClanLastSeenParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetClanLastSeenData, GetClanLastSeenError>({
         path: `/clans/${clanTag}/lastseen`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9186,15 +9617,18 @@ export class Api<SecurityDataType extends unknown> {
      */
     getClanDailyLegendBattles: (
       { clanTag, ...query }: GetClanDailyLegendBattlesParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<GetClanDailyLegendBattlesData, GetClanDailyLegendBattlesError>({
+      this.http.request<
+        GetClanDailyLegendBattlesData,
+        GetClanDailyLegendBattlesError
+      >({
         path: `/clans/${clanTag}/legend-battles/daily`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9210,15 +9644,18 @@ export class Api<SecurityDataType extends unknown> {
      */
     getClanLegendLeaderboard: (
       { clanTag, ...query }: GetClanLegendLeaderboardParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<GetClanLegendLeaderboardData, GetClanLegendLeaderboardError>({
+      this.http.request<
+        GetClanLegendLeaderboardData,
+        GetClanLegendLeaderboardError
+      >({
         path: `/clans/${clanTag}/legend-battles/leaderboard`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9234,15 +9671,18 @@ export class Api<SecurityDataType extends unknown> {
      */
     getClanCapitalContributions: (
       { clanTag, ...query }: GetClanCapitalContributionsParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<GetClanCapitalContributionsData, GetClanCapitalContributionsError>({
+      this.http.request<
+        GetClanCapitalContributionsData,
+        GetClanCapitalContributionsError
+      >({
         path: `/clans/${clanTag}/capital-contribution`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9258,15 +9698,15 @@ export class Api<SecurityDataType extends unknown> {
      */
     getClanCapitalRaids: (
       { clanTag, ...query }: GetClanCapitalRaidsParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<GetClanCapitalRaidsData, GetClanCapitalRaidsError>({
         path: `/clans/${clanTag}/capital-raids`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9280,14 +9720,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetClanGamesData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanGames: ({ clanTag, ...query }: GetClanGamesParams, params: RequestParams = {}) =>
+    getClanGames: (
+      { clanTag, ...query }: GetClanGamesParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetClanGamesData, GetClanGamesError>({
         path: `/clans/${clanTag}/clan-games`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9301,14 +9744,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetClanLinksData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanLinks: ({ clanTag }: GetClanLinksParams, params: RequestParams = {}) =>
+    getClanLinks: (
+      { clanTag }: GetClanLinksParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetClanLinksData, GetClanLinksError>({
         path: `/clans/${clanTag}/links`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   players = {
     /**
@@ -9325,10 +9771,10 @@ export class Api<SecurityDataType extends unknown> {
     getPlayer: ({ playerTag }: GetPlayerParams, params: RequestParams = {}) =>
       this.http.request<GetPlayerData, GetPlayerError>({
         path: `/players/${playerTag}`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9342,13 +9788,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `TrackLegendPlayerData`
      * @response `500` `ErrorResponseDto`
      */
-    trackLegendPlayer: ({ playerTag }: TrackLegendPlayerParams, params: RequestParams = {}) =>
+    trackLegendPlayer: (
+      { playerTag }: TrackLegendPlayerParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<TrackLegendPlayerData, TrackLegendPlayerError>({
         path: `/players/${playerTag}`,
-        method: 'PUT',
+        method: "PUT",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9364,15 +9813,15 @@ export class Api<SecurityDataType extends unknown> {
      */
     getPlayerSeasons: (
       { playerTag, ...query }: GetPlayerSeasonsParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<GetPlayerSeasonsData, GetPlayerSeasonsError>({
         path: `/players/${playerTag}/seasons`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9386,13 +9835,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetPlayerRankedWeeksData`
      * @response `500` `ErrorResponseDto`
      */
-    getPlayerRankedWeeks: ({ playerTag }: GetPlayerRankedWeeksParams, params: RequestParams = {}) =>
+    getPlayerRankedWeeks: (
+      { playerTag }: GetPlayerRankedWeeksParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetPlayerRankedWeeksData, GetPlayerRankedWeeksError>({
         path: `/players/${playerTag}/ranked`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9406,14 +9858,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetRankedArmiesData`
      * @response `500` `ErrorResponseDto`
      */
-    getRankedArmies: ({ playerTag, ...query }: GetRankedArmiesParams, params: RequestParams = {}) =>
+    getRankedArmies: (
+      { playerTag, ...query }: GetRankedArmiesParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetRankedArmiesData, GetRankedArmiesError>({
         path: `/players/${playerTag}/ranked/armies`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9427,13 +9882,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetPlayerBattleLogData`
      * @response `500` `ErrorResponseDto`
      */
-    getPlayerBattleLog: ({ playerTag }: GetPlayerBattleLogParams, params: RequestParams = {}) =>
+    getPlayerBattleLog: (
+      { playerTag }: GetPlayerBattleLogParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetPlayerBattleLogData, GetPlayerBattleLogError>({
         path: `/players/${playerTag}/battle-log`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9450,14 +9908,14 @@ export class Api<SecurityDataType extends unknown> {
      */
     getPlayerDailyBattles: (
       { playerTag }: GetPlayerDailyBattlesParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<GetPlayerDailyBattlesData, GetPlayerDailyBattlesError>({
         path: `/players/${playerTag}/battle-log/aggregate`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9472,15 +9930,21 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetBattleLogLeaderboardData`
      * @response `500` `ErrorResponseDto`
      */
-    getBattleLogLeaderboard: (data: BattleLogLeaderboardInputDto, params: RequestParams = {}) =>
-      this.http.request<GetBattleLogLeaderboardData, GetBattleLogLeaderboardError>({
+    getBattleLogLeaderboard: (
+      data: BattleLogLeaderboardInputDto,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<
+        GetBattleLogLeaderboardData,
+        GetBattleLogLeaderboardError
+      >({
         path: `/players/battle-log/leaderboard`,
-        method: 'QUERY',
+        method: "QUERY",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9497,16 +9961,19 @@ export class Api<SecurityDataType extends unknown> {
      */
     getBattleLogLeaderboardViaPost: (
       data: BattleLogLeaderboardInputDto,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<GetBattleLogLeaderboardViaPostData, GetBattleLogLeaderboardViaPostError>({
+      this.http.request<
+        GetBattleLogLeaderboardViaPostData,
+        GetBattleLogLeaderboardViaPostError
+      >({
         path: `/players/battle-log/leaderboard`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9520,13 +9987,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetPlayerClanHistoryData`
      * @response `500` `ErrorResponseDto`
      */
-    getPlayerClanHistory: ({ playerTag }: GetPlayerClanHistoryParams, params: RequestParams = {}) =>
+    getPlayerClanHistory: (
+      { playerTag }: GetPlayerClanHistoryParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetPlayerClanHistoryData, GetPlayerClanHistoryError>({
         path: `/players/${playerTag}/history`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9540,14 +10010,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetPlayerWarsData`
      * @response `500` `ErrorResponseDto`
      */
-    getPlayerWars: ({ playerTag, ...query }: GetPlayerWarsParams, params: RequestParams = {}) =>
+    getPlayerWars: (
+      { playerTag, ...query }: GetPlayerWarsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetPlayerWarsData, GetPlayerWarsError>({
         path: `/players/${playerTag}/wars`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9563,15 +10036,15 @@ export class Api<SecurityDataType extends unknown> {
      */
     getPlayerWarTotals: (
       { playerTag, ...query }: GetPlayerWarTotalsParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<GetPlayerWarTotalsData, GetPlayerWarTotalsError>({
         path: `/players/${playerTag}/wars/aggregate`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9587,16 +10060,19 @@ export class Api<SecurityDataType extends unknown> {
      */
     getPlayerClanWarLeagueTotals: (
       { playerTag, ...query }: GetPlayerClanWarLeagueTotalsParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<GetPlayerClanWarLeagueTotalsData, GetPlayerClanWarLeagueTotalsError>({
+      this.http.request<
+        GetPlayerClanWarLeagueTotalsData,
+        GetPlayerClanWarLeagueTotalsError
+      >({
         path: `/players/${playerTag}/clan-war-leagues/aggregate`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   legends = {
     /**
@@ -9611,12 +10087,15 @@ export class Api<SecurityDataType extends unknown> {
      * @response `500` `ErrorResponseDto`
      */
     getLegendRankingThresholds: (params: RequestParams = {}) =>
-      this.http.request<GetLegendRankingThresholdsData, GetLegendRankingThresholdsError>({
+      this.http.request<
+        GetLegendRankingThresholdsData,
+        GetLegendRankingThresholdsError
+      >({
         path: `/legends/ranking-thresholds`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9630,14 +10109,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetLegendDaysData`
      * @response `500` `ErrorResponseDto`
      */
-    getLegendDays: ({ playerTag, ...query }: GetLegendDaysParams, params: RequestParams = {}) =>
+    getLegendDays: (
+      { playerTag, ...query }: GetLegendDaysParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetLegendDaysData, GetLegendDaysError>({
         path: `/legends/${playerTag}/days`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9651,14 +10133,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetLegendArmiesData`
      * @response `500` `ErrorResponseDto`
      */
-    getLegendArmies: ({ playerTag, ...query }: GetLegendArmiesParams, params: RequestParams = {}) =>
+    getLegendArmies: (
+      { playerTag, ...query }: GetLegendArmiesParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetLegendArmiesData, GetLegendArmiesError>({
         path: `/legends/${playerTag}/armies`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9672,13 +10157,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetLegendSeasonsData`
      * @response `500` `ErrorResponseDto`
      */
-    getLegendSeasons: ({ playerTag }: GetLegendSeasonsParams, params: RequestParams = {}) =>
+    getLegendSeasons: (
+      { playerTag }: GetLegendSeasonsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetLegendSeasonsData, GetLegendSeasonsError>({
         path: `/legends/${playerTag}/seasons`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9692,14 +10180,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `EstimateLegendRankData`
      * @response `500` `ErrorResponseDto`
      */
-    estimateLegendRank: ({ playerTag }: EstimateLegendRankParams, params: RequestParams = {}) =>
+    estimateLegendRank: (
+      { playerTag }: EstimateLegendRankParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<EstimateLegendRankData, EstimateLegendRankError>({
         path: `/legends/${playerTag}/estimate-rank`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   rankings = {
     /**
@@ -9716,10 +10207,10 @@ export class Api<SecurityDataType extends unknown> {
     getRankingLocations: (params: RequestParams = {}) =>
       this.http.request<GetRankingLocationsData, GetRankingLocationsError>({
         path: `/rankings/locations`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9736,10 +10227,10 @@ export class Api<SecurityDataType extends unknown> {
     getRankingSeasons: (params: RequestParams = {}) =>
       this.http.request<GetRankingSeasonsData, GetRankingSeasonsError>({
         path: `/rankings/seasons`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9753,15 +10244,18 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `FindRankingsData`
      * @response `500` `ErrorResponseDto`
      */
-    findRankings: (data: RankingStandingsInputDto, params: RequestParams = {}) =>
+    findRankings: (
+      data: RankingStandingsInputDto,
+      params: RequestParams = {},
+    ) =>
       this.http.request<FindRankingsData, FindRankingsError>({
         path: `/rankings/standings`,
-        method: 'QUERY',
+        method: "QUERY",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9775,13 +10269,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetClanRankingsData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanRankings: ({ clanTag }: GetClanRankingsParams, params: RequestParams = {}) =>
+    getClanRankings: (
+      { clanTag }: GetClanRankingsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetClanRankingsData, GetClanRankingsError>({
         path: `/rankings/clans/${clanTag}`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9795,13 +10292,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetPlayerRankingsData`
      * @response `500` `ErrorResponseDto`
      */
-    getPlayerRankings: ({ playerTag }: GetPlayerRankingsParams, params: RequestParams = {}) =>
+    getPlayerRankings: (
+      { playerTag }: GetPlayerRankingsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetPlayerRankingsData, GetPlayerRankingsError>({
         path: `/rankings/players/${playerTag}`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9817,16 +10317,16 @@ export class Api<SecurityDataType extends unknown> {
      */
     getRankingBoard: (
       { countryCode, board, ...query }: GetRankingBoardParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<GetRankingBoardData, GetRankingBoardError>({
         path: `/rankings/${countryCode}/${board}`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   wars = {
     /**
@@ -9840,13 +10340,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetClanWarLeagueGroupData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanWarLeagueGroup: ({ clanTag }: GetClanWarLeagueGroupParams, params: RequestParams = {}) =>
+    getClanWarLeagueGroup: (
+      { clanTag }: GetClanWarLeagueGroupParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetClanWarLeagueGroupData, GetClanWarLeagueGroupError>({
         path: `/wars/${clanTag}/clan-war-leagues/groups`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9860,13 +10363,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetClanWarLeagueWarsData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanWarLeagueWars: ({ clanTag }: GetClanWarLeagueWarsParams, params: RequestParams = {}) =>
+    getClanWarLeagueWars: (
+      { clanTag }: GetClanWarLeagueWarsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetClanWarLeagueWarsData, GetClanWarLeagueWarsError>({
         path: `/wars/${clanTag}/clan-war-leagues/clan`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9882,15 +10388,18 @@ export class Api<SecurityDataType extends unknown> {
      */
     getClanWarLeagueSeasons: (
       { clanTag, ...query }: GetClanWarLeagueSeasonsParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<GetClanWarLeagueSeasonsData, GetClanWarLeagueSeasonsError>({
+      this.http.request<
+        GetClanWarLeagueSeasonsData,
+        GetClanWarLeagueSeasonsError
+      >({
         path: `/wars/${clanTag}/clan-war-leagues/seasons`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9906,15 +10415,15 @@ export class Api<SecurityDataType extends unknown> {
      */
     getClanMemberWarStats: (
       { clanTag, ...query }: GetClanMemberWarStatsParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<GetClanMemberWarStatsData, GetClanMemberWarStatsError>({
         path: `/wars/${clanTag}/members/stats`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9930,14 +10439,17 @@ export class Api<SecurityDataType extends unknown> {
      */
     getClanWarLeagueStandings: (
       { clanTag, groupId }: GetClanWarLeagueStandingsParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<GetClanWarLeagueStandingsData, GetClanWarLeagueStandingsError>({
+      this.http.request<
+        GetClanWarLeagueStandingsData,
+        GetClanWarLeagueStandingsError
+      >({
         path: `/wars/${clanTag}/clan-war-leagues/groups/${groupId}/standings`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9951,14 +10463,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `ListClanWarsData`
      * @response `500` `ErrorResponseDto`
      */
-    listClanWars: ({ clanTag, ...query }: ListClanWarsParams, params: RequestParams = {}) =>
+    listClanWars: (
+      { clanTag, ...query }: ListClanWarsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<ListClanWarsData, ListClanWarsError>({
         path: `/wars/${clanTag}`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9972,13 +10487,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetCurrentWarData`
      * @response `500` `ErrorResponseDto`
      */
-    getCurrentWar: ({ clanTag }: GetCurrentWarParams, params: RequestParams = {}) =>
+    getCurrentWar: (
+      { clanTag }: GetCurrentWarParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetCurrentWarData, GetCurrentWarError>({
         path: `/wars/${clanTag}/current`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -9992,14 +10510,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetClanWarData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanWar: ({ clanTag, warId }: GetClanWarParams, params: RequestParams = {}) =>
+    getClanWar: (
+      { clanTag, warId }: GetClanWarParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetClanWarData, GetClanWarError>({
         path: `/wars/${clanTag}/${warId}`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   events = {
     /**
@@ -10016,11 +10537,11 @@ export class Api<SecurityDataType extends unknown> {
     getEvents: (query: GetEventsParams, params: RequestParams = {}) =>
       this.http.request<GetEventsData, GetEventsError>({
         path: `/events`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10037,11 +10558,11 @@ export class Api<SecurityDataType extends unknown> {
     getUpcomingEvents: (params: RequestParams = {}) =>
       this.http.request<GetUpcomingEventsData, GetUpcomingEventsError>({
         path: `/events/upcoming`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   rosters = {
     /**
@@ -10058,10 +10579,10 @@ export class Api<SecurityDataType extends unknown> {
     listRosters: ({ guildId }: ListRostersParams, params: RequestParams = {}) =>
       this.http.request<ListRostersData, ListRostersError>({
         path: `/rosters/${guildId}/list`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10078,16 +10599,16 @@ export class Api<SecurityDataType extends unknown> {
     createRoster: (
       { guildId }: CreateRosterParams,
       data: RosterInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<CreateRosterData, CreateRosterError>({
         path: `/rosters/${guildId}/create`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10104,16 +10625,16 @@ export class Api<SecurityDataType extends unknown> {
     createRosterGroup: (
       { guildId }: CreateRosterGroupParams,
       data: RosterGroupInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<CreateRosterGroupData, CreateRosterGroupError>({
         path: `/rosters/${guildId}/groups`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10130,16 +10651,16 @@ export class Api<SecurityDataType extends unknown> {
     updateRosterGroup: (
       { guildId, groupId }: UpdateRosterGroupParams,
       data: RosterGroupUpdateInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<UpdateRosterGroupData, UpdateRosterGroupError>({
         path: `/rosters/${guildId}/groups/${groupId}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10155,14 +10676,14 @@ export class Api<SecurityDataType extends unknown> {
      */
     deleteRosterGroup: (
       { guildId, groupId }: DeleteRosterGroupParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<DeleteRosterGroupData, DeleteRosterGroupError>({
         path: `/rosters/${guildId}/groups/${groupId}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10176,13 +10697,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetRosterData`
      * @response `500` `ErrorResponseDto`
      */
-    getRoster: ({ rosterId, guildId }: GetRosterParams, params: RequestParams = {}) =>
+    getRoster: (
+      { rosterId, guildId }: GetRosterParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetRosterData, GetRosterError>({
         path: `/rosters/${guildId}/${rosterId}`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10199,16 +10723,16 @@ export class Api<SecurityDataType extends unknown> {
     updateRoster: (
       { guildId, rosterId }: UpdateRosterParams,
       data: RosterUpdateInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<UpdateRosterData, UpdateRosterError>({
         path: `/rosters/${guildId}/${rosterId}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10222,12 +10746,15 @@ export class Api<SecurityDataType extends unknown> {
      * @response `204` `DeleteRosterData`
      * @response `500` `ErrorResponseDto`
      */
-    deleteRoster: ({ guildId, rosterId }: DeleteRosterParams, params: RequestParams = {}) =>
+    deleteRoster: (
+      { guildId, rosterId }: DeleteRosterParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<DeleteRosterData, DeleteRosterError>({
         path: `/rosters/${guildId}/${rosterId}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        ...params
+        ...params,
       }),
 
     /**
@@ -10244,16 +10771,16 @@ export class Api<SecurityDataType extends unknown> {
     cloneRoster: (
       { guildId, rosterId }: CloneRosterParams,
       data: CloneRosterInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<CloneRosterData, CloneRosterError>({
         path: `/rosters/${guildId}/${rosterId}/clone`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10270,16 +10797,16 @@ export class Api<SecurityDataType extends unknown> {
     checkRosterMembers: (
       { guildId, rosterId }: CheckRosterMembersParams,
       data: RosterTagsInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<CheckRosterMembersData, CheckRosterMembersError>({
         path: `/rosters/${guildId}/${rosterId}/members/check`,
-        method: 'QUERY',
+        method: "QUERY",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10297,16 +10824,19 @@ export class Api<SecurityDataType extends unknown> {
     checkRosterMembersViaPost: (
       { guildId, rosterId }: CheckRosterMembersViaPostParams,
       data: RosterTagsInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<CheckRosterMembersViaPostData, CheckRosterMembersViaPostError>({
+      this.http.request<
+        CheckRosterMembersViaPostData,
+        CheckRosterMembersViaPostError
+      >({
         path: `/rosters/${guildId}/${rosterId}/members/check`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10323,16 +10853,16 @@ export class Api<SecurityDataType extends unknown> {
     addRosterMembers: (
       { guildId, rosterId }: AddRosterMembersParams,
       data: AddRosterMembersInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<AddRosterMembersData, AddRosterMembersError>({
         path: `/rosters/${guildId}/${rosterId}/members`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10349,16 +10879,16 @@ export class Api<SecurityDataType extends unknown> {
     deleteRosterMembers: (
       { rosterId, guildId }: DeleteRosterMembersParams,
       data: RemoveMembersBulkInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<DeleteRosterMembersData, DeleteRosterMembersError>({
         path: `/rosters/${guildId}/${rosterId}/members`,
-        method: 'DELETE',
+        method: "DELETE",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10374,14 +10904,14 @@ export class Api<SecurityDataType extends unknown> {
      */
     refreshRosterMembers: (
       { guildId, rosterId }: RefreshRosterMembersParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<RefreshRosterMembersData, RefreshRosterMembersError>({
         path: `/rosters/${guildId}/${rosterId}/members/refresh`,
-        method: 'POST',
+        method: "POST",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10398,17 +10928,211 @@ export class Api<SecurityDataType extends unknown> {
     transferRosterMembers: (
       { rosterId, guildId }: TransferRosterMembersParams,
       data: TransferRosterMembersInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<TransferRosterMembersData, TransferRosterMembersError>({
         path: `/rosters/${guildId}/${rosterId}/members/transfer`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
+  };
+  giveaways = {
+    /**
+     * No description
+     *
+     * @tags Giveaways
+     * @name ListGiveaways
+     * @summary List the server's giveaways
+     * @request GET:/giveaways/{guildId}
+     * @secure
+     * @response `200` `ListGiveawaysData`
+     * @response `500` `ErrorResponseDto`
+     */
+    listGiveaways: (
+      { guildId, ...query }: ListGiveawaysParams,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<ListGiveawaysData, ListGiveawaysError>({
+        path: `/giveaways/${guildId}`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description The caller posts the message and then attaches its ID with a PATCH. Set the end time as a date or epoch milliseconds, up to 60 days ahead.
+     *
+     * @tags Giveaways
+     * @name CreateGiveaway
+     * @summary Create a giveaway
+     * @request POST:/giveaways/{guildId}
+     * @secure
+     * @response `201` `CreateGiveawayData`
+     * @response `500` `ErrorResponseDto`
+     */
+    createGiveaway: (
+      { guildId }: CreateGiveawayParams,
+      data: CreateGiveawayInput,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<CreateGiveawayData, CreateGiveawayError>({
+        path: `/giveaways/${guildId}`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Giveaways
+     * @name GetGiveaway
+     * @summary Get one giveaway
+     * @request GET:/giveaways/{guildId}/{giveawayId}
+     * @secure
+     * @response `200` `GetGiveawayData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getGiveaway: (
+      { guildId, giveawayId }: GetGiveawayParams,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<GetGiveawayData, GetGiveawayError>({
+        path: `/giveaways/${guildId}/${giveawayId}`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Attach the posted message ID, or change the prize, winner count or end time.
+     *
+     * @tags Giveaways
+     * @name UpdateGiveaway
+     * @summary Update a giveaway
+     * @request PATCH:/giveaways/{guildId}/{giveawayId}
+     * @secure
+     * @response `200` `UpdateGiveawayData`
+     * @response `500` `ErrorResponseDto`
+     */
+    updateGiveaway: (
+      { guildId, giveawayId }: UpdateGiveawayParams,
+      data: UpdateGiveawayInput,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<UpdateGiveawayData, UpdateGiveawayError>({
+        path: `/giveaways/${guildId}/${giveawayId}`,
+        method: "PATCH",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description One entry per user. Restricted giveaways reject a user who is not in a chosen clan.
+     *
+     * @tags Giveaways
+     * @name EnterGiveaway
+     * @summary Enter a giveaway
+     * @request POST:/giveaways/{guildId}/{giveawayId}/enter
+     * @secure
+     * @response `201` `EnterGiveawayData`
+     * @response `500` `ErrorResponseDto`
+     */
+    enterGiveaway: (
+      { guildId, giveawayId }: EnterGiveawayParams,
+      data: EnterGiveawayInput,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<EnterGiveawayData, EnterGiveawayError>({
+        path: `/giveaways/${guildId}/${giveawayId}/enter`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Picks the winners and ends the giveaway. Fails if it is already drawn.
+     *
+     * @tags Giveaways
+     * @name DrawGiveaway
+     * @summary Draw a giveaway
+     * @request POST:/giveaways/{guildId}/{giveawayId}/draw
+     * @secure
+     * @response `201` `DrawGiveawayData`
+     * @response `500` `ErrorResponseDto`
+     */
+    drawGiveaway: (
+      { guildId, giveawayId }: DrawGiveawayParams,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<DrawGiveawayData, DrawGiveawayError>({
+        path: `/giveaways/${guildId}/${giveawayId}/draw`,
+        method: "POST",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Draws a fresh set of winners, skipping the previous ones.
+     *
+     * @tags Giveaways
+     * @name RerollGiveaway
+     * @summary Reroll a giveaway
+     * @request POST:/giveaways/{guildId}/{giveawayId}/reroll
+     * @secure
+     * @response `201` `RerollGiveawayData`
+     * @response `500` `ErrorResponseDto`
+     */
+    rerollGiveaway: (
+      { guildId, giveawayId }: RerollGiveawayParams,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<RerollGiveawayData, RerollGiveawayError>({
+        path: `/giveaways/${guildId}/${giveawayId}/reroll`,
+        method: "POST",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Giveaways
+     * @name CancelGiveaway
+     * @summary Cancel a giveaway without drawing
+     * @request POST:/giveaways/{guildId}/{giveawayId}/cancel
+     * @secure
+     * @response `204` `CancelGiveawayData`
+     * @response `500` `ErrorResponseDto`
+     */
+    cancelGiveaway: (
+      { guildId, giveawayId }: CancelGiveawayParams,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<CancelGiveawayData, CancelGiveawayError>({
+        path: `/giveaways/${guildId}/${giveawayId}/cancel`,
+        method: "POST",
+        secure: true,
+        ...params,
+      }),
   };
   users = {
     /**
@@ -10425,10 +11149,10 @@ export class Api<SecurityDataType extends unknown> {
     getUserSettings: (params: RequestParams = {}) =>
       this.http.request<GetUserSettingsData, GetUserSettingsError>({
         path: `/users/me`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10445,10 +11169,10 @@ export class Api<SecurityDataType extends unknown> {
     getWarTasks: (params: RequestParams = {}) =>
       this.http.request<GetWarTasksData, GetWarTasksError>({
         path: `/users/me/tasks/wars`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10465,10 +11189,10 @@ export class Api<SecurityDataType extends unknown> {
     getCapitalRaidTasks: (params: RequestParams = {}) =>
       this.http.request<GetCapitalRaidTasksData, GetCapitalRaidTasksError>({
         path: `/users/me/tasks/capital-raids`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10485,10 +11209,10 @@ export class Api<SecurityDataType extends unknown> {
     getClanGamesTasks: (params: RequestParams = {}) =>
       this.http.request<GetClanGamesTasksData, GetClanGamesTasksError>({
         path: `/users/me/tasks/clan-games`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10505,10 +11229,10 @@ export class Api<SecurityDataType extends unknown> {
     getLegendTasks: (params: RequestParams = {}) =>
       this.http.request<GetLegendTasksData, GetLegendTasksError>({
         path: `/users/me/tasks/legends`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10525,10 +11249,10 @@ export class Api<SecurityDataType extends unknown> {
     getRankedTasks: (params: RequestParams = {}) =>
       this.http.request<GetRankedTasksData, GetRankedTasksError>({
         path: `/users/me/tasks/ranked`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10545,12 +11269,12 @@ export class Api<SecurityDataType extends unknown> {
     setDefaultClan: (data: ClanTagInput, params: RequestParams = {}) =>
       this.http.request<SetDefaultClanData, SetDefaultClanError>({
         path: `/users/me/clan`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10567,10 +11291,10 @@ export class Api<SecurityDataType extends unknown> {
     clearDefaultClan: (params: RequestParams = {}) =>
       this.http.request<ClearDefaultClanData, ClearDefaultClanError>({
         path: `/users/me/clan`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10587,12 +11311,12 @@ export class Api<SecurityDataType extends unknown> {
     addBookmark: (data: ClanTagInput, params: RequestParams = {}) =>
       this.http.request<AddBookmarkData, AddBookmarkError>({
         path: `/users/me/bookmarks`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10606,13 +11330,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `RemoveBookmarkData`
      * @response `500` `ErrorResponseDto`
      */
-    removeBookmark: ({ clanTag }: RemoveBookmarkParams, params: RequestParams = {}) =>
+    removeBookmark: (
+      { clanTag }: RemoveBookmarkParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<RemoveBookmarkData, RemoveBookmarkError>({
         path: `/users/me/bookmarks/${clanTag}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10629,12 +11356,12 @@ export class Api<SecurityDataType extends unknown> {
     setTimezone: (data: TimezoneInput, params: RequestParams = {}) =>
       this.http.request<SetTimezoneData, SetTimezoneError>({
         path: `/users/me/timezone`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10651,10 +11378,10 @@ export class Api<SecurityDataType extends unknown> {
     clearTimezone: (params: RequestParams = {}) =>
       this.http.request<ClearTimezoneData, ClearTimezoneError>({
         path: `/users/me/timezone`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10671,10 +11398,10 @@ export class Api<SecurityDataType extends unknown> {
     getGameExports: (params: RequestParams = {}) =>
       this.http.request<GetGameExportsData, GetGameExportsError>({
         path: `/users/me/game-exports`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10691,16 +11418,16 @@ export class Api<SecurityDataType extends unknown> {
     saveGameExport: (
       { playerTag }: SaveGameExportParams,
       data: GameExportInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<SaveGameExportData, SaveGameExportError>({
         path: `/users/me/game-exports/${playerTag}`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10714,14 +11441,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `RemoveGameExportData`
      * @response `500` `ErrorResponseDto`
      */
-    removeGameExport: ({ playerTag }: RemoveGameExportParams, params: RequestParams = {}) =>
+    removeGameExport: (
+      { playerTag }: RemoveGameExportParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<RemoveGameExportData, RemoveGameExportError>({
         path: `/users/me/game-exports/${playerTag}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   guilds = {
     /**
@@ -10735,13 +11465,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetGuildClansData`
      * @response `500` `ErrorResponseDto`
      */
-    getGuildClans: ({ guildId }: GetGuildClansParams, params: RequestParams = {}) =>
+    getGuildClans: (
+      { guildId }: GetGuildClansParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetGuildClansData, GetGuildClansError>({
         path: `/guilds/${guildId}/clans`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10758,16 +11491,16 @@ export class Api<SecurityDataType extends unknown> {
     addGuildClan: (
       { guildId }: AddGuildClanParams,
       data: AddGuildClanInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<AddGuildClanData, AddGuildClanError>({
         path: `/guilds/${guildId}/clans`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10784,16 +11517,16 @@ export class Api<SecurityDataType extends unknown> {
     reorderGuildClans: (
       { guildId }: ReorderGuildClansParams,
       data: ReorderClanCategoriesInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<ReorderGuildClansData, ReorderGuildClansError>({
         path: `/guilds/${guildId}/clans/reorder`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10807,13 +11540,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `RemoveGuildClanData`
      * @response `500` `ErrorResponseDto`
      */
-    removeGuildClan: ({ guildId, clanTag }: RemoveGuildClanParams, params: RequestParams = {}) =>
+    removeGuildClan: (
+      { guildId, clanTag }: RemoveGuildClanParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<RemoveGuildClanData, RemoveGuildClanError>({
         path: `/guilds/${guildId}/clans/${clanTag}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10830,16 +11566,16 @@ export class Api<SecurityDataType extends unknown> {
     updateGuildClan: (
       { guildId, clanTag }: UpdateGuildClanParams,
       data: ClanSettingsInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<UpdateGuildClanData, UpdateGuildClanError>({
         path: `/guilds/${guildId}/clans/${clanTag}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10856,16 +11592,16 @@ export class Api<SecurityDataType extends unknown> {
     createClanCategory: (
       { guildId }: CreateClanCategoryParams,
       data: ClanCategoryInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<CreateClanCategoryData, CreateClanCategoryError>({
         path: `/guilds/${guildId}/categories`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10882,16 +11618,16 @@ export class Api<SecurityDataType extends unknown> {
     renameClanCategory: (
       { guildId, categoryId }: RenameClanCategoryParams,
       data: ClanCategoryInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<RenameClanCategoryData, RenameClanCategoryError>({
         path: `/guilds/${guildId}/categories/${categoryId}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10907,14 +11643,14 @@ export class Api<SecurityDataType extends unknown> {
      */
     deleteClanCategory: (
       { guildId, categoryId }: DeleteClanCategoryParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<DeleteClanCategoryData, DeleteClanCategoryError>({
         path: `/guilds/${guildId}/categories/${categoryId}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10928,13 +11664,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `ListChannelsData`
      * @response `500` `ErrorResponseDto`
      */
-    listChannels: ({ guildId }: ListChannelsParams, params: RequestParams = {}) =>
+    listChannels: (
+      { guildId }: ListChannelsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<ListChannelsData, ListChannelsError>({
         path: `/guilds/${guildId}/channels`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10948,13 +11687,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `ListChannelCategoriesData`
      * @response `500` `ErrorResponseDto`
      */
-    listChannelCategories: ({ guildId }: ListChannelCategoriesParams, params: RequestParams = {}) =>
+    listChannelCategories: (
+      { guildId }: ListChannelCategoriesParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<ListChannelCategoriesData, ListChannelCategoriesError>({
         path: `/guilds/${guildId}/channel-categories`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10970,14 +11712,17 @@ export class Api<SecurityDataType extends unknown> {
      */
     listMentionableChannels: (
       { guildId }: ListMentionableChannelsParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<ListMentionableChannelsData, ListMentionableChannelsError>({
+      this.http.request<
+        ListMentionableChannelsData,
+        ListMentionableChannelsError
+      >({
         path: `/guilds/${guildId}/channels/mentionable`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -10994,10 +11739,10 @@ export class Api<SecurityDataType extends unknown> {
     listRoles: ({ guildId }: ListRolesParams, params: RequestParams = {}) =>
       this.http.request<ListRolesData, ListRolesError>({
         path: `/guilds/${guildId}/roles`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11011,13 +11756,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetBotPermissionsData`
      * @response `500` `ErrorResponseDto`
      */
-    getBotPermissions: ({ guildId }: GetBotPermissionsParams, params: RequestParams = {}) =>
+    getBotPermissions: (
+      { guildId }: GetBotPermissionsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetBotPermissionsData, GetBotPermissionsError>({
         path: `/guilds/${guildId}/bot-permissions`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11034,10 +11782,10 @@ export class Api<SecurityDataType extends unknown> {
     listEmojis: ({ guildId }: ListEmojisParams, params: RequestParams = {}) =>
       this.http.request<ListEmojisData, ListEmojisError>({
         path: `/guilds/${guildId}/emojis`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11051,13 +11799,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `ListGuildClanLogsData`
      * @response `500` `ErrorResponseDto`
      */
-    listGuildClanLogs: ({ guildId }: ListGuildClanLogsParams, params: RequestParams = {}) =>
+    listGuildClanLogs: (
+      { guildId }: ListGuildClanLogsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<ListGuildClanLogsData, ListGuildClanLogsError>({
         path: `/guilds/${guildId}/clan-logs`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11071,13 +11822,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetClanLogLimitData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanLogLimit: ({ guildId }: GetClanLogLimitParams, params: RequestParams = {}) =>
+    getClanLogLimit: (
+      { guildId }: GetClanLogLimitParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetClanLogLimitData, GetClanLogLimitError>({
         path: `/guilds/${guildId}/clan-logs/limit`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11091,13 +11845,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetClanEmbedData`
      * @response `500` `ErrorResponseDto`
      */
-    getClanEmbed: ({ guildId, clanTag }: GetClanEmbedParams, params: RequestParams = {}) =>
+    getClanEmbed: (
+      { guildId, clanTag }: GetClanEmbedParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetClanEmbedData, GetClanEmbedError>({
         path: `/guilds/${guildId}/clans/${clanTag}/embed`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11114,16 +11871,16 @@ export class Api<SecurityDataType extends unknown> {
     saveClanEmbed: (
       { guildId, clanTag }: SaveClanEmbedParams,
       data: ClanEmbedInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<SaveClanEmbedData, SaveClanEmbedError>({
         path: `/guilds/${guildId}/clans/${clanTag}/embed`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11137,12 +11894,15 @@ export class Api<SecurityDataType extends unknown> {
      * @response `204` `DeleteClanEmbedData`
      * @response `500` `ErrorResponseDto`
      */
-    deleteClanEmbed: ({ guildId, clanTag }: DeleteClanEmbedParams, params: RequestParams = {}) =>
+    deleteClanEmbed: (
+      { guildId, clanTag }: DeleteClanEmbedParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<DeleteClanEmbedData, DeleteClanEmbedError>({
         path: `/guilds/${guildId}/clans/${clanTag}/embed`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        ...params
+        ...params,
       }),
 
     /**
@@ -11156,13 +11916,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `ListClanLogsData`
      * @response `500` `ErrorResponseDto`
      */
-    listClanLogs: ({ guildId, clanTag }: ListClanLogsParams, params: RequestParams = {}) =>
+    listClanLogs: (
+      { guildId, clanTag }: ListClanLogsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<ListClanLogsData, ListClanLogsError>({
         path: `/guilds/${guildId}/clans/${clanTag}/logs`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11179,16 +11942,16 @@ export class Api<SecurityDataType extends unknown> {
     saveClanLog: (
       { guildId, clanTag, logType }: SaveClanLogParams,
       data: ClanLogInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<SaveClanLogData, SaveClanLogError>({
         path: `/guilds/${guildId}/clans/${clanTag}/logs/${logType}`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11204,13 +11967,13 @@ export class Api<SecurityDataType extends unknown> {
      */
     deleteClanLog: (
       { guildId, clanTag, logType }: DeleteClanLogParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<DeleteClanLogData, DeleteClanLogError>({
         path: `/guilds/${guildId}/clans/${clanTag}/logs/${logType}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        ...params
+        ...params,
       }),
 
     /**
@@ -11224,13 +11987,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetAutoRolesData`
      * @response `500` `ErrorResponseDto`
      */
-    getAutoRoles: ({ guildId }: GetAutoRolesParams, params: RequestParams = {}) =>
+    getAutoRoles: (
+      { guildId }: GetAutoRolesParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetAutoRolesData, GetAutoRolesError>({
         path: `/guilds/${guildId}/auto-roles`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11247,16 +12013,16 @@ export class Api<SecurityDataType extends unknown> {
     updateAutoRoles: (
       { guildId }: UpdateAutoRolesParams,
       data: AutoRolesInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<UpdateAutoRolesData, UpdateAutoRolesError>({
         path: `/guilds/${guildId}/auto-roles`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11273,16 +12039,16 @@ export class Api<SecurityDataType extends unknown> {
     saveClanAutoRoles: (
       { guildId, clanTag }: SaveClanAutoRolesParams,
       data: AutoRoleClanInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<SaveClanAutoRolesData, SaveClanAutoRolesError>({
         path: `/guilds/${guildId}/auto-roles/clans/${clanTag}`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11296,14 +12062,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `ListFlagsData`
      * @response `500` `ErrorResponseDto`
      */
-    listFlags: ({ guildId, ...query }: ListFlagsParams, params: RequestParams = {}) =>
+    listFlags: (
+      { guildId, ...query }: ListFlagsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<ListFlagsData, ListFlagsError>({
         path: `/guilds/${guildId}/flags`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11317,15 +12086,19 @@ export class Api<SecurityDataType extends unknown> {
      * @response `201` `CreateFlagsData`
      * @response `500` `ErrorResponseDto`
      */
-    createFlags: ({ guildId }: CreateFlagsParams, data: FlagInput, params: RequestParams = {}) =>
+    createFlags: (
+      { guildId }: CreateFlagsParams,
+      data: FlagInput,
+      params: RequestParams = {},
+    ) =>
       this.http.request<CreateFlagsData, CreateFlagsError>({
         path: `/guilds/${guildId}/flags`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11339,12 +12112,15 @@ export class Api<SecurityDataType extends unknown> {
      * @response `204` `DeleteFlagData`
      * @response `500` `ErrorResponseDto`
      */
-    deleteFlag: ({ guildId, flagId }: DeleteFlagParams, params: RequestParams = {}) =>
+    deleteFlag: (
+      { guildId, flagId }: DeleteFlagParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<DeleteFlagData, DeleteFlagError>({
         path: `/guilds/${guildId}/flags/${flagId}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        ...params
+        ...params,
       }),
 
     /**
@@ -11358,14 +12134,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `SearchMembersData`
      * @response `500` `ErrorResponseDto`
      */
-    searchMembers: ({ guildId, ...query }: SearchMembersParams, params: RequestParams = {}) =>
+    searchMembers: (
+      { guildId, ...query }: SearchMembersParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<SearchMembersData, SearchMembersError>({
         path: `/guilds/${guildId}/members/list`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11379,13 +12158,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetServerLogsData`
      * @response `500` `ErrorResponseDto`
      */
-    getServerLogs: ({ guildId }: GetServerLogsParams, params: RequestParams = {}) =>
+    getServerLogs: (
+      { guildId }: GetServerLogsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetServerLogsData, GetServerLogsError>({
         path: `/guilds/${guildId}/server-logs`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11402,16 +12184,16 @@ export class Api<SecurityDataType extends unknown> {
     saveFlagAlertLog: (
       { guildId }: SaveFlagAlertLogParams,
       data: FlagAlertLogInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<SaveFlagAlertLogData, SaveFlagAlertLogError>({
         path: `/guilds/${guildId}/server-logs/flag-alert`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11425,13 +12207,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `DeleteFlagAlertLogData`
      * @response `500` `ErrorResponseDto`
      */
-    deleteFlagAlertLog: ({ guildId }: DeleteFlagAlertLogParams, params: RequestParams = {}) =>
+    deleteFlagAlertLog: (
+      { guildId }: DeleteFlagAlertLogParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<DeleteFlagAlertLogData, DeleteFlagAlertLogError>({
         path: `/guilds/${guildId}/server-logs/flag-alert`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11448,16 +12233,16 @@ export class Api<SecurityDataType extends unknown> {
     saveRosterChangelog: (
       { guildId }: SaveRosterChangelogParams,
       data: ServerLogChannelInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<SaveRosterChangelogData, SaveRosterChangelogError>({
         path: `/guilds/${guildId}/server-logs/roster-changelog`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11471,13 +12256,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `DeleteRosterChangelogData`
      * @response `500` `ErrorResponseDto`
      */
-    deleteRosterChangelog: ({ guildId }: DeleteRosterChangelogParams, params: RequestParams = {}) =>
+    deleteRosterChangelog: (
+      { guildId }: DeleteRosterChangelogParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<DeleteRosterChangelogData, DeleteRosterChangelogError>({
         path: `/guilds/${guildId}/server-logs/roster-changelog`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11494,16 +12282,16 @@ export class Api<SecurityDataType extends unknown> {
     saveMaintenanceLog: (
       { guildId }: SaveMaintenanceLogParams,
       data: MaintenanceLogInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<SaveMaintenanceLogData, SaveMaintenanceLogError>({
         path: `/guilds/${guildId}/server-logs/maintenance`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11517,13 +12305,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `DeleteMaintenanceLogData`
      * @response `500` `ErrorResponseDto`
      */
-    deleteMaintenanceLog: ({ guildId }: DeleteMaintenanceLogParams, params: RequestParams = {}) =>
+    deleteMaintenanceLog: (
+      { guildId }: DeleteMaintenanceLogParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<DeleteMaintenanceLogData, DeleteMaintenanceLogError>({
         path: `/guilds/${guildId}/server-logs/maintenance`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11540,16 +12331,16 @@ export class Api<SecurityDataType extends unknown> {
     saveWelcomeLog: (
       { guildId }: SaveWelcomeLogParams,
       data: WelcomeLogInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<SaveWelcomeLogData, SaveWelcomeLogError>({
         path: `/guilds/${guildId}/server-logs/welcome`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11563,13 +12354,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `DeleteWelcomeLogData`
      * @response `500` `ErrorResponseDto`
      */
-    deleteWelcomeLog: ({ guildId }: DeleteWelcomeLogParams, params: RequestParams = {}) =>
+    deleteWelcomeLog: (
+      { guildId }: DeleteWelcomeLogParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<DeleteWelcomeLogData, DeleteWelcomeLogError>({
         path: `/guilds/${guildId}/server-logs/welcome`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11583,13 +12377,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetButtonMessagesData`
      * @response `500` `ErrorResponseDto`
      */
-    getButtonMessages: ({ guildId }: GetButtonMessagesParams, params: RequestParams = {}) =>
+    getButtonMessages: (
+      { guildId }: GetButtonMessagesParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetButtonMessagesData, GetButtonMessagesError>({
         path: `/guilds/${guildId}/buttons`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11606,16 +12403,16 @@ export class Api<SecurityDataType extends unknown> {
     updateButtonMessage: (
       { guildId, buttonType }: UpdateButtonMessageParams,
       data: ButtonMessageInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<UpdateButtonMessageData, UpdateButtonMessageError>({
         path: `/guilds/${guildId}/buttons/${buttonType}`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11629,13 +12426,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetManagerRolesData`
      * @response `500` `ErrorResponseDto`
      */
-    getManagerRoles: ({ guildId }: GetManagerRolesParams, params: RequestParams = {}) =>
+    getManagerRoles: (
+      { guildId }: GetManagerRolesParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetManagerRolesData, GetManagerRolesError>({
         path: `/guilds/${guildId}/managers`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11652,16 +12452,16 @@ export class Api<SecurityDataType extends unknown> {
     updateManagerRoles: (
       { guildId }: UpdateManagerRolesParams,
       data: ManagerRolesInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<UpdateManagerRolesData, UpdateManagerRolesError>({
         path: `/guilds/${guildId}/managers`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11675,13 +12475,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetLinkParsingData`
      * @response `500` `ErrorResponseDto`
      */
-    getLinkParsing: ({ guildId }: GetLinkParsingParams, params: RequestParams = {}) =>
+    getLinkParsing: (
+      { guildId }: GetLinkParsingParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetLinkParsingData, GetLinkParsingError>({
         path: `/guilds/${guildId}/link-parsing`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11698,16 +12501,16 @@ export class Api<SecurityDataType extends unknown> {
     saveLinkParsing: (
       { guildId }: SaveLinkParsingParams,
       data: LinkParsingInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<SaveLinkParsingData, SaveLinkParsingError>({
         path: `/guilds/${guildId}/link-parsing`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11721,13 +12524,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetGuildConfigData`
      * @response `500` `ErrorResponseDto`
      */
-    getGuildConfig: ({ guildId }: GetGuildConfigParams, params: RequestParams = {}) =>
+    getGuildConfig: (
+      { guildId }: GetGuildConfigParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetGuildConfigData, GetGuildConfigError>({
         path: `/guilds/${guildId}/config`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11744,16 +12550,16 @@ export class Api<SecurityDataType extends unknown> {
     updateGuildConfig: (
       { guildId }: UpdateGuildConfigParams,
       data: ServerConfigInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<UpdateGuildConfigData, UpdateGuildConfigError>({
         path: `/guilds/${guildId}/config`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11767,14 +12573,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetGuildBetaStatusData`
      * @response `500` `ErrorResponseDto`
      */
-    getGuildBetaStatus: ({ guildId }: GetGuildBetaStatusParams, params: RequestParams = {}) =>
+    getGuildBetaStatus: (
+      { guildId }: GetGuildBetaStatusParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetGuildBetaStatusData, GetGuildBetaStatusError>({
         path: `/guilds/${guildId}/beta`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   tickets = {
     /**
@@ -11788,13 +12597,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetTicketSettingsData`
      * @response `500` `ErrorResponseDto`
      */
-    getTicketSettings: ({ guildId }: GetTicketSettingsParams, params: RequestParams = {}) =>
+    getTicketSettings: (
+      { guildId }: GetTicketSettingsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetTicketSettingsData, GetTicketSettingsError>({
         path: `/tickets/${guildId}`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11808,14 +12620,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `ListTicketsData`
      * @response `500` `ErrorResponseDto`
      */
-    listTickets: ({ guildId, ...query }: ListTicketsParams, params: RequestParams = {}) =>
+    listTickets: (
+      { guildId, ...query }: ListTicketsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<ListTicketsData, ListTicketsError>({
         path: `/tickets/${guildId}/list`,
-        method: 'GET',
+        method: "GET",
         query: query,
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11829,12 +12644,15 @@ export class Api<SecurityDataType extends unknown> {
      * @response `204` `CloseTicketData`
      * @response `500` `ErrorResponseDto`
      */
-    closeTicket: ({ guildId, ticketId }: CloseTicketParams, params: RequestParams = {}) =>
+    closeTicket: (
+      { guildId, ticketId }: CloseTicketParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<CloseTicketData, CloseTicketError>({
         path: `/tickets/${guildId}/${ticketId}/close`,
-        method: 'POST',
+        method: "POST",
         secure: true,
-        ...params
+        ...params,
       }),
 
     /**
@@ -11851,16 +12669,16 @@ export class Api<SecurityDataType extends unknown> {
     createTicketPanel: (
       { guildId }: CreateTicketPanelParams,
       data: CreateTicketPanelInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<CreateTicketPanelData, CreateTicketPanelError>({
         path: `/tickets/${guildId}/panels`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11877,16 +12695,16 @@ export class Api<SecurityDataType extends unknown> {
     updateTicketPanel: (
       { guildId, panelId }: UpdateTicketPanelParams,
       data: TicketPanelInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<UpdateTicketPanelData, UpdateTicketPanelError>({
         path: `/tickets/${guildId}/panels/${panelId}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11902,14 +12720,14 @@ export class Api<SecurityDataType extends unknown> {
      */
     deleteTicketPanel: (
       { guildId, panelId }: DeleteTicketPanelParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<DeleteTicketPanelData, DeleteTicketPanelError>({
         path: `/tickets/${guildId}/panels/${panelId}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11926,16 +12744,16 @@ export class Api<SecurityDataType extends unknown> {
     addTicketType: (
       { guildId, panelId }: AddTicketTypeParams,
       data: CreateTicketTypeInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<AddTicketTypeData, AddTicketTypeError>({
         path: `/tickets/${guildId}/panels/${panelId}/types`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11952,16 +12770,16 @@ export class Api<SecurityDataType extends unknown> {
     reorderTicketTypes: (
       { guildId, panelId }: ReorderTicketTypesParams,
       data: ReorderTicketTypesInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<ReorderTicketTypesData, ReorderTicketTypesError>({
         path: `/tickets/${guildId}/panels/${panelId}/types/order`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -11978,16 +12796,16 @@ export class Api<SecurityDataType extends unknown> {
     updateTicketType: (
       { guildId, panelId, typeId }: UpdateTicketTypeParams,
       data: TicketTypeInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<UpdateTicketTypeData, UpdateTicketTypeError>({
         path: `/tickets/${guildId}/panels/${panelId}/types/${typeId}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12003,14 +12821,14 @@ export class Api<SecurityDataType extends unknown> {
      */
     deleteTicketType: (
       { guildId, panelId, typeId }: DeleteTicketTypeParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<DeleteTicketTypeData, DeleteTicketTypeError>({
         path: `/tickets/${guildId}/panels/${panelId}/types/${typeId}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12027,17 +12845,17 @@ export class Api<SecurityDataType extends unknown> {
     replaceSavedReplies: (
       { guildId }: ReplaceSavedRepliesParams,
       data: TicketSavedRepliesInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<ReplaceSavedRepliesData, ReplaceSavedRepliesError>({
         path: `/tickets/${guildId}/saved-replies`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   reminders = {
     /**
@@ -12051,13 +12869,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `ListRemindersData`
      * @response `500` `ErrorResponseDto`
      */
-    listReminders: ({ guildId }: ListRemindersParams, params: RequestParams = {}) =>
+    listReminders: (
+      { guildId }: ListRemindersParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<ListRemindersData, ListRemindersError>({
         path: `/reminders/${guildId}`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12071,13 +12892,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetReminderPingsData`
      * @response `500` `ErrorResponseDto`
      */
-    getReminderPings: ({ guildId }: GetReminderPingsParams, params: RequestParams = {}) =>
+    getReminderPings: (
+      { guildId }: GetReminderPingsParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetReminderPingsData, GetReminderPingsError>({
         path: `/reminders/${guildId}/pings`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12094,16 +12918,16 @@ export class Api<SecurityDataType extends unknown> {
     saveReminderPings: (
       { guildId }: SaveReminderPingsParams,
       data: ReminderPingsInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<SaveReminderPingsData, SaveReminderPingsError>({
         path: `/reminders/${guildId}/pings`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12120,16 +12944,16 @@ export class Api<SecurityDataType extends unknown> {
     createClanWarReminder: (
       { guildId }: CreateClanWarReminderParams,
       data: ClanWarReminderInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<CreateClanWarReminderData, CreateClanWarReminderError>({
         path: `/reminders/${guildId}/clan-wars`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12146,16 +12970,16 @@ export class Api<SecurityDataType extends unknown> {
     updateClanWarReminder: (
       { guildId, reminderId }: UpdateClanWarReminderParams,
       data: ClanWarReminderInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<UpdateClanWarReminderData, UpdateClanWarReminderError>({
         path: `/reminders/${guildId}/clan-wars/${reminderId}`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12171,13 +12995,13 @@ export class Api<SecurityDataType extends unknown> {
      */
     deleteClanWarReminder: (
       { guildId, reminderId }: DeleteClanWarReminderParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<DeleteClanWarReminderData, DeleteClanWarReminderError>({
         path: `/reminders/${guildId}/clan-wars/${reminderId}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        ...params
+        ...params,
       }),
 
     /**
@@ -12194,16 +13018,19 @@ export class Api<SecurityDataType extends unknown> {
     createCapitalRaidReminder: (
       { guildId }: CreateCapitalRaidReminderParams,
       data: CapitalRaidReminderInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<CreateCapitalRaidReminderData, CreateCapitalRaidReminderError>({
+      this.http.request<
+        CreateCapitalRaidReminderData,
+        CreateCapitalRaidReminderError
+      >({
         path: `/reminders/${guildId}/capital-raids`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12220,16 +13047,19 @@ export class Api<SecurityDataType extends unknown> {
     updateCapitalRaidReminder: (
       { guildId, reminderId }: UpdateCapitalRaidReminderParams,
       data: CapitalRaidReminderInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<UpdateCapitalRaidReminderData, UpdateCapitalRaidReminderError>({
+      this.http.request<
+        UpdateCapitalRaidReminderData,
+        UpdateCapitalRaidReminderError
+      >({
         path: `/reminders/${guildId}/capital-raids/${reminderId}`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12245,13 +13075,16 @@ export class Api<SecurityDataType extends unknown> {
      */
     deleteCapitalRaidReminder: (
       { guildId, reminderId }: DeleteCapitalRaidReminderParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<DeleteCapitalRaidReminderData, DeleteCapitalRaidReminderError>({
+      this.http.request<
+        DeleteCapitalRaidReminderData,
+        DeleteCapitalRaidReminderError
+      >({
         path: `/reminders/${guildId}/capital-raids/${reminderId}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        ...params
+        ...params,
       }),
 
     /**
@@ -12268,16 +13101,19 @@ export class Api<SecurityDataType extends unknown> {
     createClanGamesReminder: (
       { guildId }: CreateClanGamesReminderParams,
       data: ClanGamesReminderInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<CreateClanGamesReminderData, CreateClanGamesReminderError>({
+      this.http.request<
+        CreateClanGamesReminderData,
+        CreateClanGamesReminderError
+      >({
         path: `/reminders/${guildId}/clan-games`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12294,16 +13130,19 @@ export class Api<SecurityDataType extends unknown> {
     updateClanGamesReminder: (
       { guildId, reminderId }: UpdateClanGamesReminderParams,
       data: ClanGamesReminderInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<UpdateClanGamesReminderData, UpdateClanGamesReminderError>({
+      this.http.request<
+        UpdateClanGamesReminderData,
+        UpdateClanGamesReminderError
+      >({
         path: `/reminders/${guildId}/clan-games/${reminderId}`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12319,14 +13158,17 @@ export class Api<SecurityDataType extends unknown> {
      */
     deleteClanGamesReminder: (
       { guildId, reminderId }: DeleteClanGamesReminderParams,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
-      this.http.request<DeleteClanGamesReminderData, DeleteClanGamesReminderError>({
+      this.http.request<
+        DeleteClanGamesReminderData,
+        DeleteClanGamesReminderError
+      >({
         path: `/reminders/${guildId}/clan-games/${reminderId}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        ...params
-      })
+        ...params,
+      }),
   };
   admin = {
     /**
@@ -12340,13 +13182,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `GetServerSetupData`
      * @response `500` `ErrorResponseDto`
      */
-    getServerSetup: ({ guildId }: GetServerSetupParams, params: RequestParams = {}) =>
+    getServerSetup: (
+      { guildId }: GetServerSetupParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GetServerSetupData, GetServerSetupError>({
         path: `/admin/guilds/${guildId}/setup`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12363,10 +13208,10 @@ export class Api<SecurityDataType extends unknown> {
     listBetaGuilds: (params: RequestParams = {}) =>
       this.http.request<ListBetaGuildsData, ListBetaGuildsError>({
         path: `/admin/beta-guilds`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12383,12 +13228,12 @@ export class Api<SecurityDataType extends unknown> {
     addBetaGuilds: (data: AddBetaGuildsInput, params: RequestParams = {}) =>
       this.http.request<AddBetaGuildsData, AddBetaGuildsError>({
         path: `/admin/beta-guilds`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12402,13 +13247,16 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `RemoveBetaGuildData`
      * @response `500` `ErrorResponseDto`
      */
-    removeBetaGuild: ({ guildId }: RemoveBetaGuildParams, params: RequestParams = {}) =>
+    removeBetaGuild: (
+      { guildId }: RemoveBetaGuildParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<RemoveBetaGuildData, RemoveBetaGuildError>({
         path: `/admin/beta-guilds/${guildId}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12425,10 +13273,10 @@ export class Api<SecurityDataType extends unknown> {
     listSubscribers: (params: RequestParams = {}) =>
       this.http.request<ListSubscribersData, ListSubscribersError>({
         path: `/admin/subscribers`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12442,15 +13290,18 @@ export class Api<SecurityDataType extends unknown> {
      * @response `201` `GrantSubscriptionData`
      * @response `500` `ErrorResponseDto`
      */
-    grantSubscription: (data: GrantSubscriptionInput, params: RequestParams = {}) =>
+    grantSubscription: (
+      data: GrantSubscriptionInput,
+      params: RequestParams = {},
+    ) =>
       this.http.request<GrantSubscriptionData, GrantSubscriptionError>({
         path: `/admin/subscribers`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12467,16 +13318,16 @@ export class Api<SecurityDataType extends unknown> {
     updateSubscription: (
       { id }: UpdateSubscriptionParams,
       data: UpdateSubscriptionInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<UpdateSubscriptionData, UpdateSubscriptionError>({
         path: `/admin/subscribers/${id}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12493,10 +13344,10 @@ export class Api<SecurityDataType extends unknown> {
     listDevelopers: (params: RequestParams = {}) =>
       this.http.request<ListDevelopersData, ListDevelopersError>({
         path: `/admin/developers`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12513,12 +13364,12 @@ export class Api<SecurityDataType extends unknown> {
     addDeveloper: (data: AddDeveloperInput, params: RequestParams = {}) =>
       this.http.request<AddDeveloperData, AddDeveloperError>({
         path: `/admin/developers`,
-        method: 'POST',
+        method: "POST",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12535,16 +13386,16 @@ export class Api<SecurityDataType extends unknown> {
     updateDeveloperRoles: (
       { userId }: UpdateDeveloperRolesParams,
       data: EditDeveloperInput,
-      params: RequestParams = {}
+      params: RequestParams = {},
     ) =>
       this.http.request<UpdateDeveloperRolesData, UpdateDeveloperRolesError>({
         path: `/admin/developers/${userId}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: data,
         secure: true,
         type: ContentType.Json,
-        format: 'json',
-        ...params
+        format: "json",
+        ...params,
       }),
 
     /**
@@ -12558,14 +13409,17 @@ export class Api<SecurityDataType extends unknown> {
      * @response `200` `RevokeDeveloperData`
      * @response `500` `ErrorResponseDto`
      */
-    revokeDeveloper: ({ userId }: RevokeDeveloperParams, params: RequestParams = {}) =>
+    revokeDeveloper: (
+      { userId }: RevokeDeveloperParams,
+      params: RequestParams = {},
+    ) =>
       this.http.request<RevokeDeveloperData, RevokeDeveloperError>({
         path: `/admin/developers/${userId}`,
-        method: 'DELETE',
+        method: "DELETE",
         secure: true,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   exports = {
     /**
@@ -12581,12 +13435,12 @@ export class Api<SecurityDataType extends unknown> {
     exportClanMembers: (data: ExportMembersInput, params: RequestParams = {}) =>
       this.http.request<ExportClanMembersData, ExportClanMembersError>({
         path: `/exports/members`,
-        method: 'POST',
+        method: "POST",
         body: data,
         type: ContentType.Json,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
   betaGuilds = {
     /**
@@ -12603,10 +13457,10 @@ export class Api<SecurityDataType extends unknown> {
     listBetaGuildIds: (params: RequestParams = {}) =>
       this.http.request<ListBetaGuildIdsData, ListBetaGuildIdsError>({
         path: `/beta-guilds/ids`,
-        method: 'GET',
+        method: "GET",
         secure: true,
-        format: 'json',
-        ...params
-      })
+        format: "json",
+        ...params,
+      }),
   };
 }
