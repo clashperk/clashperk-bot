@@ -2,6 +2,7 @@ import { Settings } from '@app/constants';
 import { AutocompleteInteraction, CommandInteraction } from 'discord.js';
 import { api } from '../../api/axios.js';
 import { Command } from '../../lib/handlers.js';
+import { refFromDto } from '../../struct/giveaway-manager.js';
 import { giveawayAutocomplete } from '../../util/giveaway-autocomplete.js';
 import { giveawayErrorText } from '../../util/giveaways.js';
 
@@ -33,13 +34,7 @@ export default class GiveawayEndCommand extends Command {
         giveawayId: args.giveaway
       });
       await this.client.giveawayManager.renderEnded(
-        {
-          guildId,
-          giveawayId: giveaway.id,
-          channelId: giveaway.channelId,
-          messageId: giveaway.messageId,
-          prize: giveaway.prize
-        },
+        refFromDto(giveaway),
         result.winners,
         result.entryCount
       );

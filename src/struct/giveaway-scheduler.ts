@@ -3,6 +3,10 @@ import { GiveawaysEntity } from '@app/entities';
 import { Collection } from 'mongodb';
 import { api } from '../api/axios.js';
 import { Client } from './client.js';
+import { refFromDto } from './giveaway-manager.js';
+
+/** A new giveaway is posted from its insert event. The sweep only catches ones that missed it. */
+const UNPOSTED_GRACE = 30 * 1000;
 
 export class GiveawayScheduler {
   private readonly giveaways: Collection<GiveawaysEntity>;
@@ -19,24 +23,17 @@ export class GiveawayScheduler {
       { operationType: { $in: ['insert', 'update', 'delete'] } },
       (change) => {
         if (change.operationType === 'delete') {
-          const id = change.documentKey._id.toHexString();
-          if (this.queued.has(id)) this.clear(id);
+          this.clear(change.documentKey._id.toHexString());
           return;
         }
+        if (change.operationType !== 'insert' && change.operationType !== 'update') return;
 
-        if (change.operationType === 'insert' || change.operationType === 'update') {
-          const id = change.documentKey._id.toHexString();
-          if (this.queued.has(id)) this.clear(id);
+        this.clear(change.documentKey._id.toHexString());
+        const giveaway = change.fullDocument;
+        if (giveaway?.status !== 'active' || !this.owns(giveaway.guild)) return;
 
-          const giveaway = change.fullDocument;
-          if (
-            giveaway &&
-            giveaway.status === 'active' &&
-            giveaway.endsAt.getTime() < Date.now() + this.refreshRate
-          ) {
-            this.queue(giveaway);
-          }
-        }
+        if (!giveaway.messageId) this.client.giveawayManager.post(giveaway);
+        if (giveaway.endsAt.getTime() < Date.now() + this.refreshRate) this.queue(giveaway);
       }
     );
 
@@ -44,13 +41,20 @@ export class GiveawayScheduler {
     setInterval(this._refresh.bind(this), this.refreshRate).unref();
   }
 
-  private queue(giveaway: GiveawaysEntity) {
-    if (this.client.settings.hasCustomBot(giveaway.guild) && !this.client.isCustom()) return;
-    if (!this.client.guilds.cache.has(giveaway.guild)) return;
+  /** Only the cluster that holds the server acts, and a custom bot takes over from the main one. */
+  private owns(guildId: string) {
+    if (!this.client.guilds.cache.has(guildId)) return false;
+    return !(this.client.settings.hasCustomBot(guildId) && !this.client.isCustom());
+  }
 
+  private queue(giveaway: GiveawaysEntity) {
+    const id = giveaway._id.toHexString();
     this.queued.set(
-      giveaway._id.toHexString(),
-      setTimeout(() => this.trigger(giveaway), Math.max(0, giveaway.endsAt.getTime() - Date.now()))
+      id,
+      setTimeout(
+        () => this.trigger(id, giveaway.guild),
+        Math.max(0, giveaway.endsAt.getTime() - Date.now())
+      )
     );
   }
 
@@ -60,24 +64,19 @@ export class GiveawayScheduler {
     this.queued.delete(id);
   }
 
-  private async trigger(giveaway: GiveawaysEntity) {
-    const giveawayId = giveaway._id.toHexString();
+  private async trigger(giveawayId: string, guildId: string) {
     this.clear(giveawayId);
     try {
-      const { data } = await api.giveaways.drawGiveaway({ guildId: giveaway.guild, giveawayId });
+      const { data } = await api.giveaways.drawGiveaway({ guildId, giveawayId });
+      // Read it again: the timer can be armed before the message was posted.
+      const { data: giveaway } = await api.giveaways.getGiveaway({ guildId, giveawayId });
       await this.client.giveawayManager.renderEnded(
-        {
-          guildId: giveaway.guild,
-          giveawayId,
-          channelId: giveaway.channelId,
-          messageId: giveaway.messageId,
-          prize: giveaway.prize
-        },
+        refFromDto(giveaway),
         data.winners,
         data.entryCount
       );
     } catch (error) {
-      // 409 means a manual /giveaway end or another cluster already drew it. Nothing to do.
+      // 409 means a manual /giveaway end already drew it. Nothing to do.
       const status = (error as { response?: { status?: number } })?.response?.status;
       if (status !== 409) this.client.logger.error(error, { label: 'GIVEAWAY' });
     }
@@ -86,19 +85,22 @@ export class GiveawayScheduler {
   private async _refresh() {
     if (this.client.inMaintenance) return;
 
+    const now = Date.now();
     const cursor = this.giveaways.find({
       status: 'active',
-      endsAt: { $lt: new Date(Date.now() + this.refreshRate) }
+      $or: [
+        { endsAt: { $lt: new Date(now + this.refreshRate) } },
+        { messageId: null, createdAt: { $lt: new Date(now - UNPOSTED_GRACE) } }
+      ]
     });
 
-    const now = Date.now();
     for await (const giveaway of cursor) {
-      if (!this.client.guilds.cache.has(giveaway.guild)) continue;
+      if (!this.owns(giveaway.guild)) continue;
+      if (!giveaway.messageId) this.client.giveawayManager.post(giveaway);
       if (this.queued.has(giveaway._id.toHexString())) continue;
-      if (this.client.settings.hasCustomBot(giveaway.guild) && !this.client.isCustom()) continue;
 
-      if (giveaway.endsAt.getTime() < now) this.trigger(giveaway);
-      else this.queue(giveaway);
+      if (giveaway.endsAt.getTime() < now) this.trigger(giveaway._id.toHexString(), giveaway.guild);
+      else if (giveaway.endsAt.getTime() < now + this.refreshRate) this.queue(giveaway);
     }
   }
 }
