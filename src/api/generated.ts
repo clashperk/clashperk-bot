@@ -1881,6 +1881,7 @@ export interface GiveawayDto {
   channelId: string;
   messageId: string | null;
   hostUserId: string;
+  hostName: string | null;
   prize: string;
   imageUrl: string | null;
   winnerCount: number;
@@ -1950,6 +1951,11 @@ export interface CreateGiveawayInput {
   channelId: string;
   hostUserId: string;
   /**
+   * The host's Discord name, shown on the dashboard.
+   * @maxLength 100
+   */
+  hostName?: string;
+  /**
    * @minLength 1
    * @maxLength 256
    */
@@ -1988,6 +1994,11 @@ export interface UpdateGiveawayInput {
 
 export interface EnterGiveawayInput {
   userId: string;
+  /**
+   * The user's Discord name, shown in the entrant list.
+   * @maxLength 100
+   */
+  displayName?: string;
 }
 
 export interface GiveawayEntryResultDto {

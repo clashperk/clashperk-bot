@@ -186,6 +186,7 @@ export default class GiveawayCreateCommand extends Command {
             {
               channelId: channel.id,
               hostUserId: interaction.user.id,
+              hostName: interaction.member.displayName,
               prize,
               winnerCount,
               endsAt: new Date(Date.now() + duration).toISOString(),

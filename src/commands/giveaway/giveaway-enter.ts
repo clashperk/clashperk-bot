@@ -19,7 +19,8 @@ export default class GiveawayEnterCommand extends Command {
     let result;
     try {
       ({ data: result } = await api.giveaways.enterGiveaway(params, {
-        userId: interaction.user.id
+        userId: interaction.user.id,
+        displayName: interaction.member.displayName
       }));
     } catch (error) {
       return interaction.editReply(giveawayErrorText(error, "I couldn't enter you. Try again."));
