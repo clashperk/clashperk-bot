@@ -60,6 +60,14 @@ class MongoDbClient extends MongoClient {
     return Promise.all([
       db.collection(Collections.BOT_GROWTH).createIndex({ key: 1 }, { unique: true }),
 
+      db
+        .collection(Collections.GIVEAWAYS)
+        .createIndexes([{ key: { status: 1, endsAt: 1 } }, { key: { guild: 1, status: 1 } }]),
+
+      db
+        .collection(Collections.GIVEAWAY_ENTRIES)
+        .createIndex({ giveawayId: 1, userId: 1 }, { unique: true }),
+
       db.collection(Collections.BOT_GUILDS).createIndexes([
         {
           key: { guild: 1 },

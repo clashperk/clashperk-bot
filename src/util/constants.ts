@@ -126,6 +126,9 @@ export const enum Collections {
   ROSTERS = 'Rosters',
   ROSTER_CATEGORIES = 'RosterCategories',
 
+  GIVEAWAYS = 'Giveaways',
+  GIVEAWAY_ENTRIES = 'GiveawayEntries',
+
   GOOGLE_SHEETS = 'GoogleSheets',
 
   CLAN_GAMES_POINTS = 'ClanGamesPoints',
@@ -153,6 +156,7 @@ export const enum Settings {
   COMMAND_WHITELIST = 'commandWhitelist',
   MANAGER_ROLE = 'managerRole',
   ROSTER_MANAGER_ROLE = 'rosterManagerRole',
+  GIVEAWAY_MANAGER_ROLE = 'giveawayManagerRole',
   FLAGS_MANAGER_ROLE = 'flagsManagerRole',
   LINKS_MANAGER_ROLE = 'linksManagerRole',
   CLAN_LIMIT = 'clanLimit',

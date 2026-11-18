@@ -23,6 +23,7 @@ import { EVAL_COMMAND } from './commands/eval_command.js';
 import { EVENTS_COMMAND } from './commands/events_command.js';
 import { EXPORT_COMMAND } from './commands/export_command.js';
 import { FLAG_COMMAND } from './commands/flag_command.js';
+import { GIVEAWAY_COMMAND } from './commands/giveaway_command.js';
 import { HELP_COMMAND } from './commands/help_command.js';
 import { HISTORY_COMMAND } from './commands/history_command.js';
 import { INVITE_COMMAND } from './commands/invite_command.js';
@@ -95,6 +96,7 @@ export const COMMANDS: RESTPostAPIApplicationCommandsJSONBody[] = [
   ALIAS_COMMAND,
   CATEGORY_COMMAND,
   ROSTER_COMMAND,
+  GIVEAWAY_COMMAND,
   AUTOROLE_COMMAND,
   REMINDERS_COMMAND,
 
