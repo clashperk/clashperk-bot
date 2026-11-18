@@ -56,11 +56,11 @@ export default class WarCommand extends Command {
       tag?: string;
       war_id?: number;
       user?: User;
-      attacks?: boolean;
-      open_bases?: boolean;
-      openBases?: boolean;
       export?: boolean;
       selected?: WarCommandOptionValues;
+      attacks?: boolean;
+      openBases?: boolean;
+      open_bases?: boolean;
     }
   ) {
     const clan = await this.client.resolver.resolveClan(interaction, args.tag ?? args.user?.id);
@@ -325,7 +325,8 @@ export default class WarCommand extends Command {
     const payload = {
       cmd: this.id,
       tag: body.clan.tag,
-      war_id: body.id
+      war_id: body.id,
+      selected
     };
 
     const customIds = {
@@ -371,18 +372,6 @@ export default class WarCommand extends Command {
         value: WarCommandOptions.OPEN_BASES,
         emoji: EMOJIS.EMPTY_STAR
       }
-      // {
-      // 	label: 'Lineup',
-      // 	description: 'View clan lineup.',
-      // 	value: WarCommandOptions.LINEUP,
-      // 	emoji: EMOJIS.TOWN_HALL
-      // },
-      // {
-      // 	label: 'Remaining',
-      // 	description: 'View remaining attacks.',
-      // 	value: WarCommandOptions.REMAINING,
-      // 	emoji: EMOJIS.EMPTY_STAR
-      // }
     ];
 
     if (selected && selected !== WarCommandOptions.OVERVIEW) {
@@ -568,11 +557,11 @@ export default class WarCommand extends Command {
           .map((member) => {
             return member
               .attacks!.map((atk, i) => {
-                const n = i === 0 ? member.mapPosition.toString() : ' ';
-                const th = i === 0 ? padStart(member.townhallLevel, 2) : ' ';
-                const name = i === 0 ? member.name : ' ';
+                const n = i === 0 ? member.mapPosition.toString() : '  ';
+                const th = i === 0 ? padStart(member.townhallLevel, 2) : '  ';
+                const name = i === 0 ? member.name : '';
 
-                return `\`\u200e${padStart(n, 3)} ${th} ${stars[atk.stars]} ${padStart(
+                return `\`\u200e${padStart(n, 2)} ${th} ${stars[atk.stars]} ${padStart(
                   atk.destructionPercentage,
                   3
                 )}% ${this.padEnd(`${name}`)}\``;

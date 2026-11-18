@@ -2,7 +2,6 @@ import { Settings } from '@app/constants';
 import { GiveawayMode } from '@app/entities';
 import {
   AttachmentBuilder,
-  AutocompleteInteraction,
   ChatInputCommandInteraction,
   GuildTextBasedChannel,
   MessageFlags
@@ -29,13 +28,6 @@ export default class GiveawayCreateCommand extends Command {
       roleKey: Settings.GIVEAWAY_MANAGER_ROLE,
       defer: true,
       ephemeral: true
-    });
-  }
-
-  public autocomplete(interaction: AutocompleteInteraction<'cached'>) {
-    return this.client.autocomplete.clanAutoComplete(interaction, {
-      isMulti: false,
-      withCategory: false
     });
   }
 

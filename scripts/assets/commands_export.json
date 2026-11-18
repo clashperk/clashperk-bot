@@ -1936,6 +1936,110 @@
     ]
   },
   {
+    "name": "giveaway cancel",
+    "description": "Cancel a giveaway without drawing.",
+    "description_long": null,
+    "options": [
+      {
+        "name": "giveaway",
+        "description": "The giveaway to act on.",
+        "type": "String",
+        "choices": []
+      }
+    ]
+  },
+  {
+    "name": "giveaway create",
+    "description": "Post a giveaway with an Enter button.",
+    "description_long": null,
+    "options": [
+      {
+        "name": "prize",
+        "description": "What members can win.",
+        "type": "String",
+        "choices": []
+      },
+      {
+        "name": "duration",
+        "description": "How long it runs, such as 24h, 3d or 1h30m.",
+        "type": "String",
+        "choices": []
+      },
+      {
+        "name": "winners",
+        "description": "How many winners to draw. Default 1.",
+        "type": "Integer",
+        "choices": []
+      },
+      {
+        "name": "channel",
+        "description": "Where to post it. Defaults to this channel.",
+        "type": "Channel",
+        "choices": []
+      },
+      {
+        "name": "mode",
+        "description": "Who can enter and how odds work. Default open.",
+        "type": "String",
+        "choices": [
+          "Open — everyone, equal odds",
+          "Boosted — clan members get better odds",
+          "Restricted — clan members only"
+        ]
+      },
+      {
+        "name": "clan",
+        "description": "For boosted or restricted: limit to one clan. Defaults to all server clans.",
+        "type": "String",
+        "choices": []
+      },
+      {
+        "name": "boost_factor",
+        "description": "For boosted mode: how many times the odds for clan members. Default 2.",
+        "type": "Integer",
+        "choices": []
+      },
+      {
+        "name": "image",
+        "description": "A banner image to show in the giveaway.",
+        "type": "Attachment",
+        "choices": []
+      }
+    ]
+  },
+  {
+    "name": "giveaway end",
+    "description": "Draw the winners now and end a giveaway.",
+    "description_long": null,
+    "options": [
+      {
+        "name": "giveaway",
+        "description": "The giveaway to act on.",
+        "type": "String",
+        "choices": []
+      }
+    ]
+  },
+  {
+    "name": "giveaway list",
+    "description": "List the active giveaways on this server.",
+    "description_long": null,
+    "options": []
+  },
+  {
+    "name": "giveaway reroll",
+    "description": "Draw a fresh set of winners for an ended giveaway.",
+    "description_long": null,
+    "options": [
+      {
+        "name": "giveaway",
+        "description": "The giveaway to act on.",
+        "type": "String",
+        "choices": []
+      }
+    ]
+  },
+  {
     "name": "help",
     "description": "Get a list of commands or info about a specific command.",
     "description_long": null,
