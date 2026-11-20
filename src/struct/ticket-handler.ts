@@ -26,6 +26,11 @@ const STAFF_ALLOW = {
 };
 const VIEWER_ALLOW = { ViewChannel: true, SendMessages: true, ReadMessageHistory: true };
 
+const CLOSE_ERROR_TEXT: Record<number, string> = {
+  404: 'That ticket no longer exists.',
+  409: 'This ticket is already closed.'
+};
+
 export class TicketHandler {
   // Open auto-sleep ticket channels in this cluster's guilds, so most messages skip Redis.
   private autoSleepChannels = new Set<string>();
@@ -157,10 +162,10 @@ export class TicketHandler {
         { headers: { 'x-user-id': closedBy } }
       );
     } catch (error) {
-      const message = (error as AxiosError<{ message?: string }>).response?.data?.message;
-      await reply(message ?? 'Could not close the ticket. Try again in a minute.').catch(
-        () => null
-      );
+      const status = (error as AxiosError).response?.status;
+      await reply(
+        CLOSE_ERROR_TEXT[status ?? 0] ?? 'Could not close the ticket. Try again in a minute.'
+      ).catch(() => null);
       return;
     }
     await this.clearAutoSleep(ticket.channelId);
