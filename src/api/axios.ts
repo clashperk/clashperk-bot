@@ -1,4 +1,4 @@
-import { captureException, setContext } from '@sentry/node';
+import { captureException } from '@sentry/node';
 import { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { Agent as HttpAgent } from 'http';
 import { Agent as HttpsAgent } from 'https';
@@ -10,15 +10,48 @@ import { Api, ErrorResponseDto, HttpClient } from './generated.js';
 /** Endpoints that answer with 404 as a normal "no data" result, not as a failure. */
 const EXPECTED_NOT_FOUND = [/^\/legends\/[^/]+\/estimate-rank$/];
 
+/** Codes that don't say what went wrong, so a 4xx with one of them may be a bug. */
+const GENERIC_ERROR_CODES = new Set<string>([
+  'BAD_REQUEST',
+  'UNAUTHORIZED',
+  'FORBIDDEN',
+  'NOT_FOUND',
+  'INTERNAL_SERVER_ERROR',
+  'SERVICE_UNAVAILABLE'
+]);
+
+type ApiErrorBody = Partial<ErrorResponseDto> & { cloudflare_error?: boolean };
+
 /** Only `error` goes to Sentry Issues. The caller sees the failure at every level. */
-const logLevelOf = (error: AxiosError<Partial<ErrorResponseDto>>) => {
+const logLevelOf = (error: AxiosError<ApiErrorBody>) => {
   const url = error.config?.url ?? '';
-  if (error.response?.status === 404 && EXPECTED_NOT_FOUND.some((pattern) => pattern.test(url))) {
+  const status = error.response?.status ?? 0;
+  const body = error.response?.data;
+  if (status === 404 && EXPECTED_NOT_FOUND.some((pattern) => pattern.test(url))) {
     return 'debug';
   }
-  // The API answers 503 only when the CoC API failed. A Cloudflare 503 has no JSON body.
-  if (error.response?.data?.statusCode === 503) return 'warn';
+  // A specific code (GIVEAWAY_NOT_IN_CLAN) is an outcome the caller turns into a reply.
+  if (status >= 400 && status < 500 && body?.code && !GENERIC_ERROR_CODES.has(body.code)) {
+    return 'debug';
+  }
+  // The API answers 503 only when the CoC API failed. A Cloudflare error page means the origin is down.
+  if (body?.statusCode === 503 || body?.cloudflare_error) return 'warn';
   return 'error';
+};
+
+/** Groups API errors by route and status: the stack has no app frames to tell them apart. */
+const fingerprintOf = (error: AxiosError) => {
+  const route = (error.config?.url ?? '')
+    .split('?')[0]
+    .replace(/\/%23[0-9A-Z]+/gi, '/:tag')
+    .replace(/\/\d{15,}/g, '/:id')
+    .replace(/\/[0-9a-f]{20,}/gi, '/:id');
+  return [
+    'api',
+    error.config?.method?.toUpperCase() ?? '',
+    route,
+    String(error.response?.status ?? error.code)
+  ];
 };
 
 // Cloudflare resets open connections when it moves them between data centers. Reads are safe to send
@@ -54,7 +87,7 @@ httpClient.instance.interceptors.request.use((config: RetryableConfig) => {
 
 httpClient.instance.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError<Partial<ErrorResponseDto>>) => {
+  async (error: AxiosError<ApiErrorBody>) => {
     const client = container.resolve(Client);
 
     const config = error.config as RetryableConfig | undefined;
@@ -85,17 +118,21 @@ httpClient.instance.interceptors.response.use(
     );
 
     if (level === 'error') {
-      setContext('http_call_errored', {
-        response: error.response?.data || {},
-        url: error.config?.url,
-        code: error.code,
-        message: error.message,
-        method: error.config?.method,
-        params: error.config?.params,
-        data: error.config?.data
+      // On the event only: setContext would stick to the shared scope and reach later events.
+      captureException(error, {
+        fingerprint: fingerprintOf(error),
+        contexts: {
+          http_call_errored: {
+            response: error.response?.data || {},
+            url: error.config?.url,
+            code: error.code,
+            message: error.message,
+            method: error.config?.method,
+            params: error.config?.params,
+            data: error.config?.data
+          }
+        }
       });
-
-      captureException(error);
     }
 
     // callers must see the failure; resolving here would hand them an undefined response

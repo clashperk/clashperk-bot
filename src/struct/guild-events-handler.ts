@@ -1,10 +1,12 @@
 import { Collections, FeatureFlags } from '@app/constants';
 import { addBreadcrumb, captureException } from '@sentry/node';
 import {
+  DiscordAPIError,
   Guild,
   GuildScheduledEventEntityType,
   GuildScheduledEventPrivacyLevel,
   PermissionFlagsBits,
+  RESTJSONErrorCodes,
   time
 } from 'discord.js';
 import moment from 'moment';
@@ -201,6 +203,8 @@ export class GuildEventsHandler {
   }
 
   public async create(guild: Guild, guildEvent: GuildEventData) {
+    // A timed-out bot keeps its role permissions but Discord rejects the request.
+    if (guild.members.me?.isCommunicationDisabled()) return null;
     if (
       !guild.members.me?.permissions.has([
         PermissionFlagsBits.ManageEvents,
@@ -259,6 +263,17 @@ export class GuildEventsHandler {
         try {
           await this.create(guild, guildEvent);
         } catch (error) {
+          // The cached permissions can be stale, so Discord's answer is the same skip as above.
+          if (
+            error instanceof DiscordAPIError &&
+            error.code === RESTJSONErrorCodes.MissingPermissions
+          ) {
+            this.client.logger.debug(`Missing Permissions in ${guild.id}`, {
+              label: 'GuildEventsHandler'
+            });
+            continue;
+          }
+
           if (error.message.includes('BINARY_TYPE_MAX_SIZE')) {
             await this.collection.updateOne(
               { guildId: guild.id },

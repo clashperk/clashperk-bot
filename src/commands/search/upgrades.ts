@@ -385,12 +385,11 @@ export default class UpgradesCommand extends Command {
       }
 
       if (unitsArray.length && category.key !== 'Barracks') {
-        embed.addFields([
-          {
-            name: '\u200b',
-            value: [...descriptionTexts].join('\n')
-          }
-        ]);
+        // A field value over 1024 characters fails the whole embed, so long lists span fields.
+        const values = Util.splitMessage(descriptionTexts.filter(Boolean).join('\n'), {
+          maxLength: 1024
+        });
+        embed.addFields(values.map((value) => ({ name: '\u200b', value })));
       }
     }
 
