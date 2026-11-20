@@ -167,10 +167,6 @@ export default class LegendStatsCommand extends Command {
     );
     container.addMediaGalleryComponents(media);
 
-    // container.addActionRowComponents((row) =>
-    //   row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setURL(webLink).setLabel('Open in Web'))
-    // );
-
     return interaction.editReply({
       withComponents: true,
       components: [container, row],

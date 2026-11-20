@@ -522,7 +522,7 @@ export default class LegendDaysCommand extends Command {
         const estimate = await api.legends.estimateLegendRank({ playerTag: encode(tag) });
         globalRank = estimate.data.rank;
       } catch {
-        // Silently ignore estimate errors
+        // The estimate is optional: without it the rank is left out.
       }
     }
 
@@ -590,22 +590,6 @@ export default class LegendDaysCommand extends Command {
           .join('\n')
       });
     }
-
-    // if (lastTournament.result) {
-    //   embed.addFields({
-    //     name: `Previous Week (${moment(lastTournament.startTime).format('D MMM')} - ${moment(lastTournament.endTime).format('D MMM')})`,
-    //     value: [
-    //       `- ${lastTournament.result.trophies} trophies gained`,
-    //       `- ${lastTournament.result.attacks}/${BattlesPerWeek[lastTournament.result.leagueId]} attacks`,
-    //       `- ${lastTournament.result.defenses}/${BattlesPerWeek[leagueId]} defenses`,
-    //       leagueId > lastTournament.result.leagueId
-    //         ? `- Promoted to **${formatLeague(player.leagueTier.name)} (${EMOJIS.UP_KEY} ${leagueId - lastTournament.result.leagueId})**`
-    //         : leagueId < lastTournament.result.leagueId
-    //           ? `- Demoted to **${formatLeague(player.leagueTier.name)} (${EMOJIS.DOWN_KEY} ${lastTournament.result.leagueId - leagueId})**`
-    //           : `- Stayed in **${formatLeague(player.leagueTier.name)}**`
-    //     ].join('\n')
-    //   });
-    // }
 
     if (Season.isTournamentReset) {
       const { startTime, endTime } = Util.getTournamentWindow();
