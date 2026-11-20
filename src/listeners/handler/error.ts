@@ -99,7 +99,7 @@ export default class ErrorListener extends Listener {
           new ButtonBuilder()
             .setStyle(ButtonStyle.Link)
             .setLabel(this.i18n('common.contact_support', { lng: interaction.locale }))
-            .setURL('https://discord.gg//ppuppun')
+            .setURL('https://discord.gg/ppuppun')
         )
       ],
       flags: MessageFlags.Ephemeral
