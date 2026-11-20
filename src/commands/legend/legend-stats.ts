@@ -16,7 +16,7 @@ import {
 import moment from 'moment';
 import { api } from '../../api/axios.js';
 import { Command } from '../../lib/handlers.js';
-import { createTrophyThresholdsGraph } from '../../struct/image-helper.js';
+import { createTripleRateCard, createTrophyThresholdsGraph } from '../../struct/image-helper.js';
 import { EMOJIS } from '../../util/emojis.js';
 import { padEnd, padStart } from '../../util/helper.js';
 import { Season } from '../../util/toolkit.js';
@@ -38,8 +38,10 @@ export default class LegendStatsCommand extends Command {
 
   public async exec(
     interaction: CommandInteraction<'cached'> | ButtonInteraction<'cached'>,
-    args: { is_eod?: boolean; ranks?: string[]; reference_date?: string }
+    args: { is_eod?: boolean; ranks?: string[]; reference_date?: string; view?: 'triples' }
   ) {
+    if (args.view === 'triples') return this.tripleRates(interaction);
+
     if (args.reference_date && !moment(args.reference_date).isValid()) {
       return interaction.followUp({
         content: 'Invalid reference date provided.',
@@ -77,7 +79,8 @@ export default class LegendStatsCommand extends Command {
     const customIds = {
       toggle: this.createId({ cmd: this.id, is_eod: !args.is_eod }),
       refresh: this.createId({ cmd: this.id, is_eod: args.is_eod }),
-      rank: this.createId({ cmd: this.id, array_key: 'ranks', is_eod: args.is_eod })
+      rank: this.createId({ cmd: this.id, array_key: 'ranks', is_eod: args.is_eod }),
+      triples: this.createId({ cmd: this.id, view: 'triples' })
     };
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -88,7 +91,11 @@ export default class LegendStatsCommand extends Command {
       new ButtonBuilder()
         .setLabel(!args.is_eod ? 'End of Day Ranks' : 'Live Ranks')
         .setStyle(ButtonStyle.Primary)
-        .setCustomId(customIds.toggle)
+        .setCustomId(customIds.toggle),
+      new ButtonBuilder()
+        .setLabel('3-Star Rate')
+        .setStyle(ButtonStyle.Secondary)
+        .setCustomId(customIds.triples)
     );
 
     if (!threshold.isLive && args.reference_date) {
@@ -168,6 +175,53 @@ export default class LegendStatsCommand extends Command {
       withComponents: true,
       components: [container, row],
       files: [rawFile]
+    });
+  }
+
+  private async tripleRates(
+    interaction: CommandInteraction<'cached'> | ButtonInteraction<'cached'>
+  ) {
+    const result = await api.legends.getLegendTripleRates({}).catch(() => null);
+    const days = result?.data.season.days ?? [];
+    if (!result || !days.length) {
+      return interaction.followUp({
+        content: 'No data available for this season yet.',
+        flags: MessageFlags.Ephemeral
+      });
+    }
+
+    const { attachmentKey, file, name } = await createTripleRateCard(result.data);
+    const container = new ContainerBuilder()
+      .setAccentColor(this.client.embed(interaction)!)
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          [
+            '## Legend League 3-Star Rate',
+            'The share of legend attacks that won 3 stars each day, across every legend player ClashPerk tracks.'
+          ].join('\n')
+        )
+      )
+      .addMediaGalleryComponents(
+        new MediaGalleryBuilder().addItems(
+          new MediaGalleryItemBuilder({ media: { url: attachmentKey } })
+        )
+      );
+
+    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+      new ButtonBuilder()
+        .setEmoji(EMOJIS.REFRESH)
+        .setStyle(ButtonStyle.Secondary)
+        .setCustomId(this.createId({ cmd: this.id, view: 'triples' })),
+      new ButtonBuilder()
+        .setLabel('Ranking Thresholds')
+        .setStyle(ButtonStyle.Primary)
+        .setCustomId(this.createId({ cmd: this.id }))
+    );
+
+    return interaction.editReply({
+      withComponents: true,
+      components: [container, row],
+      files: [new AttachmentBuilder(file, { name })]
     });
   }
 

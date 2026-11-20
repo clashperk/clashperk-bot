@@ -1198,6 +1198,30 @@ export interface LegendArmiesDto {
   army: LegendArmyDto | null;
 }
 
+export interface LegendTripleRateDayDto {
+  /**
+   * The game day, which starts at 05:00 UTC.
+   * @example "2026-11-19"
+   */
+  date: string;
+  attacks: number;
+  /** Attacks that won 3 stars. */
+  triples: number;
+  /** Players who attacked that day. */
+  players: number;
+}
+
+export interface LegendTripleRateSeasonDto {
+  seasonId: string;
+  /** Oldest first. Days without tracked attacks are left out. */
+  days: LegendTripleRateDayDto[];
+}
+
+export interface LegendTripleRatesDto {
+  season: LegendTripleRateSeasonDto;
+  lastSeason: LegendTripleRateSeasonDto;
+}
+
 export interface LegendSeasonDto {
   seasonId: string;
   /** Trophies when the season's first attack or defense was tracked. */
@@ -4167,6 +4191,19 @@ export type GetLegendRankingThresholdsData = LegendRankingThresholdsDto;
 
 export type GetLegendRankingThresholdsError = ErrorResponseDto;
 
+export interface GetLegendTripleRatesParams {
+  /**
+   * The league season's start date; the current season when left out.
+   * @pattern ^\d{4}-\d{2}-\d{2}$
+   * @example "2026-10-05"
+   */
+  seasonId?: string;
+}
+
+export type GetLegendTripleRatesData = LegendTripleRatesDto;
+
+export type GetLegendTripleRatesError = ErrorResponseDto;
+
 export interface GetLegendDaysParams {
   /**
    * The league season's start date; the current season when left out.
@@ -6197,6 +6234,31 @@ export namespace Legends {
     export type RequestBody = never;
     export type RequestHeaders = {};
     export type ResponseBody = GetLegendArmiesData;
+  }
+
+  /**
+   * @description Attacks and 3-star attacks on each game day of a season and the season before it, across every legend player ClashPerk tracks.
+   * @tags Legends
+   * @name GetLegendTripleRates
+   * @summary Get the daily Legend League 3-star rate
+   * @request GET:/legends/triple-rates
+   * @secure
+   * @response `200` `GetLegendTripleRatesData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetLegendTripleRates {
+    export type RequestParams = {};
+    export type RequestQuery = {
+      /**
+       * The league season's start date; the current season when left out.
+       * @pattern ^\d{4}-\d{2}-\d{2}$
+       * @example "2026-10-05"
+       */
+      seasonId?: string;
+    };
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetLegendTripleRatesData;
   }
 
   /**
@@ -10228,6 +10290,30 @@ export class Api<SecurityDataType extends unknown> {
     ) =>
       this.http.request<GetLegendArmiesData, GetLegendArmiesError>({
         path: `/legends/${playerTag}/armies`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Attacks and 3-star attacks on each game day of a season and the season before it, across every legend player ClashPerk tracks.
+     *
+     * @tags Legends
+     * @name GetLegendTripleRates
+     * @summary Get the daily Legend League 3-star rate
+     * @request GET:/legends/triple-rates
+     * @secure
+     * @response `200` `GetLegendTripleRatesData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getLegendTripleRates: (
+      query: GetLegendTripleRatesParams,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<GetLegendTripleRatesData, GetLegendTripleRatesError>({
+        path: `/legends/triple-rates`,
         method: "GET",
         query: query,
         secure: true,

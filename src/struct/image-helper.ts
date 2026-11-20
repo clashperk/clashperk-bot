@@ -1,7 +1,7 @@
 import { BattlesPerWeek, WAR_LEAGUE_MAP } from '@app/constants';
 import { APIPlayer } from 'clashofclans.js';
 import moment from 'moment';
-import { LegendArmiesDto } from '../api/generated.js';
+import { LegendArmiesDto, LegendTripleRatesDto } from '../api/generated.js';
 import { CWLRankCard } from '../helper/cwl.helper.js';
 import type { Tournament } from '../helper/legends.helper.js';
 import { Util } from '../util/toolkit.js';
@@ -246,5 +246,19 @@ export const createTrophyThresholdsGraph = async ({
     file: Buffer.from(arrayBuffer),
     name: 'legend-ranking-threshold.jpeg' as const,
     attachmentKey: 'attachment://legend-ranking-threshold.jpeg' as const
+  };
+};
+
+export const createTripleRateCard = async (data: LegendTripleRatesDto) => {
+  const arrayBuffer = await fetch(`${process.env.IMAGE_GEN_API_BASE_URL!}/legends/triple-rate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then((res) => res.arrayBuffer());
+
+  return {
+    file: Buffer.from(arrayBuffer),
+    name: 'legend-triple-rate.jpeg' as const,
+    attachmentKey: 'attachment://legend-triple-rate.jpeg' as const
   };
 };
