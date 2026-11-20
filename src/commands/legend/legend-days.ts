@@ -464,7 +464,8 @@ export default class LegendDaysCommand extends Command {
           loss,
           net: initial && final ? final - initial : gain + loss,
           final: final || '-',
-          initial: initial || '-'
+          initial: initial || '-',
+          hasChanges: changes.length > 0
         };
       });
 
@@ -491,11 +492,12 @@ export default class LegendDaysCommand extends Command {
             5
           );
           const atk = padStart(`+${day.gain}${ATTACK_COUNTS[Math.min(8, day.attackCount)]}`, 5);
-          const ng = padStart(`${day.net > 0 ? '+' : ''}${day.net}`, 4);
+          // A star marks a reset, penalty or other non-battle change folded into ATK or DEF.
+          const ng = `${padStart(`${day.net > 0 ? '+' : ''}${day.net}`, 4)}${day.hasChanges ? '*' : ' '}`;
           const final = padStart(day.final, 4);
           const init = padStart(day.initial, 5);
           const n = padStart(day.number, 2);
-          return `\`\u200e${n} \` \`${atk} \` \`${def} \` \`${ng} \` \`${init}\` \`${final}\``;
+          return `\`\u200e${n} \` \`${atk} \` \`${def} \` \`${ng}\` \`${init}\` \`${final}\``;
         })
       ].join('\n')
     ].join('\n');
