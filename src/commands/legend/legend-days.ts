@@ -253,7 +253,7 @@ export default class LegendDaysCommand extends Command {
     const currentTrophies = legendDay?.currentTrophies ?? data.trophies;
     const netTrophies = currentTrophies - initialTrophies;
 
-    const { globalRank, countryRank } = await this.rankings(data.tag);
+    const globalRank = await this.globalRank(data.tag);
 
     const weaponLevel = data.townHallWeaponLevel ? ATTACK_COUNTS[data.townHallWeaponLevel] : '';
     const embed = new EmbedBuilder()
@@ -285,18 +285,8 @@ export default class LegendDaysCommand extends Command {
       }
     ]);
 
-    if (globalRank || countryRank) {
-      embed.addFields({
-        name: '**Ranking**',
-        value: [
-          `- Global Rank: ${globalRank ?? 'N/A'}`,
-          `- Local Rank: ${
-            countryRank
-              ? `${countryRank.players.rank} (${countryRank.country} :flag_${countryRank.countryCode.toLowerCase()}:)`
-              : 'N/A'
-          }`
-        ].join('\n')
-      });
+    if (globalRank) {
+      embed.addFields({ name: '**Ranking**', value: `- Global Rank: ${globalRank}` });
     }
 
     await this.addClanField(embed, data);
@@ -403,7 +393,7 @@ export default class LegendDaysCommand extends Command {
   }
 
   private async cardStats(tag: string, legendDays: LegendDayDto[]): Promise<LegendCardStats> {
-    const [armies, { globalRank }] = await Promise.all([getLegendArmies(tag), this.rankings(tag)]);
+    const [armies, globalRank] = await Promise.all([getLegendArmies(tag), this.globalRank(tag)]);
 
     const byDate = new Map(legendDays.map((day) => [day.date, day]));
     const days = Util.getLegendDays().map(({ startTime }) => {
@@ -515,18 +505,17 @@ export default class LegendDaysCommand extends Command {
     return embed;
   }
 
-  private async rankings(tag: string) {
-    const ranks = await this.client.db
+  private async globalRank(tag: string) {
+    const [ranked] = await this.client.db
       .collection(Collections.PLAYER_RANKS)
-      .aggregate<{ country: string; countryCode: string; players: { rank: number } }>([
-        { $match: { season: Season.leagueId } },
+      .aggregate<{ players: { rank: number } }>([
+        { $match: { season: Season.leagueId, countryCode: 'global' } },
         { $unwind: { path: '$players' } },
         { $match: { 'players.tag': tag } }
       ])
       .toArray();
 
-    let globalRank =
-      ranks.find(({ countryCode }) => countryCode === 'global')?.players.rank ?? null;
+    let globalRank = ranked?.players.rank ?? null;
 
     if (!globalRank) {
       try {
@@ -537,10 +526,7 @@ export default class LegendDaysCommand extends Command {
       }
     }
 
-    return {
-      globalRank,
-      countryRank: ranks.find(({ countryCode }) => countryCode !== 'global') ?? null
-    };
+    return globalRank;
   }
 
   private async rankedBattles(
