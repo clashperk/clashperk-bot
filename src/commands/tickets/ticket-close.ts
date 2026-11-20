@@ -6,8 +6,7 @@ import {
   ButtonStyle,
   CommandInteraction,
   ComponentType,
-  EmbedBuilder,
-  TextChannel
+  EmbedBuilder
 } from 'discord.js';
 import { Args, Command } from '../../lib/handlers.js';
 
@@ -43,9 +42,7 @@ export default class TicketCloseCommand extends Command {
 
     const embed = new EmbedBuilder()
       .setTitle('Close Ticket?')
-      .setDescription(
-        'This will generate a transcript, post it to the log channel, and delete this channel.'
-      )
+      .setDescription('This will save a transcript to the log channel and delete this channel.')
       .setColor(0xeb3508);
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -81,11 +78,8 @@ export default class TicketCloseCommand extends Command {
     }
 
     await action.deferUpdate();
-    await this.client.tickets.closeTicket(
-      ticket,
-      interaction.channel as TextChannel,
-      interaction.user.id,
-      (content) => action.editReply({ content, embeds: [], components: [] })
+    await this.client.tickets.closeTicket(ticket, interaction.user.id, (content) =>
+      action.editReply({ content, embeds: [], components: [] })
     );
   }
 }
