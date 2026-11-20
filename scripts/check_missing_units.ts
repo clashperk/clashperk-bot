@@ -16,6 +16,7 @@ import {
   HOME_HEROES,
   HOME_TROOPS,
   SIEGE_MACHINES,
+  SQUADS,
   SUPER_TROOPS
 } from '../src/util/emojis.js';
 
@@ -49,6 +50,7 @@ const troopsMap = {
   HERO_EQUIPMENT,
   DARK_ELIXIR_TROOPS,
   SIEGE_MACHINES,
+  SQUADS,
   ELIXIR_SPELLS,
   DARK_SPELLS,
   SUPER_TROOPS,

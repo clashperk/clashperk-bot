@@ -171,8 +171,7 @@ export class ClanLog extends RootLog {
 
     if (member.op === LogActions.TOWN_HALL_UPGRADE) {
       if (cache.role) content = `<@&${cache.role}>`;
-      const { id } = parseEmoji(TOWN_HALLS[player.townHallLevel])!;
-      embed.setThumbnail(`https://cdn.discordapp.com/emojis/${id!}.png?v=1`);
+      this.setTownHallThumbnail(embed, player.townHallLevel);
       embed.setFooter({ text: `${data.clan.name}`, iconURL: data.clan.badge });
       embed.setDescription(
         `Town Hall was upgraded to ${player.townHallLevel} with ${this.remainingUpgrades(player)}% remaining troop upgrades.`
@@ -180,8 +179,7 @@ export class ClanLog extends RootLog {
     }
 
     if (member.op === LogActions.WAR_PREF_CHANGE && player.warPreference) {
-      const { id } = parseEmoji(TOWN_HALLS[player.townHallLevel])!;
-      embed.setThumbnail(`https://cdn.discordapp.com/emojis/${id!}.png?v=1`);
+      this.setTownHallThumbnail(embed, player.townHallLevel);
       embed.setFooter({ text: `${data.clan.name}`, iconURL: data.clan.badge });
       if (player.warPreference === 'in') {
         embed.setDescription(`**Opted in** for clan wars.`);
@@ -407,6 +405,14 @@ export class ClanLog extends RootLog {
       embeds: [embed],
       threadId: cache.threadId
     });
+  }
+
+  // A newly released Town Hall has no emoji until one is uploaded; skip the thumbnail rather than crash.
+  private setTownHallThumbnail(embed: EmbedBuilder, townHallLevel: number) {
+    const emoji = TOWN_HALLS[townHallLevel];
+    if (!emoji) return;
+    const { id } = parseEmoji(emoji)!;
+    embed.setThumbnail(`https://cdn.discordapp.com/emojis/${id!}.png?v=1`);
   }
 
   private formatHeroes(heroes: APIPlayerItem[]) {

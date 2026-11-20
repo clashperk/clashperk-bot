@@ -1,4 +1,4 @@
-import { ATTACK_COUNTS, LEGEND_LEAGUE_ID } from '@app/constants';
+import { ATTACK_COUNTS } from '@app/constants';
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -11,7 +11,7 @@ import {
 } from 'discord.js';
 import moment from 'moment';
 import {
-  getLegendBattleLogAggregate,
+  getClanDailyLegendBattles,
   getLegendTimestampAgainstDay
 } from '../../helper/legends.helper.js';
 import { Command } from '../../lib/handlers.js';
@@ -41,20 +41,10 @@ export default class LegendAttacksCommand extends Command {
     if (!resolved) return;
 
     const { clans, resolvedArgs } = resolved;
-    const legendMembers = clans
-      .flatMap((clan) => clan.memberList)
-      .filter(
-        (member) =>
-          member.trophies >= 5000 ||
-          (member.leagueTier && member.leagueTier.id === LEGEND_LEAGUE_ID)
-      );
-    const playerTags = legendMembers.map((member) => member.tag);
-
     const embed = await this.getAttackLog({
       clans,
       guild: interaction.guild,
-      leagueDay: args.day,
-      playerTags
+      leagueDay: args.day
     });
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -69,12 +59,10 @@ export default class LegendAttacksCommand extends Command {
   }
 
   private async getAttackLog({
-    playerTags,
     leagueDay,
     clans,
     guild
   }: {
-    playerTags: string[];
     leagueDay?: number;
     clans: { tag: string; name: string }[];
     guild: Guild;
@@ -82,28 +70,22 @@ export default class LegendAttacksCommand extends Command {
     const { startTime, day } = getLegendTimestampAgainstDay(leagueDay);
     const battleDate = new Date(startTime).toISOString().slice(0, 10);
 
-    const aggregateResults = await Promise.all(
-      playerTags.map((tag) => getLegendBattleLogAggregate(tag).catch(() => []))
+    const dailyItems = await Promise.all(
+      clans.map((clan) => getClanDailyLegendBattles(clan.tag, battleDate))
     );
-
-    const members = [];
-    for (let i = 0; i < playerTags.length; i++) {
-      const tag = playerTags[i];
-      const dayEntry = aggregateResults[i].find((e) => e.battleDate === battleDate);
-      if (!dayEntry) continue;
-
-      members.push({
-        name: dayEntry.name,
-        tag,
-        attackCount: dayEntry.attackCount,
-        defenseCount: dayEntry.defenseCount,
-        trophiesFromAttacks: dayEntry.offenseTrophies,
-        trophiesFromDefenses: dayEntry.defenseTrophies,
-        netTrophies: dayEntry.gain,
-        currentTrophies: dayEntry.trophies
-      });
-    }
-    members.sort((a, b) => b.currentTrophies - a.currentTrophies);
+    const members = dailyItems
+      .flat()
+      .map((entry) => ({
+        name: entry.name,
+        tag: entry.tag,
+        attackCount: entry.attackCount,
+        defenseCount: entry.defenseCount,
+        trophiesFromAttacks: entry.offenseTrophies,
+        trophiesFromDefenses: entry.defenseTrophies,
+        netTrophies: entry.gain,
+        currentTrophies: entry.trophies
+      }))
+      .sort((a, b) => b.currentTrophies - a.currentTrophies);
 
     const embed = new EmbedBuilder().setColor(this.client.embed(guild.id));
 

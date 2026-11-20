@@ -85,7 +85,9 @@
     "Electro Fangs",
     "Monolith Arrow",
     "Revenge Deck",
-    "Portal Pendant"
+    "Portal Pendant",
+    "Shield Brooch",
+    "Blizzard Axe"
   ],
   "DARK_ELIXIR_TROOPS": [
     "Minion",
@@ -113,6 +115,20 @@
     "Troop Launcher",
     "Sky Wagon"
   ],
+  "SQUADS": [
+    "Barch Squad",
+    "Giant Wizard Squad",
+    "Wall Breaker Squad",
+    "Minion Squad",
+    "Balloon Squad",
+    "Golem Witch Squad",
+    "Hog Rider Squad",
+    "Miner Squad",
+    "Healer Squad",
+    "P.E.K.K.A Titan Squad",
+    "Dragons Squad",
+    "Baby Dragon Squad"
+  ],
   "ELIXIR_SPELLS": [
     "Lightning Spell",
     "Healing Spell",
@@ -123,7 +139,8 @@
     "Invisibility Spell",
     "Recall Spell",
     "Revive Spell",
-    "Totem Spell"
+    "Totem Spell",
+    "Heroic Spell"
   ],
   "DARK_SPELLS": [
     "Poison Spell",
@@ -229,6 +246,18 @@
     "Battle Drill",
     "Troop Launcher",
     "Sky Wagon",
+    "Barch Squad",
+    "Giant Wizard Squad",
+    "Wall Breaker Squad",
+    "Minion Squad",
+    "Balloon Squad",
+    "Golem Witch Squad",
+    "Hog Rider Squad",
+    "Miner Squad",
+    "Healer Squad",
+    "P.E.K.K.A Titan Squad",
+    "Dragons Squad",
+    "Baby Dragon Squad",
     "Lightning Spell",
     "Healing Spell",
     "Rage Spell",
@@ -239,6 +268,7 @@
     "Recall Spell",
     "Revive Spell",
     "Totem Spell",
+    "Heroic Spell",
     "Poison Spell",
     "Earthquake Spell",
     "Haste Spell",
@@ -301,7 +331,9 @@
     "Electro Fangs",
     "Monolith Arrow",
     "Revenge Deck",
-    "Portal Pendant"
+    "Portal Pendant",
+    "Shield Brooch",
+    "Blizzard Axe"
   ],
   "BUILDER_TROOPS": [
     "Raged Barbarian",

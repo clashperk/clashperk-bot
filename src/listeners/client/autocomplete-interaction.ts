@@ -209,6 +209,9 @@ export default class AutocompleteInteractionListener extends Listener {
         }
         return this.rosterCategoryAutocomplete(interaction, focused);
       }
+      case 'giveaway': {
+        return this.client.autocomplete.handle(interaction);
+      }
       case 'timezone': {
         return this.timezoneAutocomplete(interaction, focused);
       }

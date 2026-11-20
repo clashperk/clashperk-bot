@@ -413,15 +413,17 @@ export class ClanGamesScheduler {
 
     const guild = this.client.guilds.cache.get(reminder.guild);
     if (!config.games || !guild) return { parse: ['users'] };
+    // Unset until /reminders config finishes building the list for the picked role.
+    const excluded = config.gamesExclusionUserIds ?? [];
 
     if (config.type === 'optIn') {
       return {
         parse: [],
-        users: userIds.filter((id) => config.gamesExclusionUserIds.includes(id))
+        users: userIds.filter((id) => excluded.includes(id))
       };
     }
 
-    return { parse: [], users: userIds.filter((id) => !config.gamesExclusionUserIds.includes(id)) };
+    return { parse: [], users: userIds.filter((id) => !excluded.includes(id)) };
   }
 
   private getExclusionConfig(guildId: string): ExclusionConfig {

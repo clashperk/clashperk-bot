@@ -27,6 +27,8 @@ import { CapitalRaidScheduler } from './capital-raid-scheduler.js';
 import { ChangeStreamHub } from './change-stream-hub.js';
 import { ClanGamesScheduler } from './clan-games-scheduler.js';
 import { ClanWarScheduler } from './clan-war-scheduler.js';
+import { GiveawayManager } from './giveaway-manager.js';
+import { GiveawayScheduler } from './giveaway-scheduler.js';
 import { ClashClient } from './clash-client.js';
 import { CommandsMap } from './commands-map.js';
 import { CustomBotManager } from './custom-bot-manager.js';
@@ -70,6 +72,8 @@ export class Client extends DiscordClient<true> {
   public clanWarScheduler!: ClanWarScheduler;
   public capitalRaidScheduler!: CapitalRaidScheduler;
   public clanGamesScheduler!: ClanGamesScheduler;
+  public giveawayScheduler!: GiveawayScheduler;
+  public giveawayManager!: GiveawayManager;
   public i18n = i18n;
   public guildEvents!: GuildEventsHandler;
   public inMaintenance = Boolean(false);
@@ -211,6 +215,7 @@ export class Client extends DiscordClient<true> {
     this.clanGamesScheduler.init();
     this.capitalRaidScheduler.init();
     this.clanWarScheduler.init();
+    this.giveawayScheduler.init();
     this.guildEvents.init();
     this.rosterManager.init();
   }
@@ -242,6 +247,8 @@ export class Client extends DiscordClient<true> {
     this.clanWarScheduler = new ClanWarScheduler(this);
     this.capitalRaidScheduler = new CapitalRaidScheduler(this);
     this.clanGamesScheduler = new ClanGamesScheduler(this);
+    this.giveawayManager = new GiveawayManager(this);
+    this.giveawayScheduler = new GiveawayScheduler(this);
     this.subscribers = new Subscribers(this);
     this.commands = new CommandsMap(this);
     this.guildEvents = new GuildEventsHandler(this);

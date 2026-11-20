@@ -20,6 +20,8 @@ import { RootLog } from './root-log.js';
 
 // Every cluster posts right after the legend reset, so each clan's fetches stay few at a time.
 const BATTLE_LOG_CONCURRENCY = 3;
+// Battles started before the reset end up to ~3.5 min after it and are stored a minute or two later.
+const DAY_SETTLE_MS = 10 * 60 * 1000;
 // The day's last battles can be ingested a little after the reset, so an empty day is final only after this.
 const EMPTY_DAY_SETTLE_MS = 60 * 60 * 1000;
 const NOTHING_TO_POST = Symbol('nothing-to-post');
@@ -47,9 +49,11 @@ export class LegendLog extends RootLog {
   public override async handleMessage(cache: Cache, webhook: WebhookClient, data: Feed) {
     if (cache.logType !== data.logType) return null;
 
+    const { startTime } = Util.getCurrentLegendTimestamp();
+    if (Date.now() - startTime < DAY_SETTLE_MS) return null;
+
     const embed = await this.embed(cache);
     if (embed === NOTHING_TO_POST) {
-      const { startTime } = Util.getCurrentLegendTimestamp();
       if (Date.now() - startTime < EMPTY_DAY_SETTLE_MS) return null;
       // Marked as posted so the refresh stops fetching this clan until the next day.
       await this.collection.updateOne({ _id: cache._id }, { $set: { lastPostedAt: new Date() } });

@@ -5,15 +5,14 @@ import {
   PermissionsString,
   User
 } from 'discord.js';
+import { MAX_BUILDER_HALL_LEVEL, MAX_TOWN_HALL_LEVEL } from 'clashofclans.js';
 import i18next from 'i18next';
 
 export const BOOST_DURATION = 3 * 24 * 60 * 60 * 1000;
 
 export const INACTIVE_GUILD_DURATION = 365 * 24 * 60 * 60 * 1000;
 
-export const MAX_TOWN_HALL_LEVEL = 18;
-
-export const MAX_BUILDER_HALL_LEVEL = 10;
+export { MAX_BUILDER_HALL_LEVEL, MAX_TOWN_HALL_LEVEL };
 
 export const MAX_CLAN_SIZE = 50;
 
@@ -127,6 +126,9 @@ export const enum Collections {
   ROSTERS = 'Rosters',
   ROSTER_CATEGORIES = 'RosterCategories',
 
+  GIVEAWAYS = 'Giveaways',
+  GIVEAWAY_ENTRIES = 'GiveawayEntries',
+
   GOOGLE_SHEETS = 'GoogleSheets',
 
   CLAN_GAMES_POINTS = 'ClanGamesPoints',
@@ -154,6 +156,7 @@ export const enum Settings {
   COMMAND_WHITELIST = 'commandWhitelist',
   MANAGER_ROLE = 'managerRole',
   ROSTER_MANAGER_ROLE = 'rosterManagerRole',
+  GIVEAWAY_MANAGER_ROLE = 'giveawayManagerRole',
   FLAGS_MANAGER_ROLE = 'flagsManagerRole',
   LINKS_MANAGER_ROLE = 'linksManagerRole',
   CLAN_LIMIT = 'clanLimit',
@@ -894,34 +897,35 @@ export const LeaguePromotionsMap = {
   '105000005': { promotion: 50, demotion: 5 },
   '105000006': { promotion: 50, demotion: 5 },
   '105000007': { promotion: 50, demotion: 5 },
-  '105000008': { promotion: 50, demotion: 5 },
-  '105000009': { promotion: 40, demotion: 5 },
+  '105000008': { promotion: 40, demotion: 10 },
+  '105000009': { promotion: 40, demotion: 10 },
   '105000010': { promotion: 35, demotion: 10 },
-  '105000011': { promotion: 50, demotion: 10 },
-  '105000012': { promotion: 40, demotion: 10 },
-  '105000013': { promotion: 35, demotion: 10 },
-  '105000014': { promotion: 50, demotion: 10 },
-  '105000015': { promotion: 40, demotion: 10 },
-  '105000016': { promotion: 35, demotion: 10 },
-  '105000017': { promotion: 50, demotion: 10 },
-  '105000018': { promotion: 40, demotion: 10 },
-  '105000019': { promotion: 35, demotion: 10 },
-  '105000020': { promotion: 50, demotion: 10 },
-  '105000021': { promotion: 40, demotion: 10 },
-  '105000022': { promotion: 30, demotion: 15 },
-  '105000023': { promotion: 50, demotion: 15 },
-  '105000024': { promotion: 40, demotion: 15 },
-  '105000025': { promotion: 30, demotion: 15 },
-  '105000026': { promotion: 50, demotion: 15 },
-  '105000027': { promotion: 40, demotion: 15 },
-  '105000028': { promotion: 30, demotion: 15 },
-  '105000029': { promotion: 25, demotion: 15 },
-  '105000030': { promotion: 25, demotion: 15 },
-  '105000031': { promotion: 20, demotion: 15 },
-  '105000032': { promotion: 20, demotion: 15 },
+  '105000011': { promotion: 40, demotion: 15 },
+  '105000012': { promotion: 35, demotion: 15 },
+  '105000013': { promotion: 30, demotion: 15 },
+  '105000014': { promotion: 40, demotion: 15 },
+  '105000015': { promotion: 35, demotion: 15 },
+  '105000016': { promotion: 30, demotion: 15 },
+  '105000017': { promotion: 40, demotion: 15 },
+  '105000018': { promotion: 35, demotion: 15 },
+  '105000019': { promotion: 30, demotion: 15 },
+  '105000020': { promotion: 35, demotion: 20 },
+  '105000021': { promotion: 30, demotion: 20 },
+  '105000022': { promotion: 30, demotion: 20 },
+  '105000023': { promotion: 35, demotion: 20 },
+  '105000024': { promotion: 30, demotion: 20 },
+  '105000025': { promotion: 25, demotion: 20 },
+  '105000026': { promotion: 35, demotion: 20 },
+  '105000027': { promotion: 30, demotion: 20 },
+  '105000028': { promotion: 25, demotion: 20 },
+  '105000029': { promotion: 20, demotion: 20 },
+  '105000030': { promotion: 20, demotion: 20 },
+  '105000031': { promotion: 20, demotion: 20 },
+  '105000032': { promotion: 20, demotion: 20 },
   '105000033': { promotion: 15, demotion: 15 },
   '105000034': { promotion: 5, demotion: 15 },
-  '105000035': { promotion: 3, demotion: 15 }
+  '105000035': { promotion: 3, demotion: 15 },
+  '105000036': { promotion: 0, demotion: 0 }
 };
 
 export const ASK_AGENT_INSTRUCTIONS = `

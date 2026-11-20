@@ -163,11 +163,16 @@ export default class ClanEmbedCommand extends Command {
         .setLabel('Resend')
         .setStyle(ButtonStyle.Secondary)
         .setCustomId(customIds.resend);
-      const linkButton = new ButtonBuilder().setLabel('Jump').setStyle(ButtonStyle.Link);
+      buttonRow.addComponents(resendButton);
+      // A link button without a URL fails the whole reply.
       if (existing.messageId) {
-        linkButton.setURL(messageLink(existing.channelId, existing.messageId, existing.guildId));
+        buttonRow.addComponents(
+          new ButtonBuilder()
+            .setLabel('Jump')
+            .setStyle(ButtonStyle.Link)
+            .setURL(messageLink(existing.channelId, existing.messageId, existing.guildId))
+        );
       }
-      buttonRow.addComponents(resendButton, linkButton);
     }
 
     const message = await interaction.editReply({

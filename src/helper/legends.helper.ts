@@ -2,7 +2,7 @@ import { APIPlayer } from 'clashofclans.js';
 import moment from 'moment';
 import { container } from 'tsyringe';
 import { api, encode } from '../api/axios.js';
-import { BattleLogDailyDto, BattleLogDto, LegendDayDto } from '../api/generated.js';
+import { BattleLogDto, LegendDayDto } from '../api/generated.js';
 import { Client } from '../struct/client.js';
 import { Collections, LeaguePromotionsMap } from '../util/constants.js';
 import { Season, Util } from '../util/toolkit.js';
@@ -53,8 +53,11 @@ export const getLegendBattleLog = async (playerTag: string): Promise<BattleLogDt
     }));
 };
 
-export const getLegendDays = async (playerTag: string): Promise<LegendDayDto[]> => {
-  const result = await api.legends.getLegendDays({ playerTag: encode(playerTag) });
+export const getLegendDays = async (
+  playerTag: string,
+  seasonId?: string
+): Promise<LegendDayDto[]> => {
+  const result = await api.legends.getLegendDays({ playerTag: encode(playerTag), seasonId });
   return result.data.items;
 };
 
@@ -175,60 +178,40 @@ export const getTournament = async (
 
 export type Tournament = NonNullable<Awaited<ReturnType<typeof getTournament>>>;
 
-export const getLegendBattleLogAggregate = async (
-  playerTag: string
-): Promise<BattleLogDailyDto[]> => {
-  const result = await api.players
-    .getPlayerDailyBattles({ playerTag: encode(playerTag) })
+/** Empty when the API can't say, so a clan that fails doesn't hide the others. */
+export const getClanDailyLegendBattles = async (clanTag: string, battleDate: string) => {
+  const result = await api.clans
+    .getClanDailyLegendBattles({ clanTag: encode(clanTag), battleDate })
     .catch(() => null);
-  if (!result?.data?.items) return [];
-  return result.data.items;
+  return result?.data.items ?? [];
 };
 
-export const aggregateLegendBattleLog = (dailyItems: BattleLogDailyDto[]) => {
-  const seasons = Season.getLeagueSeasons(3).reverse();
-  const [prevPrev, prevSeason, currentSeason] = seasons;
-
-  const seasonStart = new Date(prevSeason.endTime);
-  const seasonEnd = new Date(currentSeason.endTime);
-  const lastSeasonEnd = new Date(prevSeason.endTime);
-
-  const groupBySeason = (startMs: number, endMs: number) =>
-    dailyItems.filter((item) => {
-      const t = moment(item.battleDate).add(6, 'hours').toDate().getTime();
-      return t >= startMs && t < endMs;
-    });
-
-  const buildSeasonEntry = (seasonId: string, startDate: Date, endDate: Date) => {
-    const items = groupBySeason(startDate.getTime(), endDate.getTime());
-    const logs = items.map((item) => ({
-      timestamp: new Date(item.battleDate),
-      trophies: Number(item.trophies) as number | null
-    }));
-    const avgGain = items.length ? items.reduce((s, i) => s + Number(i.gain), 0) / items.length : 0;
-    const avgOffense = items.length
-      ? items.reduce((s, i) => s + Number(i.offenseTrophies), 0) / items.length
-      : 0;
-    const avgDefense = items.length
-      ? items.reduce((s, i) => s + Number(i.defenseTrophies), 0) / items.length
-      : 0;
-    return { _id: seasonId, logs, avgGain, avgOffense, avgDefense };
+const summarizeLegendSeason = (seasonId: string, days: LegendDayDto[]) => {
+  const mean = (pick: (day: LegendDayDto) => number) =>
+    days.length ? days.reduce((sum, day) => sum + pick(day), 0) / days.length : 0;
+  return {
+    _id: seasonId,
+    logs: days.map((day) => ({ timestamp: new Date(day.date), trophies: day.currentTrophies })),
+    avgGain: mean((day) => day.attackTrophies + day.defenseTrophies),
+    avgOffense: mean((day) => day.attackTrophies),
+    avgDefense: mean((day) => day.defenseTrophies)
   };
+};
 
-  const currentEntry = buildSeasonEntry(
-    currentSeason.id,
-    new Date(prevSeason.endTime),
-    new Date(currentSeason.endTime)
-  );
-  const prevEntry = buildSeasonEntry(
-    prevSeason.id,
-    new Date(prevPrev.endTime),
-    new Date(prevSeason.endTime)
-  );
+/** The current and last league seasons for the legend graph, each left out when it has no days. */
+export const summarizeLegendSeasons = (currentDays: LegendDayDto[], lastDays: LegendDayDto[]) => {
+  const [currentSeason, lastSeason] = Season.getLeagueSeasons(2);
+  const items = [
+    summarizeLegendSeason(currentSeason.id, currentDays),
+    summarizeLegendSeason(lastSeason.id, lastDays)
+  ].filter((season) => season.logs.length > 0);
 
-  const items = [currentEntry, prevEntry].filter((s) => s.logs.length > 0);
-
-  return { items, seasonStart, seasonEnd, lastSeasonEnd };
+  return {
+    items,
+    seasonStart: new Date(lastSeason.endTime),
+    seasonEnd: new Date(currentSeason.endTime),
+    lastSeasonEnd: new Date(lastSeason.endTime)
+  };
 };
 
 export const calculateTrophies = (

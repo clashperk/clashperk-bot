@@ -87,7 +87,9 @@ export const HERO_EQUIPMENT: Record<string, string> = {
   'Electro Fangs': '<:ElectroFangs:1498392822158721214>',
   'Monolith Arrow': '<:monolith_arrow:1546061610651615233>',
   'Revenge Deck': '<:revenge_deck:1546061642830319756>',
-  'Portal Pendant': '<:portal_pendant:1558735000654970950>'
+  'Portal Pendant': '<:portal_pendant:1558735000654970950>',
+  'Shield Brooch': '<:shield_brooch:1571901969243570287>',
+  'Blizzard Axe': '<a:blizzard_axe:1571901980711059586>'
 };
 
 export const DARK_ELIXIR_TROOPS: Record<string, string> = {
@@ -118,6 +120,21 @@ export const SIEGE_MACHINES: Record<string, string> = {
   'Sky Wagon': '<:SkyWagon:1498392948340162623>'
 };
 
+export const SQUADS: Record<string, string> = {
+  'Barch Squad': '<a:barch_squad:1571901809101111417>',
+  'Giant Wizard Squad': '<a:giant_wizard_squad:1571901821335904418>',
+  'Wall Breaker Squad': '<a:wall_breaker_squad:1571901833834790982>',
+  'Minion Squad': '<a:minion_squad:1571901848221388914>',
+  'Balloon Squad': '<a:balloon_squad:1571901860804034621>',
+  'Golem Witch Squad': '<a:golem_witch_squad:1571901872581775411>',
+  'Hog Rider Squad': '<a:hog_rider_squad:1571901884044677274>',
+  'Miner Squad': '<a:miner_squad:1571901896052969555>',
+  'Healer Squad': '<a:healer_squad:1571901908635881552>',
+  'P.E.K.K.A Titan Squad': '<a:pekka_titan_squad:1571901920145051661>',
+  'Dragons Squad': '<a:dragons_squad:1571901932665176115>',
+  'Baby Dragon Squad': '<a:baby_dragon_squad:1571901944744911019>'
+};
+
 export const ELIXIR_SPELLS: Record<string, string> = {
   'Lightning Spell': '<:Lightning:785740412010364958>',
   'Healing Spell': '<:Healing:696302035913670737>',
@@ -128,7 +145,8 @@ export const ELIXIR_SPELLS: Record<string, string> = {
   'Invisibility Spell': '<:Invisible:787186410032463882>',
   'Recall Spell': '<:Recall:1029115194552623227>',
   'Revive Spell': '<:Revive:1310678415707475999>',
-  'Totem Spell': '<:Totem:1440588711493369866>'
+  'Totem Spell': '<:Totem:1440588711493369866>',
+  'Heroic Spell': '<:heroic_spell:1571901957264904193>'
 };
 
 export const DARK_SPELLS: Record<string, string> = {
@@ -192,6 +210,7 @@ export const HOME_TROOPS: Record<string, string> = {
   ...ELIXIR_TROOPS,
   ...DARK_ELIXIR_TROOPS,
   ...SIEGE_MACHINES,
+  ...SQUADS,
   ...ELIXIR_SPELLS,
   ...DARK_SPELLS,
   ...HERO_PETS,
@@ -227,7 +246,8 @@ export const TOWN_HALLS: Record<string, string> = {
   15: '<:TownHall15:1029109199105425530>',
   16: '<:TownHall16:1184211259130925166>',
   17: '<:TownHall17:1310678877194158132>',
-  18: '<:TownHall18:1439918692988358656>'
+  18: '<:TownHall18:1439918692988358656>',
+  19: '<a:TownHall19:1571901731682394162>'
 };
 
 export const BUILDER_HALLS: Record<string, string> = {
@@ -280,48 +300,6 @@ export const HOME_BASE_LEAGUES: Record<string, string> = {
   105000034: '<:Legend3:1502756189954506886>',
   105000035: '<:Legend2:1502756123974045867>',
   105000036: '<:Legend1:1502756072803401968>'
-};
-
-export const PLAYER_LEAGUE_TIERS: Record<string, string> = {
-  'Unranked': '<:Unranked:1424720675003830423>',
-  'Skeleton League 1': '<:SkeletonLeague1:1424720650332934224>',
-  'Skeleton League 2': '<:SkeletonLeague2:1424720655982788689>',
-  'Skeleton League 3': '<:SkeletonLeague3:1424720659640094722>',
-  'Barbarian League 4': '<:BarbarianLeague4:1424720571090079819>',
-  'Barbarian League 5': '<:BarbarianLeague5:1424720576466915369>',
-  'Barbarian League 6': '<:BarbarianLeague6:1424720580304834641>',
-  'Archer League 7': '<:ArcherLeague7:1424720558930792471>',
-  'Archer League 8': '<:ArcherLeague8:1424720563317899274>',
-  'Archer League 9': '<:ArcherLeague9:1424720566501511250>',
-  'Wizard League 10': '<:WizardLeague10:1424720705148293180>',
-  'Wizard League 11': '<:WizardLeague11:1424720709803839561>',
-  'Wizard League 12': '<:WizardLeague12:1424720713440559185>',
-  'Valkyrie League 13': '<:ValkyrieLeague13:1424720679554650233>',
-  'Valkyrie League 14': '<:ValkyrieLeague14:1424720684025643059>',
-  'Valkyrie League 15': '<:ValkyrieLeague15:1424720688543170731>',
-  'Witch League 16': '<:WitchLeague16:1424720691412074579>',
-  'Witch League 17': '<:WitchLeague17:1424720695690264667>',
-  'Witch League 18': '<:WitchLeague18:1424720701247455245>',
-  'Golem League 19': '<:GolemLeague19:1424720615063158865>',
-  'Golem League 20': '<:GolemLeague20:1424720619815174307>',
-  'Golem League 21': '<:GolemLeague21:1424720623145582663>',
-  'P.E.K.K.A League 22': '<:PEKKALeague22:1424720636273754122>',
-  'P.E.K.K.A League 23': '<:PEKKALeague23:1424720641830948874>',
-  'P.E.K.K.A League 24': '<:PEKKALeague24:1424720647015235645>',
-  'Titan League 25': '<:TitanLeague25:1424720663083487343>',
-  'Titan League 26': '<:TitanLeague26:1424720667290632203>',
-  'Titan League 27': '<:TitanLeague27:1424720670595485770>',
-  'Dragon League 28': '<:DragonLeague28:1424720585086337125>',
-  'Dragon League 29': '<:DragonLeague29:1424720590140342322>',
-  'Dragon League 30': '<:DragonLeague30:1424720594854875196>',
-  'Electro League 31': '<:ElectroLeague31:1424720598172569693>',
-  'Electro League 32': '<:ElectroLeague32:1424720603721502762>',
-  'Electro League 33': '<:ElectroLeague33:1424720610793361598>',
-
-  'Legend League': '<:LegendLeague:1424720630183497832>',
-  'Legend III': '<:Legend3:1502756189954506886>',
-  'Legend II': '<:Legend2:1502756123974045867>',
-  'Legend I': '<:Legend1:1502756072803401968>'
 };
 
 export const CAPITAL_LEAGUES: Record<string, string> = {

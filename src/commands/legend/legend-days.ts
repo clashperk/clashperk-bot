@@ -24,13 +24,12 @@ import moment from 'moment';
 import ms from 'ms';
 import pluralize from 'pluralize';
 import { api, encode } from '../../api/axios.js';
-import { LegendDayDto } from '../../api/generated.js';
+import { LegendDayChangeDto, LegendDayChangeType, LegendDayDto } from '../../api/generated.js';
 import {
-  aggregateLegendBattleLog,
-  getLegendBattleLogAggregate,
   getLegendArmies,
   getRankedArmies,
   getLegendDays,
+  summarizeLegendSeasons,
   getLegendTimestampAgainstDay,
   getRankedBattleLog,
   getTournament,
@@ -42,7 +41,7 @@ import {
   createRankedGraph,
   LegendCardStats
 } from '../../struct/image-helper.js';
-import { EMOJIS, HOME_BASE_LEAGUES, PLAYER_LEAGUE_TIERS, TOWN_HALLS } from '../../util/emojis.js';
+import { EMOJIS, HOME_BASE_LEAGUES, TOWN_HALLS } from '../../util/emojis.js';
 import {
   dashboardLink,
   dashboardUrl,
@@ -55,6 +54,15 @@ import { Season, Util } from '../../util/toolkit.js';
 
 const MIN_LAST_SEASON_DAYS = 7;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const CHANGE_LABELS: Record<LegendDayChangeType, string> = {
+  [LegendDayChangeType.Reset]: 'Reset to 5000',
+  [LegendDayChangeType.MissedDefenses]: 'Missed defenses',
+  [LegendDayChangeType.Untracked]: 'Untracked changes'
+};
+
+const signed = (value: number) => `${value > 0 ? '+' : ''}${value}`;
+const describeChange = (change: LegendDayChangeDto) =>
+  `${CHANGE_LABELS[change.type]} (${signed(change.trophies)} trophies)`;
 
 export default class LegendDaysCommand extends Command {
   public constructor() {
@@ -178,7 +186,7 @@ export default class LegendDaysCommand extends Command {
         description: `${EMOJIS.TROPHY_UNICODE} ${op.trophies}`,
         value: op.tag,
         default: op.tag === data.tag,
-        emoji: PLAYER_LEAGUE_TIERS[PLAYER_LEAGUE_MAP[op.leagueTier?.id ?? UNRANKED_TIER_ID]]
+        emoji: HOME_BASE_LEAGUES[op.leagueTier?.id ?? UNRANKED_TIER_ID]
       }));
 
     if (!(options.length > 1)) return;
@@ -234,7 +242,6 @@ export default class LegendDaysCommand extends Command {
 
     const trophiesFromAttacks = legendDay?.attackTrophies ?? 0;
     const trophiesFromDefenses = legendDay?.defenseTrophies ?? 0;
-    const netTrophies = trophiesFromAttacks + trophiesFromDefenses;
 
     let streak = 0;
     for (const b of [...attacks].reverse()) {
@@ -244,6 +251,7 @@ export default class LegendDaysCommand extends Command {
 
     const initialTrophies = legendDay?.initialTrophies ?? data.trophies;
     const currentTrophies = legendDay?.currentTrophies ?? data.trophies;
+    const netTrophies = currentTrophies - initialTrophies;
 
     const { globalRank, countryRank } = await this.rankings(data.tag);
 
@@ -266,13 +274,11 @@ export default class LegendDaysCommand extends Command {
       {
         name: '**Overview**',
         value: [
-          ...(legendDay?.reset
-            ? [`- Reset to ${legendDay.reset.to} (from ${legendDay.reset.from})`]
-            : []),
           `- Initial Trophies: ${initialTrophies}`,
           `- Current Trophies: ${currentTrophies}`,
           `- ${attacks.length} attack${attacks.length === 1 ? '' : 's'} (+${trophiesFromAttacks} trophies)`,
           `- ${defenses.length} defense${defenses.length === 1 ? '' : 's'} (${trophiesFromDefenses} trophies)`,
+          ...(legendDay?.changes ?? []).map((change) => `- ${describeChange(change)}`),
           `- ${Math.abs(netTrophies)} trophies ${netTrophies >= 0 ? 'gained' : 'lost'}`,
           `- Streak: ${streak}`
         ].join('\n')
@@ -330,15 +336,13 @@ export default class LegendDaysCommand extends Command {
   }
 
   private async graph(data: APIPlayer, legendDays: LegendDayDto[]) {
-    const dailyItems = await getLegendBattleLogAggregate(data.tag);
-    if (!dailyItems.length) return null;
-
+    const lastDays = await getLegendDays(data.tag, Season.getLastLeagueSeason().id).catch(() => []);
     const {
       items: result,
       seasonStart,
       seasonEnd,
       lastSeasonEnd
-    } = aggregateLegendBattleLog(dailyItems);
+    } = summarizeLegendSeasons(legendDays, lastDays);
     if (!result.length) return null;
 
     const season = result.at(0)!;
@@ -427,25 +431,42 @@ export default class LegendDaysCommand extends Command {
   private async logs(data: APIPlayer, legendDays: LegendDayDto[]) {
     const days = Util.getLegendDays();
 
-    const perDayLogs = days.map(({ startTime }) => {
-      const battleDate = new Date(startTime).toISOString().slice(0, 10);
-      const legendDay = legendDays.find((d) => d.date === battleDate);
+    const dayLogs = days.map(({ startTime }, i) => ({
+      number: i + 1,
+      legendDay: legendDays.find((d) => d.date === new Date(startTime).toISOString().slice(0, 10))
+    }));
+    // Days before the player was tracked are left out, and a quiet day keeps the last trophies.
+    let lastTrophies: number | null = null;
+    const perDayLogs = dayLogs
+      .slice(
+        Math.max(
+          0,
+          dayLogs.findIndex(({ legendDay }) => legendDay)
+        )
+      )
+      .map(({ number, legendDay }) => {
+        const changes = legendDay?.changes ?? [];
+        const sumOf = (sign: number) =>
+          changes.reduce((sum, c) => (Math.sign(c.trophies) === sign ? sum + c.trophies : sum), 0);
+        // The table has no column for changes battles don't explain, so each counts in ATK or DEF
+        // by its sign and the row adds up.
+        const gain = (legendDay?.attackTrophies ?? 0) + sumOf(1);
+        const loss = (legendDay?.defenseTrophies ?? 0) + sumOf(-1);
+        const initial = legendDay?.initialTrophies ?? lastTrophies;
+        const final = legendDay?.currentTrophies ?? lastTrophies;
+        lastTrophies = final;
 
-      const gain = legendDay?.attackTrophies ?? 0;
-      const loss = legendDay?.defenseTrophies ?? 0;
-      const initial = legendDay?.initialTrophies;
-      const final = legendDay?.currentTrophies;
-
-      return {
-        attackCount: legendDay?.attackCount ?? 0,
-        defenseCount: legendDay?.defenseCount ?? 0,
-        gain,
-        loss,
-        net: initial && final ? final - initial : gain + loss,
-        final: final || '-',
-        initial: initial || '-'
-      };
-    });
+        return {
+          number,
+          attackCount: legendDay?.attackCount ?? 0,
+          defenseCount: legendDay?.defenseCount ?? 0,
+          gain,
+          loss,
+          net: initial && final ? final - initial : gain + loss,
+          final: final || '-',
+          initial: initial || '-'
+        };
+      });
 
     const totalAttacks = perDayLogs.reduce((acc, cur) => acc + cur.attackCount, 0);
     const weaponLevel = data.townHallWeaponLevel ? ATTACK_COUNTS[data.townHallWeaponLevel] : '';
@@ -464,7 +485,7 @@ export default class LegendDaysCommand extends Command {
       '',
       [
         '`DAY` `  ATK ` `  DEF ` ` +/- ` `START` ` END`',
-        ...perDayLogs.map((day, i) => {
+        ...perDayLogs.map((day) => {
           const def = padStart(
             `-${Math.abs(day.loss)}${ATTACK_COUNTS[Math.min(8, day.defenseCount)]}`,
             5
@@ -473,7 +494,7 @@ export default class LegendDaysCommand extends Command {
           const ng = padStart(`${day.net > 0 ? '+' : ''}${day.net}`, 4);
           const final = padStart(day.final, 4);
           const init = padStart(day.initial, 5);
-          const n = padStart(i + 1, 2);
+          const n = padStart(day.number, 2);
           return `\`\u200e${n} \` \`${atk} \` \`${def} \` \`${ng} \` \`${init}\` \`${final}\``;
         })
       ].join('\n')

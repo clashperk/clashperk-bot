@@ -127,6 +127,7 @@
         "description": "The season to show attacks for.",
         "type": "String",
         "choices": [
+          "2 Nov – 30 Nov 2026",
           "5 Oct – 2 Nov 2026",
           "7 Sep – 5 Oct 2026",
           "10 Aug – 7 Sep 2026",
@@ -143,8 +144,7 @@
           "6 Oct – 3 Nov 2025",
           "25 Aug – 6 Oct 2025",
           "28 Jul – 25 Aug 2025",
-          "30 Jun – 28 Jul 2025",
-          "26 May – 30 Jun 2025"
+          "30 Jun – 28 Jul 2025"
         ]
       }
     ]
@@ -809,6 +809,12 @@
         "choices": []
       },
       {
+        "name": "th_19",
+        "description": "Town Hall 19 role.",
+        "type": "Role",
+        "choices": []
+      },
+      {
         "name": "allow_non_family_accounts",
         "description": "Whether to give roles to the members that are not in the family clans.",
         "type": "String",
@@ -930,12 +936,12 @@
         "description": "The week to show contributions for.",
         "type": "String",
         "choices": [
+          "13 Nov, 2026",
+          "06 Nov, 2026",
+          "30 Oct, 2026",
+          "23 Oct, 2026",
           "16 Oct, 2026",
-          "09 Oct, 2026",
-          "02 Oct, 2026",
-          "25 Sep, 2026",
-          "18 Sep, 2026",
-          "11 Sep, 2026"
+          "09 Oct, 2026"
         ]
       }
     ]
@@ -962,12 +968,12 @@
         "description": "Retrieve data for the specified raid weekend.",
         "type": "String",
         "choices": [
+          "13 Nov, 2026",
+          "06 Nov, 2026",
+          "30 Oct, 2026",
+          "23 Oct, 2026",
           "16 Oct, 2026",
-          "09 Oct, 2026",
-          "02 Oct, 2026",
-          "25 Sep, 2026",
-          "18 Sep, 2026",
-          "11 Sep, 2026"
+          "09 Oct, 2026"
         ]
       }
     ]
@@ -1070,6 +1076,7 @@
         "description": "The season to show the scoreboard for.",
         "type": "String",
         "choices": [
+          "Nov 2026",
           "Oct 2026",
           "Sep 2026",
           "Aug 2026",
@@ -1086,8 +1093,7 @@
           "Sep 2025",
           "Aug 2025",
           "Jul 2025",
-          "Jun 2025",
-          "May 2025"
+          "Jun 2025"
         ]
       }
     ]
@@ -1183,6 +1189,7 @@
         "description": "CWL season",
         "type": "String",
         "choices": [
+          "Nov 2026",
           "Oct 2026",
           "Sep 2026",
           "Aug 2026",
@@ -1194,8 +1201,7 @@
           "Mar 2026",
           "Feb 2026",
           "Jan 2026",
-          "Dec 2025",
-          "Nov 2025"
+          "Dec 2025"
         ]
       },
       {
@@ -1279,6 +1285,7 @@
         "description": "CWL season",
         "type": "String",
         "choices": [
+          "Nov 2026",
           "Oct 2026",
           "Sep 2026",
           "Aug 2026",
@@ -1290,8 +1297,7 @@
           "Mar 2026",
           "Feb 2026",
           "Jan 2026",
-          "Dec 2025",
-          "Nov 2025"
+          "Dec 2025"
         ]
       },
       {
@@ -1318,6 +1324,7 @@
         "description": "CWL season",
         "type": "String",
         "choices": [
+          "Nov 2026",
           "Oct 2026",
           "Sep 2026",
           "Aug 2026",
@@ -1329,8 +1336,7 @@
           "Mar 2026",
           "Feb 2026",
           "Jan 2026",
-          "Dec 2025",
-          "Nov 2025"
+          "Dec 2025"
         ]
       },
       {
@@ -1357,6 +1363,7 @@
         "description": "CWL season",
         "type": "String",
         "choices": [
+          "Nov 2026",
           "Oct 2026",
           "Sep 2026",
           "Aug 2026",
@@ -1368,8 +1375,7 @@
           "Mar 2026",
           "Feb 2026",
           "Jan 2026",
-          "Dec 2025",
-          "Nov 2025"
+          "Dec 2025"
         ]
       },
       {
@@ -1408,6 +1414,7 @@
         "description": "The season to show donations for.",
         "type": "String",
         "choices": [
+          "2 Nov – 30 Nov 2026",
           "5 Oct – 2 Nov 2026",
           "7 Sep – 5 Oct 2026",
           "10 Aug – 7 Sep 2026",
@@ -1424,8 +1431,7 @@
           "6 Oct – 3 Nov 2025",
           "25 Aug – 6 Oct 2025",
           "28 Jul – 25 Aug 2025",
-          "30 Jun – 28 Jul 2025",
-          "26 May – 30 Jun 2025"
+          "30 Jun – 28 Jul 2025"
         ]
       },
       {
@@ -1556,6 +1562,7 @@
         "description": "Retrieve data since the specified season.",
         "type": "String",
         "choices": [
+          "Nov 2026",
           "Oct 2026",
           "Sep 2026",
           "Aug 2026",
@@ -1567,8 +1574,7 @@
           "Mar 2026",
           "Feb 2026",
           "Jan 2026",
-          "Dec 2025",
-          "Nov 2025"
+          "Dec 2025"
         ]
       },
       {
@@ -1604,6 +1610,7 @@
         "description": "Retrieve data since the specified season.",
         "type": "String",
         "choices": [
+          "Nov 2026",
           "Oct 2026",
           "Sep 2026",
           "Aug 2026",
@@ -1620,8 +1627,7 @@
           "Sep 2025",
           "Aug 2025",
           "Jul 2025",
-          "Jun 2025",
-          "May 2025"
+          "Jun 2025"
         ]
       },
       {
@@ -1678,6 +1684,7 @@
         "description": "Retrieve data since the specified season.",
         "type": "String",
         "choices": [
+          "Since Nov 2026",
           "Since Oct 2026",
           "Since Sep 2026",
           "Since Aug 2026",
@@ -1694,8 +1701,7 @@
           "Since Sep 2025",
           "Since Aug 2025",
           "Since Jul 2025",
-          "Since Jun 2025",
-          "Since May 2025"
+          "Since Jun 2025"
         ]
       },
       {
@@ -1739,6 +1745,7 @@
         "description": "Retrieve data since the specified season.",
         "type": "String",
         "choices": [
+          "2 Nov – 30 Nov 2026",
           "5 Oct – 2 Nov 2026",
           "7 Sep – 5 Oct 2026",
           "10 Aug – 7 Sep 2026",
@@ -1755,8 +1762,7 @@
           "6 Oct – 3 Nov 2025",
           "25 Aug – 6 Oct 2025",
           "28 Jul – 25 Aug 2025",
-          "30 Jun – 28 Jul 2025",
-          "26 May – 30 Jun 2025"
+          "30 Jun – 28 Jul 2025"
         ]
       },
       {
@@ -1930,6 +1936,110 @@
     ]
   },
   {
+    "name": "giveaway cancel",
+    "description": "Cancel a giveaway without drawing.",
+    "description_long": null,
+    "options": [
+      {
+        "name": "giveaway",
+        "description": "The giveaway to act on.",
+        "type": "String",
+        "choices": []
+      }
+    ]
+  },
+  {
+    "name": "giveaway create",
+    "description": "Post a giveaway with an Enter button.",
+    "description_long": null,
+    "options": [
+      {
+        "name": "prize",
+        "description": "What members can win.",
+        "type": "String",
+        "choices": []
+      },
+      {
+        "name": "duration",
+        "description": "How long it runs, such as 24h, 3d or 1h30m.",
+        "type": "String",
+        "choices": []
+      },
+      {
+        "name": "winners",
+        "description": "How many winners to draw. Default 1.",
+        "type": "Integer",
+        "choices": []
+      },
+      {
+        "name": "channel",
+        "description": "Where to post it. Defaults to this channel.",
+        "type": "Channel",
+        "choices": []
+      },
+      {
+        "name": "mode",
+        "description": "Who can enter and how odds work. Default open.",
+        "type": "String",
+        "choices": [
+          "Open — everyone, equal odds",
+          "Boosted — clan members get better odds",
+          "Restricted — clan members only"
+        ]
+      },
+      {
+        "name": "clan",
+        "description": "For boosted or restricted: limit to one clan. Defaults to all server clans.",
+        "type": "String",
+        "choices": []
+      },
+      {
+        "name": "boost_factor",
+        "description": "For boosted mode: how many times the odds for clan members. Default 2.",
+        "type": "Integer",
+        "choices": []
+      },
+      {
+        "name": "image",
+        "description": "A banner image to show in the giveaway.",
+        "type": "Attachment",
+        "choices": []
+      }
+    ]
+  },
+  {
+    "name": "giveaway end",
+    "description": "Draw the winners now and end a giveaway.",
+    "description_long": null,
+    "options": [
+      {
+        "name": "giveaway",
+        "description": "The giveaway to act on.",
+        "type": "String",
+        "choices": []
+      }
+    ]
+  },
+  {
+    "name": "giveaway list",
+    "description": "List the active giveaways on this server.",
+    "description_long": null,
+    "options": []
+  },
+  {
+    "name": "giveaway reroll",
+    "description": "Draw a fresh set of winners for an ended giveaway.",
+    "description_long": null,
+    "options": [
+      {
+        "name": "giveaway",
+        "description": "The giveaway to act on.",
+        "type": "String",
+        "choices": []
+      }
+    ]
+  },
+  {
     "name": "help",
     "description": "Get a list of commands or info about a specific command.",
     "description_long": null,
@@ -2082,6 +2192,7 @@
         "description": "Retrieve data for the specified season.",
         "type": "String",
         "choices": [
+          "2 Nov – 30 Nov 2026",
           "5 Oct – 2 Nov 2026",
           "7 Sep – 5 Oct 2026",
           "10 Aug – 7 Sep 2026",
@@ -2098,8 +2209,7 @@
           "6 Oct – 3 Nov 2025",
           "25 Aug – 6 Oct 2025",
           "28 Jul – 25 Aug 2025",
-          "30 Jun – 28 Jul 2025",
-          "26 May – 30 Jun 2025"
+          "30 Jun – 28 Jul 2025"
         ]
       }
     ]
@@ -2120,6 +2230,7 @@
         "description": "Retrieve data for the specified season.",
         "type": "String",
         "choices": [
+          "2 Nov – 30 Nov 2026",
           "5 Oct – 2 Nov 2026",
           "7 Sep – 5 Oct 2026",
           "10 Aug – 7 Sep 2026",
@@ -2136,8 +2247,7 @@
           "6 Oct – 3 Nov 2025",
           "25 Aug – 6 Oct 2025",
           "28 Jul – 25 Aug 2025",
-          "30 Jun – 28 Jul 2025",
-          "26 May – 30 Jun 2025"
+          "30 Jun – 28 Jul 2025"
         ]
       }
     ]
@@ -2158,6 +2268,7 @@
         "description": "Retrieve data for the specified season.",
         "type": "String",
         "choices": [
+          "2 Nov – 30 Nov 2026",
           "5 Oct – 2 Nov 2026",
           "7 Sep – 5 Oct 2026",
           "10 Aug – 7 Sep 2026",
@@ -2174,8 +2285,7 @@
           "6 Oct – 3 Nov 2025",
           "25 Aug – 6 Oct 2025",
           "28 Jul – 25 Aug 2025",
-          "30 Jun – 28 Jul 2025",
-          "26 May – 30 Jun 2025"
+          "30 Jun – 28 Jul 2025"
         ]
       }
     ]
@@ -2252,6 +2362,7 @@
         "description": "Retrieve data for the specified season.",
         "type": "String",
         "choices": [
+          "2 Nov – 30 Nov 2026",
           "5 Oct – 2 Nov 2026",
           "7 Sep – 5 Oct 2026",
           "10 Aug – 7 Sep 2026",
@@ -2268,8 +2379,7 @@
           "6 Oct – 3 Nov 2025",
           "25 Aug – 6 Oct 2025",
           "28 Jul – 25 Aug 2025",
-          "30 Jun – 28 Jul 2025",
-          "26 May – 30 Jun 2025"
+          "30 Jun – 28 Jul 2025"
         ]
       },
       {
@@ -3628,6 +3738,7 @@
         "description": "Retrieve data since the specified season.",
         "type": "String",
         "choices": [
+          "Since Nov 2026",
           "Since Oct 2026",
           "Since Sep 2026",
           "Since Aug 2026",
@@ -3644,8 +3755,7 @@
           "Since Sep 2025",
           "Since Aug 2025",
           "Since Jul 2025",
-          "Since Jun 2025",
-          "Since May 2025"
+          "Since Jun 2025"
         ]
       },
       {
@@ -3748,6 +3858,7 @@
         "description": "Retrieve data since the specified season.",
         "type": "String",
         "choices": [
+          "Since Nov 2026",
           "Since Oct 2026",
           "Since Sep 2026",
           "Since Aug 2026",
@@ -3764,8 +3875,7 @@
           "Since Sep 2025",
           "Since Aug 2025",
           "Since Jul 2025",
-          "Since Jun 2025",
-          "Since May 2025"
+          "Since Jun 2025"
         ]
       },
       {
@@ -3807,6 +3917,7 @@
         "description": "Retrieve data for the specified season.",
         "type": "String",
         "choices": [
+          "Nov 2026",
           "Oct 2026",
           "Sep 2026",
           "Aug 2026",
@@ -3823,8 +3934,7 @@
           "Sep 2025",
           "Aug 2025",
           "Jul 2025",
-          "Jun 2025",
-          "May 2025"
+          "Jun 2025"
         ]
       }
     ]
@@ -3845,6 +3955,7 @@
         "description": "Retrieve data for the specified season.",
         "type": "String",
         "choices": [
+          "2 Nov – 30 Nov 2026",
           "5 Oct – 2 Nov 2026",
           "7 Sep – 5 Oct 2026",
           "10 Aug – 7 Sep 2026",
@@ -3861,8 +3972,7 @@
           "6 Oct – 3 Nov 2025",
           "25 Aug – 6 Oct 2025",
           "28 Jul – 25 Aug 2025",
-          "30 Jun – 28 Jul 2025",
-          "26 May – 30 Jun 2025"
+          "30 Jun – 28 Jul 2025"
         ]
       }
     ]
@@ -3883,6 +3993,7 @@
         "description": "Retrieve data for the specified season.",
         "type": "String",
         "choices": [
+          "2 Nov – 30 Nov 2026",
           "5 Oct – 2 Nov 2026",
           "7 Sep – 5 Oct 2026",
           "10 Aug – 7 Sep 2026",
@@ -3899,8 +4010,7 @@
           "6 Oct – 3 Nov 2025",
           "25 Aug – 6 Oct 2025",
           "28 Jul – 25 Aug 2025",
-          "30 Jun – 28 Jul 2025",
-          "26 May – 30 Jun 2025"
+          "30 Jun – 28 Jul 2025"
         ]
       },
       {
@@ -3936,6 +4046,7 @@
         "description": "Retrieve data for the specified season.",
         "type": "String",
         "choices": [
+          "Nov 2026",
           "Oct 2026",
           "Sep 2026",
           "Aug 2026",
@@ -3952,8 +4063,7 @@
           "Sep 2025",
           "Aug 2025",
           "Jul 2025",
-          "Jun 2025",
-          "May 2025"
+          "Jun 2025"
         ]
       },
       {
@@ -3961,12 +4071,12 @@
         "description": "The week to show capital contributions for.",
         "type": "String",
         "choices": [
+          "13 Nov, 2026",
+          "06 Nov, 2026",
+          "30 Oct, 2026",
+          "23 Oct, 2026",
           "16 Oct, 2026",
-          "09 Oct, 2026",
-          "02 Oct, 2026",
-          "25 Sep, 2026",
-          "18 Sep, 2026",
-          "11 Sep, 2026"
+          "09 Oct, 2026"
         ]
       }
     ]
@@ -3987,12 +4097,12 @@
         "description": "Retrieve data for the specified raid weekend.",
         "type": "String",
         "choices": [
+          "13 Nov, 2026",
+          "06 Nov, 2026",
+          "30 Oct, 2026",
+          "23 Oct, 2026",
           "16 Oct, 2026",
-          "09 Oct, 2026",
-          "02 Oct, 2026",
-          "25 Sep, 2026",
-          "18 Sep, 2026",
-          "11 Sep, 2026"
+          "09 Oct, 2026"
         ]
       }
     ]
@@ -4007,6 +4117,7 @@
         "description": "Retrieve data for the specified season.",
         "type": "String",
         "choices": [
+          "Nov 2026",
           "Oct 2026",
           "Sep 2026",
           "Aug 2026",
@@ -4023,8 +4134,7 @@
           "Sep 2025",
           "Aug 2025",
           "Jul 2025",
-          "Jun 2025",
-          "May 2025"
+          "Jun 2025"
         ]
       },
       {
@@ -4071,6 +4181,7 @@
         "description": "Retrieve data for the specified season.",
         "type": "String",
         "choices": [
+          "Nov 2026",
           "Oct 2026",
           "Sep 2026",
           "Aug 2026",
@@ -4082,8 +4193,7 @@
           "Mar 2026",
           "Feb 2026",
           "Jan 2026",
-          "Dec 2025",
-          "Nov 2025"
+          "Dec 2025"
         ]
       },
       {
@@ -4117,6 +4227,7 @@
         "description": "Retrieve data for the specified season.",
         "type": "String",
         "choices": [
+          "2 Nov – 30 Nov 2026",
           "5 Oct – 2 Nov 2026",
           "7 Sep – 5 Oct 2026",
           "10 Aug – 7 Sep 2026",
@@ -4133,8 +4244,7 @@
           "6 Oct – 3 Nov 2025",
           "25 Aug – 6 Oct 2025",
           "28 Jul – 25 Aug 2025",
-          "30 Jun – 28 Jul 2025",
-          "26 May – 30 Jun 2025"
+          "30 Jun – 28 Jul 2025"
         ]
       },
       {
@@ -4185,6 +4295,7 @@
         "description": "Retrieve data since the specified season.",
         "type": "String",
         "choices": [
+          "Since Nov 2026",
           "Since Oct 2026",
           "Since Sep 2026",
           "Since Aug 2026",
@@ -4201,8 +4312,7 @@
           "Since Sep 2025",
           "Since Aug 2025",
           "Since Jul 2025",
-          "Since Jun 2025",
-          "Since May 2025"
+          "Since Jun 2025"
         ]
       }
     ]
@@ -4242,6 +4352,7 @@
         "description": "Retrieve data for the specified season.",
         "type": "String",
         "choices": [
+          "Nov 2026",
           "Oct 2026",
           "Sep 2026",
           "Aug 2026",
@@ -4258,8 +4369,7 @@
           "Sep 2025",
           "Aug 2025",
           "Jul 2025",
-          "Jun 2025",
-          "May 2025"
+          "Jun 2025"
         ]
       }
     ]

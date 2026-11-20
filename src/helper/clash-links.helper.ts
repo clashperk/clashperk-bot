@@ -28,6 +28,7 @@ export const MAX_LINKS_PER_MESSAGE = 3;
 
 const ACTIONS: Record<string, { type: ClashLinkType; param: string }> = {
   openplayerprofile: { type: 'player', param: 'tag' },
+  addfriend: { type: 'player', param: 'tag' },
   openclanprofile: { type: 'clan', param: 'tag' },
   copyarmy: { type: 'army', param: 'army' },
   openlayout: { type: 'base', param: 'id' }

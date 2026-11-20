@@ -1,3 +1,5 @@
+import { MAX_TOWN_HALL_LEVEL } from '@app/constants';
+import { ArmyLinkUnit, parseArmyLink } from 'clashofclans.js';
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -7,7 +9,6 @@ import {
   Guild,
   Message
 } from 'discord.js';
-import { URL } from 'node:url';
 import { Command } from '../../lib/handlers.js';
 import {
   DARK_ELIXIR_TROOPS,
@@ -19,23 +20,17 @@ import {
   HERO_PETS,
   HOME_HEROES,
   SIEGE_MACHINES,
+  SQUADS,
   SUPER_TROOPS
 } from '../../util/emojis.js';
-import { ARMY_CAPACITY, RAW_SUPER_TROOPS, RAW_TROOPS } from '../../util/troops.js';
+import { ARMY_CAPACITY } from '../../util/troops.js';
 
-const [TOTAL_UNITS, TOTAL_SPELLS] = [340, 11];
-const ARMY_URL_REGEX =
-  /^https?:\/\/link\.clashofclans\.com\/[a-z]{1,2}[\/]?\?action=CopyArmy&army=\S+$/;
+const [TOTAL_UNITS, TOTAL_SPELLS] = [352, 11];
+const ARMY_LINK_IN_TEXT = /https?:\/\/link\.clashofclans\.com\/\S+/i;
 
-// Army links carry Supercell's per-category index; static data uses the game's GlobalID.
-const GLOBAL_ID_BASE: Record<string, number> = {
-  troop: 4_000_000,
-  siege: 4_000_000,
-  pet: 73_000_000,
-  spell: 26_000_000,
-  hero: 28_000_000,
-  equipment: 90_000_000
-};
+const SPELLS: Record<string, string> = { ...DARK_SPELLS, ...ELIXIR_SPELLS };
+const TROOPS: Record<string, string> = { ...ELIXIR_TROOPS, ...DARK_ELIXIR_TROOPS };
+const CC_TROOPS: Record<string, string> = { ...TROOPS, ...SIEGE_MACHINES, ...SUPER_TROOPS };
 
 export default class ArmyCommand extends Command {
   public constructor() {
@@ -65,249 +60,66 @@ export default class ArmyCommand extends Command {
     locale: string,
     args: { link: string; message?: string; army_name?: string; tips?: string }
   ) {
-    const url = this.getURL(args.link ?? args.message!);
-    const army = url?.searchParams.get('army');
-    if (!army) return { embeds: [], content: this.i18n('command.army.no_link', { lng: locale }) };
-
-    const troopParts: string[] = [];
-    const spellParts: string[] = [];
-    const heroParts: string[] = [];
-    const ccTroopParts: string[] = [];
-    const ccSpellParts: string[] = [];
-
-    for (const char of army.split(/(?=[hsiud])/)) {
-      // troops
-      if (char.startsWith('u')) {
-        const regex = /^u\d+x\d+(-\d+x\d+)*-?$/;
-
-        if (regex.test(char)) {
-          troopParts.push(...char.slice(1).split('-'));
-        }
-      }
-
-      // spells
-      if (char.startsWith('s')) {
-        const regex = /^s\d+x\d+(-\d+x\d+)*-?$/;
-
-        if (regex.test(char)) {
-          spellParts.push(...char.slice(1).split('-'));
-        }
-      }
-
-      // heroes
-      if (char.startsWith('h')) {
-        // const regex = /^h(\d+(p\d+)?e\d+_\d+(-\d+(p\d+)?e\d+_\d+)*)-?$/;
-        const regex = /^h(\d+(m\d+)?(p\d+)?(e\d+)?_\d+(?:-\d+(m\d+)?(p\d+)?(e\d+)?_\d+)*)-?$/;
-
-        if (regex.test(char)) {
-          heroParts.push(...char.slice(1).split('-'));
-        }
-      }
-
-      // cc spells
-      if (char.startsWith('d')) {
-        const regex = /^d\d+x\d+(-\d+x\d+)*-?$/;
-
-        if (regex.test(char)) {
-          ccSpellParts.push(...char.slice(1).split('-'));
-        }
-      }
-
-      // cc troops
-      if (char.startsWith('i')) {
-        const regex = /^i\d+x\d+(-\d+x\d+)*-?$/;
-        if (regex.test(char)) {
-          ccTroopParts.push(...char.slice(1).split('-'));
-        }
-      }
+    const input = (args.link ?? args.message ?? '').trim();
+    const link = input.match(ARMY_LINK_IN_TEXT)?.[0];
+    const army = parseArmyLink(link ?? input);
+    if (!army) {
+      const key = link ? 'command.army.invalid_link' : 'command.army.no_link';
+      return { embeds: [], content: this.i18n(key, { lng: locale }) };
     }
 
-    const parseArmyCombinations = (combinations: string[]) => {
-      return combinations
-        .map((parts) => parts.split(/x/))
-        .map((parts) => ({
-          id: parts.length > 2 ? 0 : Number(parts[1]),
-          total: Number(parts[0])
+    const malformed = [...army.troops, ...army.spells].some((en) => en.count > TOTAL_UNITS);
+    if (malformed) {
+      return { embeds: [], content: this.i18n('command.army.invalid_link', { lng: locale }) };
+    }
+
+    const toEntries = (list: ArmyLinkUnit[], emojis: Record<string, string>) =>
+      list
+        .filter((en) => en.unit.name in emojis)
+        .map((en) => ({
+          name: en.unit.name,
+          total: en.count,
+          housing: en.unit.housingSpace,
+          hallLevel: en.unit.unlock.hall
         }));
-    };
 
-    const parseHeroCombinations = (combinations: string[]) => {
-      const heroes: { id: number; pets: number[]; equipment: number[] }[] = [];
-      for (const parts of combinations) {
-        const components = parts.split(/(?=[mpe])/); // [ '*', 'm*', 'p*', 'e*_*' ]
-        const hero: { id: number; pets: number[]; equipment: number[] } = {
-          id: Number(parts[0]),
-          pets: [],
-          equipment: []
-        };
-
-        for (const component of components) {
-          if (component.startsWith('p')) {
-            hero.pets.push(Number(component.slice(1)));
-          }
-          if (component.startsWith('e')) {
-            hero.equipment.push(
-              ...component
-                .slice(1)
-                .split('_')
-                .map((en) => Number(en))
-            );
-          }
-          if (component.startsWith('m')) {
-          }
-        }
-
-        heroes.push(hero);
-      }
-
-      return heroes;
-    };
-
-    if (!troopParts.length && !spellParts.length) {
-      return { embeds: [], content: this.i18n('command.army.invalid_link', { lng: locale }) };
-    }
-
-    const troopList = parseArmyCombinations(troopParts);
-    const spellList = parseArmyCombinations(spellParts);
-    const heroList = parseHeroCombinations(heroParts);
-    const ccTroopList = parseArmyCombinations(ccTroopParts);
-    const ccSpellList = parseArmyCombinations(ccSpellParts);
-
-    const malformed = ![...troopList, ...spellList].every(
-      (en) => typeof en.id === 'number' && typeof en.total === 'number' && en.total <= TOTAL_UNITS
+    const troops = toEntries(
+      army.troops.filter((en) => en.unit.subCategory === 'troop' && !en.unit.superTroop),
+      TROOPS
     );
-    if (malformed)
-      return { embeds: [], content: this.i18n('command.army.invalid_link', { lng: locale }) };
+    const superTroops = toEntries(
+      army.troops.filter((en) => en.unit.superTroop),
+      SUPER_TROOPS
+    );
+    const siegeMachines = toEntries(
+      army.troops.filter((en) => en.unit.subCategory === 'siege'),
+      SIEGE_MACHINES
+    );
+    const squads = toEntries(
+      army.troops.filter((en) => en.unit.subCategory === 'squad'),
+      SQUADS
+    );
+    const spells = toEntries(army.spells, SPELLS);
+    const ccTroops = toEntries(army.clanCastle.troops, CC_TROOPS);
+    const ccSpells = toEntries(army.clanCastle.spells, SPELLS);
 
-    const SPELLS: Record<string, string> = {
-      ...DARK_SPELLS,
-      ...ELIXIR_SPELLS
-    };
-    const TROOPS: Record<string, string> = {
-      ...ELIXIR_TROOPS,
-      ...DARK_ELIXIR_TROOPS
-    };
-    const CC_TROOPS: Record<string, string> = {
-      ...TROOPS,
-      ...SIEGE_MACHINES,
-      ...SUPER_TROOPS
-    };
+    const heroes = army.heroes
+      .filter((en) => en.unit.name in HOME_HEROES)
+      .map((en) => ({
+        name: en.unit.name,
+        pets: en.pet && en.pet.name in HERO_PETS ? [{ name: en.pet.name }] : [],
+        equipment: en.equipment
+          .filter((eq) => eq.name in HERO_EQUIPMENT)
+          .map((eq) => ({ name: eq.name }))
+      }));
 
-    const findUnits = ({
-      emojiRecords,
-      category,
-      subCategory,
-      parts
-    }: {
-      category: string;
-      subCategory?: string;
-      parts: { id: number; total: number }[];
-      emojiRecords: Record<string, string>;
-    }) => {
-      const _findOne = (id: number) => {
-        const globalId = GLOBAL_ID_BASE[subCategory ?? category] + id;
-        return RAW_TROOPS.find(
-          (en) =>
-            en.id === globalId &&
-            en.category === category &&
-            (subCategory ? en.subCategory === subCategory : true) &&
-            en.name in emojiRecords
-        );
-      };
-
-      return parts
-        .filter((parts) => _findOne(parts.id))
-        .map((parts) => {
-          const unit = _findOne(parts.id)!;
-          return {
-            id: parts.id,
-            total: parts.total,
-            name: unit.name,
-            category: unit.category,
-            housing: unit.housingSpace,
-            hallLevel: unit.unlock.hall,
-            subCategory: unit.subCategory
-          };
-        });
-    };
-
-    const troops = findUnits({ category: 'troop', emojiRecords: TROOPS, parts: troopList });
-    const spells = findUnits({ category: 'spell', emojiRecords: SPELLS, parts: spellList });
-    const siegeMachines = findUnits({
-      category: 'troop',
-      subCategory: 'siege',
-      emojiRecords: SIEGE_MACHINES,
-      parts: troopList
-    });
-    const ccTroops = findUnits({ category: 'troop', emojiRecords: CC_TROOPS, parts: ccTroopList });
-    const ccSpells = findUnits({ category: 'spell', emojiRecords: SPELLS, parts: ccSpellList });
-
-    const superTroops = troopList
-      .filter((parts) =>
-        RAW_SUPER_TROOPS.find(
-          (en) => en.id === GLOBAL_ID_BASE.troop + parts.id && en.name in SUPER_TROOPS
-        )
-      )
-      .map((parts) => {
-        const unit = RAW_SUPER_TROOPS.find(
-          (en) => en.id === GLOBAL_ID_BASE.troop + parts.id && en.name in SUPER_TROOPS
-        )!;
-        return {
-          id: parts.id,
-          total: parts.total,
-          name: unit.name,
-          category: 'troop',
-          subCategory: 'super',
-          hallLevel: RAW_TROOPS.find((en) => en.id === unit.id)!.unlock.hall,
-          housing: unit.housingSpace
-        };
-      });
-
-    const heroes = heroList
-      .filter((parts) =>
-        RAW_TROOPS.find(
-          (en) =>
-            en.id === GLOBAL_ID_BASE.hero + parts.id &&
-            en.category === 'hero' &&
-            en.name in HOME_HEROES
-        )
-      )
-      .map((parts) => {
-        const unit = RAW_TROOPS.find(
-          (en) =>
-            en.id === GLOBAL_ID_BASE.hero + parts.id &&
-            en.category === 'hero' &&
-            en.name in HOME_HEROES
-        )!;
-        return {
-          id: parts.id,
-          total: 0,
-          name: unit.name,
-          pets: findUnits({
-            subCategory: 'pet',
-            category: 'troop',
-            parts: parts.pets.map((i) => ({
-              id: i,
-              total: 1
-            })),
-            emojiRecords: HERO_PETS
-          }),
-          equipment: findUnits({
-            category: 'equipment',
-            parts: parts.equipment.map((i) => ({
-              id: i,
-              total: 1
-            })),
-            emojiRecords: HERO_EQUIPMENT
-          }),
-          category: unit.category,
-          subCategory: unit.subCategory,
-          hallLevel: unit.unlock.hall,
-          housing: unit.housingSpace
-        };
-      });
-
-    if (!spells.length && !troops.length && !superTroops.length && !siegeMachines.length) {
+    if (
+      !spells.length &&
+      !troops.length &&
+      !superTroops.length &&
+      !siegeMachines.length &&
+      !squads.length
+    ) {
       return { embeds: [], content: this.i18n('command.army.invalid_link', { lng: locale }) };
     }
 
@@ -315,15 +127,16 @@ export default class ArmyCommand extends Command {
       ...troops.map((en) => en.hallLevel),
       ...spells.map((en) => en.hallLevel),
       ...siegeMachines.map((en) => en.hallLevel),
-      ...superTroops.map((en) => en.hallLevel)
+      ...superTroops.map((en) => en.hallLevel),
+      ...squads.map((en) => en.hallLevel)
     );
 
-    const [totalTroop, totalSpell] = [
-      troops.reduce((pre, cur) => pre + cur.housing * cur.total, 0) +
-        superTroops.reduce((pre, curr) => pre + curr.housing * curr.total, 0),
-      spells.reduce((pre, cur) => pre + cur.housing * cur.total, 0),
-      siegeMachines.reduce((pre, cur) => pre + cur.housing * cur.total, 0)
-    ];
+    // Siege machines have their own slots, so they don't count toward the camps.
+    const totalTroop = [...troops, ...superTroops, ...squads].reduce(
+      (pre, cur) => pre + cur.housing * cur.total,
+      0
+    );
+    const totalSpell = spells.reduce((pre, cur) => pre + cur.housing * cur.total, 0);
 
     const hallByTroops =
       ARMY_CAPACITY.find((en) => en.troops >= Math.min(totalTroop, TOTAL_UNITS))?.hall ?? 0;
@@ -335,7 +148,7 @@ export default class ArmyCommand extends Command {
       .setColor(this.client.embed(guild.id))
       .setDescription(
         [
-          `**${args.army_name ?? 'Shared Army Composition'} [TH ${townHallLevel}${townHallLevel === 14 ? '' : '+'}]**`,
+          `**${args.army_name ?? 'Shared Army Composition'} [TH ${townHallLevel}${townHallLevel >= MAX_TOWN_HALL_LEVEL ? '' : '+'}]**`,
           '',
           `${EMOJIS.TROOPS} **${totalTroop}** ${EMOJIS.SPELLS} **${totalSpell}**`
         ].join('\n')
@@ -405,6 +218,20 @@ export default class ArmyCommand extends Command {
       ]);
     }
 
+    if (squads.length) {
+      embed.addFields([
+        {
+          name: '\u200b',
+          value: [
+            '**Squads**',
+            squads
+              .map((en) => `\u200e\`${this.padding(en.total)}\` ${SQUADS[en.name]}  ${en.name}`)
+              .join('\n')
+          ].join('\n')
+        }
+      ]);
+    }
+
     if (siegeMachines.length) {
       embed.addFields([
         {
@@ -450,7 +277,7 @@ export default class ArmyCommand extends Command {
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
         .setStyle(ButtonStyle.Link)
-        .setURL(url!.href)
+        .setURL(army.url)
         .setLabel('Copy Army Link')
         .setEmoji(EMOJIS.TROOPS)
     );
@@ -463,10 +290,5 @@ export default class ArmyCommand extends Command {
 
   private padding(num: number) {
     return `${num.toString().padStart(2, ' ')}${num > 99 ? '' : 'x'}`;
-  }
-
-  private getURL(url: string) {
-    if (!ARMY_URL_REGEX.test(url)) return null;
-    return new URL(url.match(ARMY_URL_REGEX)![0]!);
   }
 }
