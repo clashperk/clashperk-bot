@@ -15,6 +15,7 @@ import {
   buildEndedGiveaway,
   GIVEAWAY_BANNER_NAME,
   GiveawayView,
+  NO_PINGS,
   viewFromDto,
   viewFromEntity,
   winnerAnnouncement
@@ -92,7 +93,8 @@ export class GiveawayManager {
         .send({
           components: [buildActiveGiveaway(view)],
           files: [new AttachmentBuilder(view.imageUrl, { name: GIVEAWAY_BANNER_NAME })],
-          flags: MessageFlags.IsComponentsV2
+          flags: MessageFlags.IsComponentsV2,
+          allowedMentions: NO_PINGS
         })
         .catch(() => null);
       // A broken link, a non-image or a file too big: post without the banner rather than not at all.
@@ -100,7 +102,8 @@ export class GiveawayManager {
     }
     return channel.send({
       components: [buildActiveGiveaway({ ...view, imageUrl: null })],
-      flags: MessageFlags.IsComponentsV2
+      flags: MessageFlags.IsComponentsV2,
+      allowedMentions: NO_PINGS
     });
   }
 
@@ -135,7 +138,8 @@ export class GiveawayManager {
     const hasBanner = message.attachments.some((file) => file.name === GIVEAWAY_BANNER_NAME);
     await message.edit({
       components: [buildActiveGiveaway({ ...view, imageUrl: hasBanner ? view.imageUrl : null })],
-      flags: MessageFlags.IsComponentsV2
+      flags: MessageFlags.IsComponentsV2,
+      allowedMentions: NO_PINGS
     });
   }
 
@@ -156,7 +160,8 @@ export class GiveawayManager {
       ?.edit({
         components: [buildEndedGiveaway(viewFromEntity(giveaway), giveaway.winners)],
         attachments: [],
-        flags: MessageFlags.IsComponentsV2
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: NO_PINGS
       })
       .catch(() => null);
 
@@ -174,7 +179,8 @@ export class GiveawayManager {
       ?.edit({
         components: [buildCancelledGiveaway(giveaway.prize)],
         attachments: [],
-        flags: MessageFlags.IsComponentsV2
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: NO_PINGS
       })
       .catch(() => null);
   }

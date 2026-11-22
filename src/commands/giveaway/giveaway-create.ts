@@ -4,24 +4,33 @@ import {
   ActionRowBuilder,
   AttachmentBuilder,
   ButtonBuilder,
+  ButtonInteraction,
   ButtonStyle,
   ChatInputCommandInteraction,
   ContainerBuilder,
+  LabelBuilder,
   MessageFlags,
+  ModalBuilder,
   StringSelectMenuBuilder,
-  TextDisplayBuilder
+  TextDisplayBuilder,
+  TextInputBuilder,
+  TextInputStyle
 } from 'discord.js';
 import ms from 'ms';
 import { api } from '../../api/axios.js';
 import { GiveawayEligibilityInput } from '../../api/generated.js';
 import { Command } from '../../lib/handlers.js';
-import { createInteractionCollector } from '../../util/collectors.js';
+import { createInteractionCollector, createModalCollector } from '../../util/collectors.js';
 import {
   buildActiveGiveaway,
+  DEFAULT_DESCRIPTION,
+  giveawayTitle,
   eligibilitySummary,
   GIVEAWAY_BANNER_NAME,
   giveawayErrorText,
-  GiveawayView
+  GiveawayView,
+  MAX_DESCRIPTION,
+  MAX_TITLE
 } from '../../util/giveaways.js';
 
 const MAX_DURATION = 60 * 24 * 60 * 60 * 1000;
@@ -75,6 +84,8 @@ export default class GiveawayCreateCommand extends Command {
     const winnerCount = interaction.options.getInteger('winners') ?? 1;
     const boostFactor = interaction.options.getInteger('boost_factor') ?? 2;
     let picked = [ALL_CLANS];
+    let title: string | null = null;
+    let description: string | null = null;
 
     const eligibility = (): GiveawayEligibility => {
       if (mode === 'open') return { mode };
@@ -85,6 +96,8 @@ export default class GiveawayCreateCommand extends Command {
     const view = (): GiveawayView => ({
       id: 'preview',
       prize,
+      title,
+      description,
       imageUrl: image?.url ?? null,
       winnerCount,
       endsAtMs: Date.now() + duration,
@@ -106,6 +119,7 @@ export default class GiveawayCreateCommand extends Command {
     const customIds = {
       clans: this.client.uuid(interaction.user.id),
       post: this.client.uuid(interaction.user.id),
+      edit: this.client.uuid(interaction.user.id),
       cancel: this.client.uuid(interaction.user.id)
     };
 
@@ -163,6 +177,10 @@ export default class GiveawayCreateCommand extends Command {
             .setLabel('Post giveaway')
             .setStyle(ButtonStyle.Success),
           new ButtonBuilder()
+            .setCustomId(customIds.edit)
+            .setLabel('Edit message')
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
             .setCustomId(customIds.cancel)
             .setLabel('Cancel')
             .setStyle(ButtonStyle.Secondary),
@@ -190,6 +208,49 @@ export default class GiveawayCreateCommand extends Command {
       flags: MessageFlags.IsComponentsV2 as const
     });
 
+    const editMessage = async (action: ButtonInteraction<'cached'>) => {
+      const modalId = this.client.uuid(interaction.user.id);
+      const titleInput = new TextInputBuilder()
+        .setCustomId('title')
+        .setStyle(TextInputStyle.Short)
+        .setMaxLength(MAX_TITLE)
+        .setPlaceholder(giveawayTitle({ prize, title: null }))
+        .setRequired(false);
+      const descriptionInput = new TextInputBuilder()
+        .setCustomId('description')
+        .setStyle(TextInputStyle.Paragraph)
+        .setMaxLength(MAX_DESCRIPTION)
+        .setPlaceholder(DEFAULT_DESCRIPTION)
+        .setRequired(false);
+      if (title) titleInput.setValue(title);
+      if (description) descriptionInput.setValue(description);
+
+      await action.showModal(
+        new ModalBuilder()
+          .setCustomId(modalId)
+          .setTitle('Edit message')
+          .addLabelComponents(
+            new LabelBuilder()
+              .setLabel('Title')
+              .setDescription('Leave empty for the default.')
+              .setTextInputComponent(titleInput),
+            new LabelBuilder()
+              .setLabel('Description')
+              .setDescription('Markdown works. Leave empty for the default.')
+              .setTextInputComponent(descriptionInput)
+          )
+      );
+      createModalCollector({
+        customId: modalId,
+        interaction: action,
+        onSubmit: async (submit) => {
+          title = submit.fields.getTextInputValue('title').trim() || null;
+          description = submit.fields.getTextInputValue('description').trim() || null;
+          if (submit.isFromMessage()) await submit.update(preview());
+        }
+      });
+    };
+
     let done = false;
     const message = await interaction.editReply(preview());
     const collector = createInteractionCollector({
@@ -208,6 +269,8 @@ export default class GiveawayCreateCommand extends Command {
           return action.update(finish('Cancelled. Nothing was posted.'));
         }
 
+        if (action.customId === customIds.edit) return editMessage(action);
+
         await action.deferUpdate();
         try {
           await api.giveaways.createGiveaway(
@@ -220,6 +283,8 @@ export default class GiveawayCreateCommand extends Command {
               winnerCount,
               endsAt: new Date(Date.now() + duration).toISOString(),
               eligibility: eligibility() as GiveawayEligibilityInput,
+              ...(title ? { title } : {}),
+              ...(description ? { description } : {}),
               ...(image ? { imageUrl: image.url } : {})
             }
           );

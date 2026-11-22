@@ -1122,6 +1122,30 @@ export interface LegendRankingThresholdsDto {
   history: LegendRankingThresholdsSnapShotDto[];
 }
 
+export interface LegendTripleRateDayDto {
+  /**
+   * The game day, which starts at 05:00 UTC.
+   * @example "2026-11-19"
+   */
+  date: string;
+  attacks: number;
+  /** Attacks that won 3 stars. */
+  triples: number;
+  /** Players who attacked that day. */
+  players: number;
+}
+
+export interface LegendTripleRateSeasonDto {
+  seasonId: string;
+  /** Oldest first. Days without tracked attacks are left out. */
+  days: LegendTripleRateDayDto[];
+}
+
+export interface LegendTripleRatesDto {
+  season: LegendTripleRateSeasonDto;
+  lastSeason: LegendTripleRateSeasonDto;
+}
+
 export interface LegendResetDto {
   /** Trophies before the reset. */
   from: number;
@@ -1196,30 +1220,6 @@ export interface LegendArmiesDto {
   heroes: LegendHeroSetupDto[];
   /** The most used army, without the clan castle. Null with no attacks. */
   army: LegendArmyDto | null;
-}
-
-export interface LegendTripleRateDayDto {
-  /**
-   * The game day, which starts at 05:00 UTC.
-   * @example "2026-11-19"
-   */
-  date: string;
-  attacks: number;
-  /** Attacks that won 3 stars. */
-  triples: number;
-  /** Players who attacked that day. */
-  players: number;
-}
-
-export interface LegendTripleRateSeasonDto {
-  seasonId: string;
-  /** Oldest first. Days without tracked attacks are left out. */
-  days: LegendTripleRateDayDto[];
-}
-
-export interface LegendTripleRatesDto {
-  season: LegendTripleRateSeasonDto;
-  lastSeason: LegendTripleRateSeasonDto;
 }
 
 export interface LegendSeasonDto {
@@ -1907,6 +1907,8 @@ export interface GiveawayDto {
   hostUserId: string;
   hostName: string | null;
   prize: string;
+  title: string | null;
+  description: string | null;
   imageUrl: string | null;
   winnerCount: number;
   eligibility: GiveawayEligibilityDto;
@@ -1985,6 +1987,16 @@ export interface CreateGiveawayInput {
    */
   prize: string;
   /**
+   * Replaces the "🎉 Giveaway · prize" heading on the posted message.
+   * @maxLength 100
+   */
+  title?: string;
+  /**
+   * Replaces the line under the heading. Markdown.
+   * @maxLength 1000
+   */
+  description?: string;
+  /**
    * @format uri
    * @maxLength 2048
    */
@@ -1998,6 +2010,16 @@ export interface CreateGiveawayInput {
 }
 
 export interface UpdateGiveawayInput {
+  /**
+   * Null puts the default heading back.
+   * @maxLength 100
+   */
+  title?: string | null;
+  /**
+   * Null puts the default line back.
+   * @maxLength 1000
+   */
+  description?: string | null;
   /**
    * Date string or timestamp in milliseconds
    * @format date-time
@@ -2014,6 +2036,8 @@ export interface UpdateGiveawayInput {
    * @max 50
    */
   winnerCount?: number;
+  /** New clans or boost for an active giveaway. The mode can't change. */
+  eligibility?: GiveawayEligibilityInput;
 }
 
 export interface EnterGiveawayInput {
@@ -2981,6 +3005,7 @@ export interface TicketPanelDto {
   logChannels: TicketLogChannelsDto;
   extraButtons: TicketExtraButtonDto[];
   extraButtonsPlacement: string;
+  saveTranscripts: boolean;
   ticketCount: number;
   openTicketCount: number;
   /** @format date-time */
@@ -3111,7 +3136,7 @@ export interface TicketLogChannelsInput {
   buttonClick?: string | null;
   /** Tickets put to sleep, reopened or claimed. */
   statusChange?: string | null;
-  /** Closed tickets, with a transcript of the last 100 messages. */
+  /** Closed tickets, with a transcript when the panel saves them. */
   ticketClose?: string | null;
 }
 
@@ -3151,6 +3176,8 @@ export interface TicketPanelInput {
   extraButtons?: TicketExtraButtonInput[];
   /** `row` keeps extra buttons beside the type buttons; `col` starts a new row. */
   extraButtonsPlacement?: "row" | "col";
+  /** Post a transcript to the ticket close log when a ticket closes. */
+  saveTranscripts?: boolean;
 }
 
 export interface CreateTicketTypeInput {
@@ -3706,6 +3733,30 @@ export interface CommandsUsageLogDto {
 
 export interface CommandsUsageLogItemsDto {
   items: CommandsUsageLogDto[];
+}
+
+export interface BotDayDto {
+  /** YYYY-MM-DD, the bot's day (UTC+5:30). */
+  date: string;
+  commands: number;
+  serversJoined: number;
+  serversLeft: number;
+}
+
+export interface BotCommandUsesDto {
+  command: string;
+  uses: number;
+}
+
+export interface BotOverviewDto {
+  servers: number;
+  clans: number;
+  players: number;
+  commandsUsed: number;
+  /** The last 30 days, oldest first, today included. */
+  days: BotDayDto[];
+  /** The most used commands over the last 7 days. */
+  topCommands: BotCommandUsesDto[];
 }
 
 export interface BetaGuildDto {
@@ -5635,7 +5686,7 @@ export namespace Clans {
    * @description Shows Town Hall upgrades, members joining and leaving, and clan milestones, newest first.
    * @tags Clans
    * @name GetClanActivity
-   * @summary List recent activity in clans
+   * @summary List recent activity in clans · cached 5m
    * @request QUERY:/clans/activity
    * @secure
    * @response `200` `GetClanActivityData`
@@ -5653,7 +5704,7 @@ export namespace Clans {
    * @description Deprecated: send the same request with the `QUERY` method. This route is removed on 2026-11-25.
    * @tags Clans
    * @name GetClanActivityViaPost
-   * @summary List recent activity in clans
+   * @summary List recent activity in clans · cached 5m
    * @request POST:/clans/activity
    * @deprecated
    * @secure
@@ -5672,7 +5723,7 @@ export namespace Clans {
    * No description
    * @tags Clans
    * @name GetClan
-   * @summary Get a clan's profile
+   * @summary Get a clan's profile · cached 2m
    * @request GET:/clans/{clanTag}
    * @secure
    * @response `200` `GetClanData`
@@ -5692,7 +5743,7 @@ export namespace Clans {
    * @description Shows when each member was last active, and how active they've been over the last day and the last 30 days. Members ClashPerk hasn't seen yet are left out.
    * @tags Clans
    * @name GetClanLastSeen
-   * @summary Get last-seen times for a clan's members
+   * @summary Get last-seen times for a clan's members · cached 10m
    * @request GET:/clans/{clanTag}/lastseen
    * @secure
    * @response `200` `GetClanLastSeenData`
@@ -5712,7 +5763,7 @@ export namespace Clans {
    * @description Covers members in Legend League. Members with no battles logged that day are left out.
    * @tags Clans
    * @name GetClanDailyLegendBattles
-   * @summary Get a clan's legend battle totals for one day
+   * @summary Get a clan's legend battle totals for one day · cached 2m
    * @request GET:/clans/{clanTag}/legend-battles/daily
    * @secure
    * @response `200` `GetClanDailyLegendBattlesData`
@@ -5739,7 +5790,7 @@ export namespace Clans {
    * @description Uses the current members. For a past season, each member's trophies are where they finished it.
    * @tags Clans
    * @name GetClanLegendLeaderboard
-   * @summary Rank a clan's members by Legend League trophies
+   * @summary Rank a clan's members by Legend League trophies · cached 10m
    * @request GET:/clans/{clanTag}/legend-battles/leaderboard
    * @secure
    * @response `200` `GetClanLegendLeaderboardData`
@@ -5766,7 +5817,7 @@ export namespace Clans {
    * @description Pass a month such as `2026-10` to see that month. Without one, you get the last 10 days.
    * @tags Clans
    * @name GetClanCapitalContributions
-   * @summary List a clan's Capital Gold contributions
+   * @summary List a clan's Capital Gold contributions · cached 5m
    * @request GET:/clans/{clanTag}/capital-contribution
    * @secure
    * @response `200` `GetClanCapitalContributionsData`
@@ -5792,7 +5843,7 @@ export namespace Clans {
    * No description
    * @tags Clans
    * @name GetClanCapitalRaids
-   * @summary List a clan's Capital raid weekends
+   * @summary List a clan's Capital raid weekends · cached 5m
    * @request GET:/clans/{clanTag}/capital-raids
    * @secure
    * @response `200` `GetClanCapitalRaidsData`
@@ -5819,7 +5870,7 @@ export namespace Clans {
    * No description
    * @tags Clans
    * @name GetClanGames
-   * @summary Get a clan's Clan Games points
+   * @summary Get a clan's Clan Games points · cached 5m
    * @request GET:/clans/{clanTag}/clan-games
    * @secure
    * @response `200` `GetClanGamesData`
@@ -5846,7 +5897,7 @@ export namespace Clans {
    * @description Also tells you which of these links you're allowed to remove.
    * @tags Clans
    * @name GetClanLinks
-   * @summary List a clan's members with their Discord links
+   * @summary List a clan's members with their Discord links · cached 30s, per user
    * @request GET:/clans/{clanTag}/links
    * @secure
    * @response `200` `GetClanLinksData`
@@ -5868,7 +5919,7 @@ export namespace Players {
    * No description
    * @tags Players
    * @name GetPlayer
-   * @summary Get a player's profile
+   * @summary Get a player's profile · cached 2m
    * @request GET:/players/{playerTag}
    * @secure
    * @response `200` `GetPlayerData`
@@ -5908,7 +5959,7 @@ export namespace Players {
    * No description
    * @tags Players
    * @name GetPlayerSeasons
-   * @summary Get a player's season stats
+   * @summary Get a player's season stats · cached 10m
    * @request GET:/players/{playerTag}/seasons
    * @secure
    * @response `200` `GetPlayerSeasonsData`
@@ -5935,7 +5986,7 @@ export namespace Players {
    * @description If the player isn't in a league group right now, there's no current week in the response.
    * @tags Players
    * @name GetPlayerRankedWeeks
-   * @summary Get a player's ranked league weeks
+   * @summary Get a player's ranked league weeks · cached 5m
    * @request GET:/players/{playerTag}/ranked
    * @secure
    * @response `200` `GetPlayerRankedWeeksData`
@@ -5955,7 +6006,7 @@ export namespace Players {
    * @description Each hero with the pet and equipment used most, and the army used most, from the week's ranked attacks.
    * @tags Players
    * @name GetRankedArmies
-   * @summary Get a player's most used ranked armies
+   * @summary Get a player's most used ranked armies · cached 5m
    * @request GET:/players/{playerTag}/ranked/armies
    * @secure
    * @response `200` `GetRankedArmiesData`
@@ -5982,7 +6033,7 @@ export namespace Players {
    * @description Only battles ClashPerk has tracked, up to 448.
    * @tags Players
    * @name GetPlayerBattleLog
-   * @summary Get a player's battle log
+   * @summary Get a player's battle log · cached 10m
    * @request GET:/players/{playerTag}/battle-log
    * @secure
    * @response `200` `GetPlayerBattleLogData`
@@ -6002,7 +6053,7 @@ export namespace Players {
    * @description Deprecated: use `GET /v1/legends/{playerTag}/days` for one player, or `GET /v1/clans/{clanTag}/legend-battles/daily` for a clan. This route is removed on 2026-12-15.
    * @tags Players
    * @name GetPlayerDailyBattles
-   * @summary Get a player's daily battle totals
+   * @summary Get a player's daily battle totals · cached 10m
    * @request GET:/players/{playerTag}/battle-log/aggregate
    * @deprecated
    * @secure
@@ -6023,7 +6074,7 @@ export namespace Players {
    * @description Deprecated: use `GET /v1/clans/{clanTag}/legend-battles/leaderboard`, once per clan. This route is removed on 2026-12-15.
    * @tags Players
    * @name GetBattleLogLeaderboard
-   * @summary Rank players by Legend League trophies
+   * @summary Rank players by Legend League trophies · cached 10m
    * @request QUERY:/players/battle-log/leaderboard
    * @deprecated
    * @secure
@@ -6042,7 +6093,7 @@ export namespace Players {
    * @description Deprecated: send the same request with the `QUERY` method. This route is removed on 2026-11-25.
    * @tags Players
    * @name GetBattleLogLeaderboardViaPost
-   * @summary Rank players by Legend League trophies
+   * @summary Rank players by Legend League trophies · cached 10m
    * @request POST:/players/battle-log/leaderboard
    * @deprecated
    * @secure
@@ -6061,7 +6112,7 @@ export namespace Players {
    * @description Newest first. For the clan the player is in now, the last-seen time is the current time.
    * @tags Players
    * @name GetPlayerClanHistory
-   * @summary Get a player's clan history
+   * @summary Get a player's clan history · cached 10m
    * @request GET:/players/{playerTag}/history
    * @secure
    * @response `200` `GetPlayerClanHistoryData`
@@ -6081,7 +6132,7 @@ export namespace Players {
    * No description
    * @tags Players
    * @name GetPlayerWars
-   * @summary List a player's wars and attacks
+   * @summary List a player's wars and attacks · cached 10m
    * @request GET:/players/{playerTag}/wars
    * @secure
    * @response `200` `GetPlayerWarsData`
@@ -6114,7 +6165,7 @@ export namespace Players {
    * @description Only counts wars that started on or after `startDate`.
    * @tags Players
    * @name GetPlayerWarTotals
-   * @summary Get a player's war totals per season
+   * @summary Get a player's war totals per season · cached 10m
    * @request GET:/players/{playerTag}/wars/aggregate
    * @secure
    * @response `200` `GetPlayerWarTotalsData`
@@ -6140,7 +6191,7 @@ export namespace Players {
    * @description Only counts rounds that started on or after `startDate`, newest group first. An attack counts as missed once its round ends.
    * @tags Players
    * @name GetPlayerClanWarLeagueTotals
-   * @summary Get a player's CWL totals per league group
+   * @summary Get a player's CWL totals per league group · cached 10m
    * @request GET:/players/{playerTag}/clan-war-leagues/aggregate
    * @secure
    * @response `200` `GetPlayerClanWarLeagueTotalsData`
@@ -6168,7 +6219,7 @@ export namespace Legends {
    * @description Shows how many trophies it takes to reach certain ranks among the players ClashPerk tracks. Includes live numbers, the latest daily snapshot and up to 45 days of history.
    * @tags Legends
    * @name GetLegendRankingThresholds
-   * @summary Get Legend League rank thresholds
+   * @summary Get Legend League rank thresholds · cached 5m
    * @request GET:/legends/ranking-thresholds
    * @secure
    * @response `200` `GetLegendRankingThresholdsData`
@@ -6183,10 +6234,35 @@ export namespace Legends {
   }
 
   /**
+   * @description Attacks and 3-star attacks on each game day of a season and the season before it, across every legend player ClashPerk tracks.
+   * @tags Legends
+   * @name GetLegendTripleRates
+   * @summary Get the daily Legend League 3-star rate · cached 30m
+   * @request GET:/legends/triple-rates
+   * @secure
+   * @response `200` `GetLegendTripleRatesData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetLegendTripleRates {
+    export type RequestParams = {};
+    export type RequestQuery = {
+      /**
+       * The league season's start date; the current season when left out.
+       * @pattern ^\d{4}-\d{2}-\d{2}$
+       * @example "2026-10-05"
+       */
+      seasonId?: string;
+    };
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetLegendTripleRatesData;
+  }
+
+  /**
    * @description Shows each day's starting and ending trophies, the Monday reset and every battle.
    * @tags Legends
    * @name GetLegendDays
-   * @summary Get a player's legend days in a season
+   * @summary Get a player's legend days in a season · cached 1m
    * @request GET:/legends/{playerTag}/days
    * @secure
    * @response `200` `GetLegendDaysData`
@@ -6213,7 +6289,7 @@ export namespace Legends {
    * @description Each hero with the pet and equipment used most, and the army used most, from the season's legend attacks.
    * @tags Legends
    * @name GetLegendArmies
-   * @summary Get a player's most used legend armies
+   * @summary Get a player's most used legend armies · cached 5m
    * @request GET:/legends/{playerTag}/armies
    * @secure
    * @response `200` `GetLegendArmiesData`
@@ -6237,35 +6313,10 @@ export namespace Legends {
   }
 
   /**
-   * @description Attacks and 3-star attacks on each game day of a season and the season before it, across every legend player ClashPerk tracks.
-   * @tags Legends
-   * @name GetLegendTripleRates
-   * @summary Get the daily Legend League 3-star rate
-   * @request GET:/legends/triple-rates
-   * @secure
-   * @response `200` `GetLegendTripleRatesData`
-   * @response `500` `ErrorResponseDto`
-   */
-  export namespace GetLegendTripleRates {
-    export type RequestParams = {};
-    export type RequestQuery = {
-      /**
-       * The league season's start date; the current season when left out.
-       * @pattern ^\d{4}-\d{2}-\d{2}$
-       * @example "2026-10-05"
-       */
-      seasonId?: string;
-    };
-    export type RequestBody = never;
-    export type RequestHeaders = {};
-    export type ResponseBody = GetLegendTripleRatesData;
-  }
-
-  /**
    * No description
    * @tags Legends
    * @name GetLegendSeasons
-   * @summary Get a player's recent legend seasons
+   * @summary Get a player's recent legend seasons · cached 5m
    * @request GET:/legends/{playerTag}/seasons
    * @secure
    * @response `200` `GetLegendSeasonsData`
@@ -6285,7 +6336,7 @@ export namespace Legends {
    * @description The rank is worked out from the players ClashPerk tracks this season, so it may differ from the game. Returns 404 if the player isn't tracked.
    * @tags Legends
    * @name EstimateLegendRank
-   * @summary Estimate a player's legend rank
+   * @summary Estimate a player's legend rank · cached 5m
    * @request GET:/legends/{playerTag}/estimate-rank
    * @secure
    * @response `200` `EstimateLegendRankData`
@@ -6307,7 +6358,7 @@ export namespace Rankings {
    * No description
    * @tags Rankings
    * @name GetRankingLocations
-   * @summary List ranking locations
+   * @summary List ranking locations · cached 24h
    * @request GET:/rankings/locations
    * @secure
    * @response `200` `GetRankingLocationsData`
@@ -6325,7 +6376,7 @@ export namespace Rankings {
    * No description
    * @tags Rankings
    * @name GetRankingSeasons
-   * @summary List saved ranking seasons
+   * @summary List saved ranking seasons · cached 1h
    * @request GET:/rankings/seasons
    * @secure
    * @response `200` `GetRankingSeasonsData`
@@ -6343,7 +6394,7 @@ export namespace Rankings {
    * @description Looks through every saved board, in every country and worldwide.
    * @tags Rankings
    * @name FindRankings
-   * @summary Find where players and clans rank this season
+   * @summary Find where players and clans rank this season · cached 5m
    * @request QUERY:/rankings/standings
    * @secure
    * @response `200` `FindRankingsData`
@@ -6361,7 +6412,7 @@ export namespace Rankings {
    * @description Shows where the clan sits on the clan and capital boards in its country and worldwide, and its country rank over the last 6 saved seasons.
    * @tags Rankings
    * @name GetClanRankings
-   * @summary Get a clan's rankings and rank history
+   * @summary Get a clan's rankings and rank history · cached 5m
    * @request GET:/rankings/clans/{clanTag}
    * @secure
    * @response `200` `GetClanRankingsData`
@@ -6381,7 +6432,7 @@ export namespace Rankings {
    * @description Only seasons where the player made a board, newest first. The current season isn't included.
    * @tags Rankings
    * @name GetPlayerRankings
-   * @summary List a player's past season-end ranks
+   * @summary List a player's past season-end ranks · cached 5m
    * @request GET:/rankings/players/{playerTag}
    * @secure
    * @response `200` `GetPlayerRankingsData`
@@ -6401,7 +6452,7 @@ export namespace Rankings {
    * @description Shows the live board, or pass `season` to see a saved one. Builder base boards are only available live.
    * @tags Rankings
    * @name GetRankingBoard
-   * @summary Get a ranking board
+   * @summary Get a ranking board · cached 5m
    * @request GET:/rankings/{countryCode}/{board}
    * @secure
    * @response `200` `GetRankingBoardData`
@@ -6440,7 +6491,7 @@ export namespace Wars {
    * @description Comes straight from the game and includes every war in the group. Returns 404 if the clan isn't in CWL.
    * @tags Wars
    * @name GetClanWarLeagueGroup
-   * @summary Get a clan's current CWL group
+   * @summary Get a clan's current CWL group · cached 5m
    * @request GET:/wars/{clanTag}/clan-war-leagues/groups
    * @secure
    * @response `200` `GetClanWarLeagueGroupData`
@@ -6460,7 +6511,7 @@ export namespace Wars {
    * @description Uses the clan's most recent saved CWL group and returns only the clan's own wars.
    * @tags Wars
    * @name GetClanWarLeagueWars
-   * @summary Get a clan's wars in its latest CWL group
+   * @summary Get a clan's wars in its latest CWL group · cached 5m
    * @request GET:/wars/{clanTag}/clan-war-leagues/clan
    * @secure
    * @response `200` `GetClanWarLeagueWarsData`
@@ -6480,7 +6531,7 @@ export namespace Wars {
    * @description Built from the wars ClashPerk tracked, newest first. Use the standings endpoint to see a group's table.
    * @tags Wars
    * @name GetClanWarLeagueSeasons
-   * @summary List a clan's CWL seasons with member totals
+   * @summary List a clan's CWL seasons with member totals · cached 5m
    * @request GET:/wars/{clanTag}/clan-war-leagues/seasons
    * @secure
    * @response `200` `GetClanWarLeagueSeasonsData`
@@ -6507,7 +6558,7 @@ export namespace Wars {
    * No description
    * @tags Wars
    * @name GetClanMemberWarStats
-   * @summary Get war stats for a clan's members
+   * @summary Get war stats for a clan's members · cached 5m
    * @request GET:/wars/{clanTag}/members/stats
    * @secure
    * @response `200` `GetClanMemberWarStatsData`
@@ -6547,7 +6598,7 @@ export namespace Wars {
    * @description Get the `groupId` from the CWL seasons endpoint. Each war win adds 10 bonus stars, as in the game.
    * @tags Wars
    * @name GetClanWarLeagueStandings
-   * @summary Get a CWL group's standings
+   * @summary Get a CWL group's standings · cached 5m
    * @request GET:/wars/{clanTag}/clan-war-leagues/groups/{groupId}/standings
    * @secure
    * @response `200` `GetClanWarLeagueStandingsData`
@@ -6568,7 +6619,7 @@ export namespace Wars {
    * No description
    * @tags Wars
    * @name ListClanWars
-   * @summary List a clan's tracked wars
+   * @summary List a clan's tracked wars · cached 1m
    * @request GET:/wars/{clanTag}
    * @secure
    * @response `200` `ListClanWarsData`
@@ -6600,7 +6651,7 @@ export namespace Wars {
    * @description During CWL, this is the clan's current round. The war is empty if the clan isn't in one, or if its war log is private outside CWL.
    * @tags Wars
    * @name GetCurrentWar
-   * @summary Get a clan's current war
+   * @summary Get a clan's current war · cached 1m
    * @request GET:/wars/{clanTag}/current
    * @secure
    * @response `200` `GetCurrentWarData`
@@ -6620,7 +6671,7 @@ export namespace Wars {
    * @description Use a war ID from the clan's war list.
    * @tags Wars
    * @name GetClanWar
-   * @summary Get a tracked war
+   * @summary Get a tracked war · cached 5m
    * @request GET:/wars/{clanTag}/{warId}
    * @secure
    * @response `200` `GetClanWarData`
@@ -6643,7 +6694,7 @@ export namespace Events {
    * No description
    * @tags Events
    * @name GetEvents
-   * @summary List game events in a date range
+   * @summary List game events in a date range · cached 1m
    * @request GET:/events
    * @secure
    * @response `200` `GetEventsData`
@@ -6672,7 +6723,7 @@ export namespace Events {
    * No description
    * @tags Events
    * @name GetUpcomingEvents
-   * @summary List current and next game events
+   * @summary List current and next game events · cached 1m
    * @request GET:/events/upcoming
    * @secure
    * @response `200` `GetUpcomingEventsData`
@@ -7224,7 +7275,7 @@ export namespace Users {
    * @description Covers your linked accounts that you haven't hidden. CWL rounds still show even if the account has left the clan.
    * @tags Users
    * @name GetWarTasks
-   * @summary List your accounts' current wars
+   * @summary List your accounts' current wars · cached 1m, per user
    * @request GET:/users/me/tasks/wars
    * @secure
    * @response `200` `GetWarTasksData`
@@ -7242,7 +7293,7 @@ export namespace Users {
    * @description Empty outside raid weekends.
    * @tags Users
    * @name GetCapitalRaidTasks
-   * @summary List your accounts' capital raid attacks
+   * @summary List your accounts' capital raid attacks · cached 1m, per user
    * @request GET:/users/me/tasks/capital-raids
    * @secure
    * @response `200` `GetCapitalRaidTasksData`
@@ -7260,7 +7311,7 @@ export namespace Users {
    * @description Empty outside Clan Games.
    * @tags Users
    * @name GetClanGamesTasks
-   * @summary List your accounts' Clan Games points
+   * @summary List your accounts' Clan Games points · cached 1m, per user
    * @request GET:/users/me/tasks/clan-games
    * @secure
    * @response `200` `GetClanGamesTasksData`
@@ -7278,7 +7329,7 @@ export namespace Users {
    * No description
    * @tags Users
    * @name GetLegendTasks
-   * @summary List your accounts' Legend League attacks today
+   * @summary List your accounts' Legend League attacks today · cached 1m, per user
    * @request GET:/users/me/tasks/legends
    * @secure
    * @response `200` `GetLegendTasksData`
@@ -7296,7 +7347,7 @@ export namespace Users {
    * No description
    * @tags Users
    * @name GetRankedTasks
-   * @summary List your accounts' ranked attacks this week
+   * @summary List your accounts' ranked attacks this week · cached 1m, per user
    * @request GET:/users/me/tasks/ranked
    * @secure
    * @response `200` `GetRankedTasksData`
@@ -8487,7 +8538,7 @@ export namespace Tickets {
   }
 
   /**
-   * @description Does the same as the Close button in Discord. The last 100 messages are saved to the ticket log, the ticket type's role changes are undone, Notify Me subscribers get a DM, and the channel is deleted.
+   * @description Does the same as the Close button in Discord. A transcript of the ticket and its staff thread goes to the ticket close log, the ticket type's role changes are undone, Notify Me subscribers get a DM, and the channel is deleted.
    * @tags Tickets
    * @name CloseTicket
    * @summary Close an opened ticket
@@ -8929,7 +8980,7 @@ export namespace Admin {
    * @description Clans, auto-roles, logs, reminders, rosters and other settings, with role and channel names when the bot can see the server.
    * @tags Admin
    * @name GetServerSetup
-   * @summary Get everything a server has set up
+   * @summary Get everything a server has set up · cached 1m, server only
    * @request GET:/admin/guilds/{guildId}/setup
    * @secure
    * @response `200` `GetServerSetupData`
@@ -9139,7 +9190,7 @@ export namespace Exports {
    * @description For a scheduled export, the sheet already made for the same server and clans is returned instead of a new one.
    * @tags Internal
    * @name ExportClanMembers
-   * @summary Export clan members to a Google Sheet
+   * @summary Export clan members to a Google Sheet · cached 10m
    * @request POST:/exports/members
    * @response `201` `ExportClanMembersData`
    * @response `500` `ErrorResponseDto`
@@ -9350,7 +9401,7 @@ export class HttpClient<SecurityDataType = unknown> {
 
 /**
  * @title ClashPerk Discord Bot API
- * @version v2.0.177
+ * @version v2.0.187
  * @baseUrl /v1
  * @contact
  *
@@ -9666,7 +9717,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Clans
      * @name GetClanActivity
-     * @summary List recent activity in clans
+     * @summary List recent activity in clans · cached 5m
      * @request QUERY:/clans/activity
      * @secure
      * @response `200` `GetClanActivityData`
@@ -9688,7 +9739,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Clans
      * @name GetClanActivityViaPost
-     * @summary List recent activity in clans
+     * @summary List recent activity in clans · cached 5m
      * @request POST:/clans/activity
      * @deprecated
      * @secure
@@ -9717,7 +9768,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Clans
      * @name GetClan
-     * @summary Get a clan's profile
+     * @summary Get a clan's profile · cached 2m
      * @request GET:/clans/{clanTag}
      * @secure
      * @response `200` `GetClanData`
@@ -9737,7 +9788,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Clans
      * @name GetClanLastSeen
-     * @summary Get last-seen times for a clan's members
+     * @summary Get last-seen times for a clan's members · cached 10m
      * @request GET:/clans/{clanTag}/lastseen
      * @secure
      * @response `200` `GetClanLastSeenData`
@@ -9760,7 +9811,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Clans
      * @name GetClanDailyLegendBattles
-     * @summary Get a clan's legend battle totals for one day
+     * @summary Get a clan's legend battle totals for one day · cached 2m
      * @request GET:/clans/{clanTag}/legend-battles/daily
      * @secure
      * @response `200` `GetClanDailyLegendBattlesData`
@@ -9787,7 +9838,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Clans
      * @name GetClanLegendLeaderboard
-     * @summary Rank a clan's members by Legend League trophies
+     * @summary Rank a clan's members by Legend League trophies · cached 10m
      * @request GET:/clans/{clanTag}/legend-battles/leaderboard
      * @secure
      * @response `200` `GetClanLegendLeaderboardData`
@@ -9814,7 +9865,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Clans
      * @name GetClanCapitalContributions
-     * @summary List a clan's Capital Gold contributions
+     * @summary List a clan's Capital Gold contributions · cached 5m
      * @request GET:/clans/{clanTag}/capital-contribution
      * @secure
      * @response `200` `GetClanCapitalContributionsData`
@@ -9841,7 +9892,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Clans
      * @name GetClanCapitalRaids
-     * @summary List a clan's Capital raid weekends
+     * @summary List a clan's Capital raid weekends · cached 5m
      * @request GET:/clans/{clanTag}/capital-raids
      * @secure
      * @response `200` `GetClanCapitalRaidsData`
@@ -9865,7 +9916,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Clans
      * @name GetClanGames
-     * @summary Get a clan's Clan Games points
+     * @summary Get a clan's Clan Games points · cached 5m
      * @request GET:/clans/{clanTag}/clan-games
      * @secure
      * @response `200` `GetClanGamesData`
@@ -9889,7 +9940,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Clans
      * @name GetClanLinks
-     * @summary List a clan's members with their Discord links
+     * @summary List a clan's members with their Discord links · cached 30s, per user
      * @request GET:/clans/{clanTag}/links
      * @secure
      * @response `200` `GetClanLinksData`
@@ -9913,7 +9964,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetPlayer
-     * @summary Get a player's profile
+     * @summary Get a player's profile · cached 2m
      * @request GET:/players/{playerTag}
      * @secure
      * @response `200` `GetPlayerData`
@@ -9956,7 +10007,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetPlayerSeasons
-     * @summary Get a player's season stats
+     * @summary Get a player's season stats · cached 10m
      * @request GET:/players/{playerTag}/seasons
      * @secure
      * @response `200` `GetPlayerSeasonsData`
@@ -9980,7 +10031,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetPlayerRankedWeeks
-     * @summary Get a player's ranked league weeks
+     * @summary Get a player's ranked league weeks · cached 5m
      * @request GET:/players/{playerTag}/ranked
      * @secure
      * @response `200` `GetPlayerRankedWeeksData`
@@ -10003,7 +10054,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetRankedArmies
-     * @summary Get a player's most used ranked armies
+     * @summary Get a player's most used ranked armies · cached 5m
      * @request GET:/players/{playerTag}/ranked/armies
      * @secure
      * @response `200` `GetRankedArmiesData`
@@ -10027,7 +10078,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetPlayerBattleLog
-     * @summary Get a player's battle log
+     * @summary Get a player's battle log · cached 10m
      * @request GET:/players/{playerTag}/battle-log
      * @secure
      * @response `200` `GetPlayerBattleLogData`
@@ -10050,7 +10101,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetPlayerDailyBattles
-     * @summary Get a player's daily battle totals
+     * @summary Get a player's daily battle totals · cached 10m
      * @request GET:/players/{playerTag}/battle-log/aggregate
      * @deprecated
      * @secure
@@ -10074,7 +10125,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetBattleLogLeaderboard
-     * @summary Rank players by Legend League trophies
+     * @summary Rank players by Legend League trophies · cached 10m
      * @request QUERY:/players/battle-log/leaderboard
      * @deprecated
      * @secure
@@ -10103,7 +10154,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetBattleLogLeaderboardViaPost
-     * @summary Rank players by Legend League trophies
+     * @summary Rank players by Legend League trophies · cached 10m
      * @request POST:/players/battle-log/leaderboard
      * @deprecated
      * @secure
@@ -10132,7 +10183,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetPlayerClanHistory
-     * @summary Get a player's clan history
+     * @summary Get a player's clan history · cached 10m
      * @request GET:/players/{playerTag}/history
      * @secure
      * @response `200` `GetPlayerClanHistoryData`
@@ -10155,7 +10206,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetPlayerWars
-     * @summary List a player's wars and attacks
+     * @summary List a player's wars and attacks · cached 10m
      * @request GET:/players/{playerTag}/wars
      * @secure
      * @response `200` `GetPlayerWarsData`
@@ -10179,7 +10230,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetPlayerWarTotals
-     * @summary Get a player's war totals per season
+     * @summary Get a player's war totals per season · cached 10m
      * @request GET:/players/{playerTag}/wars/aggregate
      * @secure
      * @response `200` `GetPlayerWarTotalsData`
@@ -10203,7 +10254,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetPlayerClanWarLeagueTotals
-     * @summary Get a player's CWL totals per league group
+     * @summary Get a player's CWL totals per league group · cached 10m
      * @request GET:/players/{playerTag}/clan-war-leagues/aggregate
      * @secure
      * @response `200` `GetPlayerClanWarLeagueTotalsData`
@@ -10231,7 +10282,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Legends
      * @name GetLegendRankingThresholds
-     * @summary Get Legend League rank thresholds
+     * @summary Get Legend League rank thresholds · cached 5m
      * @request GET:/legends/ranking-thresholds
      * @secure
      * @response `200` `GetLegendRankingThresholdsData`
@@ -10250,11 +10301,35 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
+     * @description Attacks and 3-star attacks on each game day of a season and the season before it, across every legend player ClashPerk tracks.
+     *
+     * @tags Legends
+     * @name GetLegendTripleRates
+     * @summary Get the daily Legend League 3-star rate · cached 30m
+     * @request GET:/legends/triple-rates
+     * @secure
+     * @response `200` `GetLegendTripleRatesData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getLegendTripleRates: (
+      query: GetLegendTripleRatesParams = {},
+      params: RequestParams = {},
+    ) =>
+      this.http.request<GetLegendTripleRatesData, GetLegendTripleRatesError>({
+        path: `/legends/triple-rates`,
+        method: "GET",
+        query: query,
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
      * @description Shows each day's starting and ending trophies, the Monday reset and every battle.
      *
      * @tags Legends
      * @name GetLegendDays
-     * @summary Get a player's legend days in a season
+     * @summary Get a player's legend days in a season · cached 1m
      * @request GET:/legends/{playerTag}/days
      * @secure
      * @response `200` `GetLegendDaysData`
@@ -10278,7 +10353,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Legends
      * @name GetLegendArmies
-     * @summary Get a player's most used legend armies
+     * @summary Get a player's most used legend armies · cached 5m
      * @request GET:/legends/{playerTag}/armies
      * @secure
      * @response `200` `GetLegendArmiesData`
@@ -10298,35 +10373,11 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description Attacks and 3-star attacks on each game day of a season and the season before it, across every legend player ClashPerk tracks.
-     *
-     * @tags Legends
-     * @name GetLegendTripleRates
-     * @summary Get the daily Legend League 3-star rate
-     * @request GET:/legends/triple-rates
-     * @secure
-     * @response `200` `GetLegendTripleRatesData`
-     * @response `500` `ErrorResponseDto`
-     */
-    getLegendTripleRates: (
-      query: GetLegendTripleRatesParams,
-      params: RequestParams = {},
-    ) =>
-      this.http.request<GetLegendTripleRatesData, GetLegendTripleRatesError>({
-        path: `/legends/triple-rates`,
-        method: "GET",
-        query: query,
-        secure: true,
-        format: "json",
-        ...params,
-      }),
-
-    /**
      * No description
      *
      * @tags Legends
      * @name GetLegendSeasons
-     * @summary Get a player's recent legend seasons
+     * @summary Get a player's recent legend seasons · cached 5m
      * @request GET:/legends/{playerTag}/seasons
      * @secure
      * @response `200` `GetLegendSeasonsData`
@@ -10349,7 +10400,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Legends
      * @name EstimateLegendRank
-     * @summary Estimate a player's legend rank
+     * @summary Estimate a player's legend rank · cached 5m
      * @request GET:/legends/{playerTag}/estimate-rank
      * @secure
      * @response `200` `EstimateLegendRankData`
@@ -10373,7 +10424,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Rankings
      * @name GetRankingLocations
-     * @summary List ranking locations
+     * @summary List ranking locations · cached 24h
      * @request GET:/rankings/locations
      * @secure
      * @response `200` `GetRankingLocationsData`
@@ -10393,7 +10444,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Rankings
      * @name GetRankingSeasons
-     * @summary List saved ranking seasons
+     * @summary List saved ranking seasons · cached 1h
      * @request GET:/rankings/seasons
      * @secure
      * @response `200` `GetRankingSeasonsData`
@@ -10413,7 +10464,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Rankings
      * @name FindRankings
-     * @summary Find where players and clans rank this season
+     * @summary Find where players and clans rank this season · cached 5m
      * @request QUERY:/rankings/standings
      * @secure
      * @response `200` `FindRankingsData`
@@ -10438,7 +10489,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Rankings
      * @name GetClanRankings
-     * @summary Get a clan's rankings and rank history
+     * @summary Get a clan's rankings and rank history · cached 5m
      * @request GET:/rankings/clans/{clanTag}
      * @secure
      * @response `200` `GetClanRankingsData`
@@ -10461,7 +10512,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Rankings
      * @name GetPlayerRankings
-     * @summary List a player's past season-end ranks
+     * @summary List a player's past season-end ranks · cached 5m
      * @request GET:/rankings/players/{playerTag}
      * @secure
      * @response `200` `GetPlayerRankingsData`
@@ -10484,7 +10535,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Rankings
      * @name GetRankingBoard
-     * @summary Get a ranking board
+     * @summary Get a ranking board · cached 5m
      * @request GET:/rankings/{countryCode}/{board}
      * @secure
      * @response `200` `GetRankingBoardData`
@@ -10509,7 +10560,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Wars
      * @name GetClanWarLeagueGroup
-     * @summary Get a clan's current CWL group
+     * @summary Get a clan's current CWL group · cached 5m
      * @request GET:/wars/{clanTag}/clan-war-leagues/groups
      * @secure
      * @response `200` `GetClanWarLeagueGroupData`
@@ -10532,7 +10583,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Wars
      * @name GetClanWarLeagueWars
-     * @summary Get a clan's wars in its latest CWL group
+     * @summary Get a clan's wars in its latest CWL group · cached 5m
      * @request GET:/wars/{clanTag}/clan-war-leagues/clan
      * @secure
      * @response `200` `GetClanWarLeagueWarsData`
@@ -10555,7 +10606,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Wars
      * @name GetClanWarLeagueSeasons
-     * @summary List a clan's CWL seasons with member totals
+     * @summary List a clan's CWL seasons with member totals · cached 5m
      * @request GET:/wars/{clanTag}/clan-war-leagues/seasons
      * @secure
      * @response `200` `GetClanWarLeagueSeasonsData`
@@ -10582,7 +10633,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Wars
      * @name GetClanMemberWarStats
-     * @summary Get war stats for a clan's members
+     * @summary Get war stats for a clan's members · cached 5m
      * @request GET:/wars/{clanTag}/members/stats
      * @secure
      * @response `200` `GetClanMemberWarStatsData`
@@ -10606,7 +10657,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Wars
      * @name GetClanWarLeagueStandings
-     * @summary Get a CWL group's standings
+     * @summary Get a CWL group's standings · cached 5m
      * @request GET:/wars/{clanTag}/clan-war-leagues/groups/{groupId}/standings
      * @secure
      * @response `200` `GetClanWarLeagueStandingsData`
@@ -10632,7 +10683,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Wars
      * @name ListClanWars
-     * @summary List a clan's tracked wars
+     * @summary List a clan's tracked wars · cached 1m
      * @request GET:/wars/{clanTag}
      * @secure
      * @response `200` `ListClanWarsData`
@@ -10656,7 +10707,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Wars
      * @name GetCurrentWar
-     * @summary Get a clan's current war
+     * @summary Get a clan's current war · cached 1m
      * @request GET:/wars/{clanTag}/current
      * @secure
      * @response `200` `GetCurrentWarData`
@@ -10679,7 +10730,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Wars
      * @name GetClanWar
-     * @summary Get a tracked war
+     * @summary Get a tracked war · cached 5m
      * @request GET:/wars/{clanTag}/{warId}
      * @secure
      * @response `200` `GetClanWarData`
@@ -10703,7 +10754,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Events
      * @name GetEvents
-     * @summary List game events in a date range
+     * @summary List game events in a date range · cached 1m
      * @request GET:/events
      * @secure
      * @response `200` `GetEventsData`
@@ -10724,7 +10775,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Events
      * @name GetUpcomingEvents
-     * @summary List current and next game events
+     * @summary List current and next game events · cached 1m
      * @request GET:/events/upcoming
      * @secure
      * @response `200` `GetUpcomingEventsData`
@@ -11359,7 +11410,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name GetWarTasks
-     * @summary List your accounts' current wars
+     * @summary List your accounts' current wars · cached 1m, per user
      * @request GET:/users/me/tasks/wars
      * @secure
      * @response `200` `GetWarTasksData`
@@ -11379,7 +11430,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name GetCapitalRaidTasks
-     * @summary List your accounts' capital raid attacks
+     * @summary List your accounts' capital raid attacks · cached 1m, per user
      * @request GET:/users/me/tasks/capital-raids
      * @secure
      * @response `200` `GetCapitalRaidTasksData`
@@ -11399,7 +11450,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name GetClanGamesTasks
-     * @summary List your accounts' Clan Games points
+     * @summary List your accounts' Clan Games points · cached 1m, per user
      * @request GET:/users/me/tasks/clan-games
      * @secure
      * @response `200` `GetClanGamesTasksData`
@@ -11419,7 +11470,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name GetLegendTasks
-     * @summary List your accounts' Legend League attacks today
+     * @summary List your accounts' Legend League attacks today · cached 1m, per user
      * @request GET:/users/me/tasks/legends
      * @secure
      * @response `200` `GetLegendTasksData`
@@ -11439,7 +11490,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Users
      * @name GetRankedTasks
-     * @summary List your accounts' ranked attacks this week
+     * @summary List your accounts' ranked attacks this week · cached 1m, per user
      * @request GET:/users/me/tasks/ranked
      * @secure
      * @response `200` `GetRankedTasksData`
@@ -12833,7 +12884,7 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description Does the same as the Close button in Discord. The last 100 messages are saved to the ticket log, the ticket type's role changes are undone, Notify Me subscribers get a DM, and the channel is deleted.
+     * @description Does the same as the Close button in Discord. A transcript of the ticket and its staff thread goes to the ticket close log, the ticket type's role changes are undone, Notify Me subscribers get a DM, and the channel is deleted.
      *
      * @tags Tickets
      * @name CloseTicket
@@ -13375,7 +13426,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Admin
      * @name GetServerSetup
-     * @summary Get everything a server has set up
+     * @summary Get everything a server has set up · cached 1m, server only
      * @request GET:/admin/guilds/{guildId}/setup
      * @secure
      * @response `200` `GetServerSetupData`
@@ -13626,7 +13677,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Internal
      * @name ExportClanMembers
-     * @summary Export clan members to a Google Sheet
+     * @summary Export clan members to a Google Sheet · cached 10m
      * @request POST:/exports/members
      * @response `201` `ExportClanMembersData`
      * @response `500` `ErrorResponseDto`

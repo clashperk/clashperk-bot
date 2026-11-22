@@ -15,10 +15,17 @@ import {
 import { GiveawayDto, GiveawayEntryResultDto } from '../api/generated.js';
 
 export const GIVEAWAY_BANNER_NAME = 'giveaway-banner.png';
+export const DEFAULT_DESCRIPTION = 'Click the button below to enter. Good luck!';
+export const MAX_TITLE = 100;
+export const MAX_DESCRIPTION = 1000;
+/** Mentions in the giveaway message show but never ping. The winner announcement pings. */
+export const NO_PINGS = { parse: [] } as const;
 
 export interface GiveawayView {
   id: string;
   prize: string;
+  title: string | null;
+  description: string | null;
   imageUrl: string | null;
   winnerCount: number;
   endsAtMs: number;
@@ -33,6 +40,8 @@ export function viewFromEntity(giveaway: GiveawaysEntity, clanNames: string[] = 
   return {
     id: giveaway._id.toHexString(),
     prize: giveaway.prize,
+    title: giveaway.title ?? null,
+    description: giveaway.description ?? null,
     imageUrl: giveaway.imageUrl,
     winnerCount: giveaway.winnerCount,
     endsAtMs: giveaway.endsAt.getTime(),
@@ -47,6 +56,8 @@ export function viewFromDto(giveaway: GiveawayDto, clanNames: string[] = []): Gi
   return {
     id: giveaway.id,
     prize: giveaway.prize,
+    title: giveaway.title,
+    description: giveaway.description,
     imageUrl: giveaway.imageUrl,
     winnerCount: giveaway.winnerCount,
     endsAtMs: giveaway.endsAt,
@@ -117,6 +128,11 @@ function oddsNote(eligibility: GiveawayEligibility): string {
   return 'Equal odds for all';
 }
 
+/** The host's own heading, or the default built from the prize. */
+export function giveawayTitle(view: Pick<GiveawayView, 'title' | 'prize'>) {
+  return view.title ?? `🎉 Giveaway · ${escapeMarkdown(view.prize)}`;
+}
+
 function enterButton(giveawayId: string, disabled = false) {
   // Stateless: the handler reloads the giveaway from its id, so the button survives restarts.
   return new ButtonBuilder()
@@ -132,7 +148,7 @@ export function buildActiveGiveaway(view: GiveawayView, { preview = false } = {}
   const container = new ContainerBuilder().setAccentColor(0xd99a2b);
   container.addTextDisplayComponents(
     new TextDisplayBuilder().setContent(
-      `## 🎉 Giveaway · ${escapeMarkdown(view.prize)}\nClick the button below to enter. Good luck!`
+      `## ${giveawayTitle(view)}\n${view.description ?? DEFAULT_DESCRIPTION}`
     )
   );
   if (view.imageUrl) {

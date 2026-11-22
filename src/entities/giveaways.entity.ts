@@ -16,6 +16,10 @@ export interface GiveawaysEntity {
   messageId: string | null;
   hostUserId: string;
   prize: string;
+  /** Replaces the default heading on the posted message. */
+  title?: string | null;
+  /** Replaces the default line under the heading. Markdown. */
+  description?: string | null;
   imageUrl: string | null;
   winnerCount: number;
   eligibility: GiveawayEligibility;
