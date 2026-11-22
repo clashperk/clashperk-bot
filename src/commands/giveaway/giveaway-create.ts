@@ -282,6 +282,7 @@ export default class GiveawayCreateCommand extends Command {
             { guildId: interaction.guildId },
             {
               channelId: channel.id,
+              applicationId: this.client.user.id,
               hostUserId: interaction.user.id,
               hostName: interaction.member.displayName,
               prize,

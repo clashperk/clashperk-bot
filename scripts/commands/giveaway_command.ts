@@ -57,7 +57,8 @@ export const GIVEAWAY_COMMAND: RESTPostAPIApplicationCommandsJSONBody = {
         },
         {
           name: 'boost_factor',
-          description: 'For boosted mode: how many times the odds for clan members. Default 2.',
+          description:
+            'Boosted mode only. Tickets each clan member gets, everyone else gets 1. Default 2.',
           type: ApplicationCommandOptionType.Integer,
           min_value: 2,
           max_value: 100

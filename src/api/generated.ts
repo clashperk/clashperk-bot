@@ -1976,6 +1976,8 @@ export interface CreateGiveawayInput {
   endsAt: string;
   channelId: string;
   hostUserId: string;
+  /** The bot that posts and runs it. Only an API-key caller (a bot) can set it. */
+  applicationId?: string;
   /**
    * The host's Discord name, shown on the dashboard.
    * @maxLength 100
