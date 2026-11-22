@@ -7,6 +7,9 @@ import { Client } from './client.js';
 /** A new giveaway is posted from its insert event. The sweep only catches ones that missed it. */
 const UNPOSTED_GRACE = 30 * 1000;
 
+/** Fields an edit can change that the posted message shows. */
+const SHOWN_FIELDS = ['prize', 'winnerCount', 'endsAt', 'eligibility'];
+
 export class GiveawayScheduler {
   private readonly giveaways: Collection<GiveawaysEntity>;
   private readonly refreshRate = 5 * 60 * 1000;
@@ -43,6 +46,9 @@ export class GiveawayScheduler {
         if (giveaway.status !== 'active') return;
 
         if (!giveaway.messageId) this.client.giveawayManager.post(giveaway);
+        else if (Object.keys(updated ?? {}).some(isShownField)) {
+          this.client.giveawayManager.scheduleRefresh(giveaway.guild, giveaway._id.toHexString());
+        }
         if (giveaway.endsAt.getTime() < Date.now() + this.refreshRate) this.queue(giveaway);
       }
     );
@@ -107,4 +113,9 @@ export class GiveawayScheduler {
       else if (giveaway.endsAt.getTime() < now + this.refreshRate) this.queue(giveaway);
     }
   }
+}
+
+/** Matches `eligibility` and dotted paths under it, such as `eligibility.clanTags`. */
+function isShownField(path: string) {
+  return SHOWN_FIELDS.some((field) => path === field || path.startsWith(`${field}.`));
 }

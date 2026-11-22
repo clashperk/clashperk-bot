@@ -22,7 +22,7 @@ import {
 import { Client } from './client.js';
 
 /** How long the live entry count may lag, so a busy giveaway doesn't hit Discord's rate limits. */
-const COUNT_EDIT_DELAY = 5_000;
+const REFRESH_DELAY = 5_000;
 
 /** Posting failures that retrying can't fix, so the giveaway is cancelled instead. */
 const UNPOSTABLE = new Set<number>([
@@ -33,7 +33,7 @@ const UNPOSTABLE = new Set<number>([
 
 export class GiveawayManager {
   private readonly posting = new Set<string>();
-  private readonly countEdits = new Map<string, NodeJS.Timeout>();
+  private readonly refreshes = new Map<string, NodeJS.Timeout>();
 
   public constructor(private readonly client: Client) {}
 
@@ -111,19 +111,19 @@ export class GiveawayManager {
     });
   }
 
-  /** Updates the posted message's entry count, at most once per `COUNT_EDIT_DELAY`. */
-  public scheduleCountUpdate(guildId: string, giveawayId: string) {
-    if (this.countEdits.has(giveawayId)) return;
+  /** Re-renders the posted message from the API, at most once per `REFRESH_DELAY`. */
+  public scheduleRefresh(guildId: string, giveawayId: string) {
+    if (this.refreshes.has(giveawayId)) return;
     const timeout = setTimeout(() => {
-      this.countEdits.delete(giveawayId);
-      this.refreshCount(guildId, giveawayId).catch((error) =>
+      this.refreshes.delete(giveawayId);
+      this.refreshActive(guildId, giveawayId).catch((error) =>
         this.client.logger.error(error, { label: 'GIVEAWAY' })
       );
-    }, COUNT_EDIT_DELAY);
-    this.countEdits.set(giveawayId, timeout.unref());
+    }, REFRESH_DELAY);
+    this.refreshes.set(giveawayId, timeout.unref());
   }
 
-  private async refreshCount(guildId: string, giveawayId: string) {
+  private async refreshActive(guildId: string, giveawayId: string) {
     const { data: giveaway } = await api.giveaways.getGiveaway({ guildId, giveawayId });
     if (giveaway.status !== 'active' || !giveaway.messageId) return;
     const message = await this.fetchMessage(giveaway.channelId, giveaway.messageId);

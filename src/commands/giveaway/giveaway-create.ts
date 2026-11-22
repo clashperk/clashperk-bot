@@ -26,6 +26,8 @@ import {
 
 const MAX_DURATION = 60 * 24 * 60 * 60 * 1000;
 const ALL_CLANS = '*';
+/** A select menu holds 25 options, and one is "All server clans". */
+const MENU_CLANS = 24;
 
 export default class GiveawayCreateCommand extends Command {
   public constructor() {
@@ -92,6 +94,15 @@ export default class GiveawayCreateCommand extends Command {
       clanNames: clans.filter((clan) => picked.includes(clan.tag)).map((clan) => clan.name)
     });
 
+    const dashboardLink =
+      clans.length > MENU_CLANS
+        ? await this.client.util.createDashboardUrl({
+            userId: interaction.user.id,
+            guildId: interaction.guildId,
+            path: '/giveaways/new'
+          })
+        : null;
+
     const customIds = {
       clans: this.client.uuid(interaction.user.id),
       post: this.client.uuid(interaction.user.id),
@@ -108,7 +119,17 @@ export default class GiveawayCreateCommand extends Command {
         | ActionRowBuilder<StringSelectMenuBuilder>
         | ActionRowBuilder<ButtonBuilder>
       )[] = [
-        new TextDisplayBuilder().setContent(`${header}\n-# Only you can see this preview.`),
+        new TextDisplayBuilder().setContent(
+          [
+            header,
+            ...(dashboardLink
+              ? [
+                  `This server has ${clans.length} clans. The menu lists the first ${MENU_CLANS}. To pick others, create the giveaway on the dashboard.`
+                ]
+              : []),
+            '-# Only you can see this preview.'
+          ].join('\n')
+        ),
         buildActiveGiveaway(current, { preview: true })
       ];
       if (mode !== 'open') {
@@ -118,14 +139,14 @@ export default class GiveawayCreateCommand extends Command {
               .setCustomId(customIds.clans)
               .setPlaceholder('Clans that count')
               .setMinValues(1)
-              .setMaxValues(Math.min(clans.length, 24) + 1)
+              .setMaxValues(Math.min(clans.length, MENU_CLANS) + 1)
               .addOptions(
                 {
                   label: 'All server clans',
                   value: ALL_CLANS,
                   default: picked.includes(ALL_CLANS)
                 },
-                ...clans.slice(0, 24).map((clan) => ({
+                ...clans.slice(0, MENU_CLANS).map((clan) => ({
                   label: clan.name,
                   description: clan.tag,
                   value: clan.tag,
@@ -144,7 +165,15 @@ export default class GiveawayCreateCommand extends Command {
           new ButtonBuilder()
             .setCustomId(customIds.cancel)
             .setLabel('Cancel')
-            .setStyle(ButtonStyle.Secondary)
+            .setStyle(ButtonStyle.Secondary),
+          ...(dashboardLink
+            ? [
+                new ButtonBuilder()
+                  .setURL(dashboardLink)
+                  .setLabel('Open dashboard')
+                  .setStyle(ButtonStyle.Link)
+              ]
+            : [])
         )
       );
       return {
