@@ -37,6 +37,13 @@ const MAX_DURATION = 60 * 24 * 60 * 60 * 1000;
 const ALL_CLANS = '*';
 /** A select menu holds 25 options, and one is "All server clans". */
 const MENU_CLANS = 24;
+/** Discord's limit on a modal label's description. */
+const LABEL_HINT_LENGTH = 100;
+
+const headingHint = (heading: string) => {
+  const hint = `Leave empty to show “${heading}”.`;
+  return hint.length > LABEL_HINT_LENGTH ? 'Leave empty to show the default heading.' : hint;
+};
 
 export default class GiveawayCreateCommand extends Command {
   public constructor() {
@@ -214,13 +221,11 @@ export default class GiveawayCreateCommand extends Command {
         .setCustomId('title')
         .setStyle(TextInputStyle.Short)
         .setMaxLength(MAX_TITLE)
-        .setPlaceholder(giveawayTitle({ prize, title: null }))
         .setRequired(false);
       const descriptionInput = new TextInputBuilder()
         .setCustomId('description')
         .setStyle(TextInputStyle.Paragraph)
         .setMaxLength(MAX_DESCRIPTION)
-        .setPlaceholder(DEFAULT_DESCRIPTION)
         .setRequired(false);
       if (title) titleInput.setValue(title);
       if (description) descriptionInput.setValue(description);
@@ -231,12 +236,12 @@ export default class GiveawayCreateCommand extends Command {
           .setTitle('Edit message')
           .addLabelComponents(
             new LabelBuilder()
-              .setLabel('Title')
-              .setDescription('Leave empty for the default.')
+              .setLabel('Heading')
+              .setDescription(headingHint(giveawayTitle({ prize, title: null })))
               .setTextInputComponent(titleInput),
             new LabelBuilder()
               .setLabel('Description')
-              .setDescription('Markdown works. Leave empty for the default.')
+              .setDescription(`Leave empty to show “${DEFAULT_DESCRIPTION}” Markdown works.`)
               .setTextInputComponent(descriptionInput)
           )
       );
