@@ -4,28 +4,46 @@ import {
   ActionRowBuilder,
   AttachmentBuilder,
   ButtonBuilder,
+  ButtonInteraction,
   ButtonStyle,
   ChatInputCommandInteraction,
   ContainerBuilder,
+  LabelBuilder,
   MessageFlags,
+  ModalBuilder,
   StringSelectMenuBuilder,
-  TextDisplayBuilder
+  TextDisplayBuilder,
+  TextInputBuilder,
+  TextInputStyle
 } from 'discord.js';
 import ms from 'ms';
 import { api } from '../../api/axios.js';
 import { GiveawayEligibilityInput } from '../../api/generated.js';
 import { Command } from '../../lib/handlers.js';
-import { createInteractionCollector } from '../../util/collectors.js';
+import { createInteractionCollector, createModalCollector } from '../../util/collectors.js';
 import {
   buildActiveGiveaway,
+  DEFAULT_DESCRIPTION,
+  giveawayTitle,
   eligibilitySummary,
   GIVEAWAY_BANNER_NAME,
   giveawayErrorText,
-  GiveawayView
+  GiveawayView,
+  MAX_DESCRIPTION,
+  MAX_TITLE
 } from '../../util/giveaways.js';
 
 const MAX_DURATION = 60 * 24 * 60 * 60 * 1000;
 const ALL_CLANS = '*';
+/** A select menu holds 25 options, and one is "All server clans". */
+const MENU_CLANS = 24;
+/** Discord's limit on a modal label's description. */
+const LABEL_HINT_LENGTH = 100;
+
+const headingHint = (heading: string) => {
+  const hint = `Leave empty to show “${heading}”.`;
+  return hint.length > LABEL_HINT_LENGTH ? 'Leave empty to show the default heading.' : hint;
+};
 
 export default class GiveawayCreateCommand extends Command {
   public constructor() {
@@ -73,6 +91,8 @@ export default class GiveawayCreateCommand extends Command {
     const winnerCount = interaction.options.getInteger('winners') ?? 1;
     const boostFactor = interaction.options.getInteger('boost_factor') ?? 2;
     let picked = [ALL_CLANS];
+    let title: string | null = null;
+    let description: string | null = null;
 
     const eligibility = (): GiveawayEligibility => {
       if (mode === 'open') return { mode };
@@ -83,6 +103,8 @@ export default class GiveawayCreateCommand extends Command {
     const view = (): GiveawayView => ({
       id: 'preview',
       prize,
+      title,
+      description,
       imageUrl: image?.url ?? null,
       winnerCount,
       endsAtMs: Date.now() + duration,
@@ -92,9 +114,19 @@ export default class GiveawayCreateCommand extends Command {
       clanNames: clans.filter((clan) => picked.includes(clan.tag)).map((clan) => clan.name)
     });
 
+    const dashboardLink =
+      clans.length > MENU_CLANS
+        ? await this.client.util.createDashboardUrl({
+            userId: interaction.user.id,
+            guildId: interaction.guildId,
+            path: '/giveaways/new'
+          })
+        : null;
+
     const customIds = {
       clans: this.client.uuid(interaction.user.id),
       post: this.client.uuid(interaction.user.id),
+      edit: this.client.uuid(interaction.user.id),
       cancel: this.client.uuid(interaction.user.id)
     };
 
@@ -108,7 +140,17 @@ export default class GiveawayCreateCommand extends Command {
         | ActionRowBuilder<StringSelectMenuBuilder>
         | ActionRowBuilder<ButtonBuilder>
       )[] = [
-        new TextDisplayBuilder().setContent(`${header}\n-# Only you can see this preview.`),
+        new TextDisplayBuilder().setContent(
+          [
+            header,
+            ...(dashboardLink
+              ? [
+                  `This server has ${clans.length} clans. The menu lists the first ${MENU_CLANS}. To pick others, create the giveaway on the dashboard.`
+                ]
+              : []),
+            '-# Only you can see this preview.'
+          ].join('\n')
+        ),
         buildActiveGiveaway(current, { preview: true })
       ];
       if (mode !== 'open') {
@@ -118,14 +160,14 @@ export default class GiveawayCreateCommand extends Command {
               .setCustomId(customIds.clans)
               .setPlaceholder('Clans that count')
               .setMinValues(1)
-              .setMaxValues(Math.min(clans.length, 24) + 1)
+              .setMaxValues(Math.min(clans.length, MENU_CLANS) + 1)
               .addOptions(
                 {
                   label: 'All server clans',
                   value: ALL_CLANS,
                   default: picked.includes(ALL_CLANS)
                 },
-                ...clans.slice(0, 24).map((clan) => ({
+                ...clans.slice(0, MENU_CLANS).map((clan) => ({
                   label: clan.name,
                   description: clan.tag,
                   value: clan.tag,
@@ -142,9 +184,21 @@ export default class GiveawayCreateCommand extends Command {
             .setLabel('Post giveaway')
             .setStyle(ButtonStyle.Success),
           new ButtonBuilder()
+            .setCustomId(customIds.edit)
+            .setLabel('Edit message')
+            .setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder()
             .setCustomId(customIds.cancel)
             .setLabel('Cancel')
-            .setStyle(ButtonStyle.Secondary)
+            .setStyle(ButtonStyle.Secondary),
+          ...(dashboardLink
+            ? [
+                new ButtonBuilder()
+                  .setURL(dashboardLink)
+                  .setLabel('Open dashboard')
+                  .setStyle(ButtonStyle.Link)
+              ]
+            : [])
         )
       );
       return {
@@ -160,6 +214,47 @@ export default class GiveawayCreateCommand extends Command {
       attachments: [],
       flags: MessageFlags.IsComponentsV2 as const
     });
+
+    const editMessage = async (action: ButtonInteraction<'cached'>) => {
+      const modalId = this.client.uuid(interaction.user.id);
+      const titleInput = new TextInputBuilder()
+        .setCustomId('title')
+        .setStyle(TextInputStyle.Short)
+        .setMaxLength(MAX_TITLE)
+        .setRequired(false);
+      const descriptionInput = new TextInputBuilder()
+        .setCustomId('description')
+        .setStyle(TextInputStyle.Paragraph)
+        .setMaxLength(MAX_DESCRIPTION)
+        .setRequired(false);
+      if (title) titleInput.setValue(title);
+      if (description) descriptionInput.setValue(description);
+
+      await action.showModal(
+        new ModalBuilder()
+          .setCustomId(modalId)
+          .setTitle('Edit message')
+          .addLabelComponents(
+            new LabelBuilder()
+              .setLabel('Heading')
+              .setDescription(headingHint(giveawayTitle({ prize, title: null })))
+              .setTextInputComponent(titleInput),
+            new LabelBuilder()
+              .setLabel('Description')
+              .setDescription(`Leave empty to show “${DEFAULT_DESCRIPTION}” Markdown works.`)
+              .setTextInputComponent(descriptionInput)
+          )
+      );
+      createModalCollector({
+        customId: modalId,
+        interaction: action,
+        onSubmit: async (submit) => {
+          title = submit.fields.getTextInputValue('title').trim() || null;
+          description = submit.fields.getTextInputValue('description').trim() || null;
+          if (submit.isFromMessage()) await submit.update(preview());
+        }
+      });
+    };
 
     let done = false;
     const message = await interaction.editReply(preview());
@@ -179,18 +274,23 @@ export default class GiveawayCreateCommand extends Command {
           return action.update(finish('Cancelled. Nothing was posted.'));
         }
 
+        if (action.customId === customIds.edit) return editMessage(action);
+
         await action.deferUpdate();
         try {
           await api.giveaways.createGiveaway(
             { guildId: interaction.guildId },
             {
               channelId: channel.id,
+              applicationId: this.client.user.id,
               hostUserId: interaction.user.id,
               hostName: interaction.member.displayName,
               prize,
               winnerCount,
               endsAt: new Date(Date.now() + duration).toISOString(),
               eligibility: eligibility() as GiveawayEligibilityInput,
+              ...(title ? { title } : {}),
+              ...(description ? { description } : {}),
               ...(image ? { imageUrl: image.url } : {})
             }
           );

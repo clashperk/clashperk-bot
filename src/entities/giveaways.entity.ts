@@ -14,8 +14,14 @@ export interface GiveawaysEntity {
   guild: string;
   channelId: string;
   messageId: string | null;
+  /** The bot that posts and runs it. Unset means the server's own bot: its custom bot, or ClashPerk. */
+  applicationId?: string | null;
   hostUserId: string;
   prize: string;
+  /** Replaces the default heading on the posted message. */
+  title?: string | null;
+  /** Replaces the default line under the heading. Markdown. */
+  description?: string | null;
   imageUrl: string | null;
   winnerCount: number;
   eligibility: GiveawayEligibility;

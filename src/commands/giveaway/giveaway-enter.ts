@@ -25,7 +25,7 @@ export default class GiveawayEnterCommand extends Command {
     } catch (error) {
       return interaction.editReply(giveawayErrorText(error, "I couldn't enter you. Try again."));
     }
-    this.client.giveawayManager.scheduleCountUpdate(params.guildId, params.giveawayId);
+    this.client.giveawayManager.scheduleRefresh(params.guildId, params.giveawayId);
 
     // The reply's wording depends on the mode. If that lookup fails, the entry still counts.
     const giveaway = await api.giveaways

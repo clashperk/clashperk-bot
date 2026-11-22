@@ -7,6 +7,9 @@ import { Client } from './client.js';
 /** A new giveaway is posted from its insert event. The sweep only catches ones that missed it. */
 const UNPOSTED_GRACE = 30 * 1000;
 
+/** Fields an edit can change that the posted message shows. */
+const SHOWN_FIELDS = ['prize', 'winnerCount', 'endsAt', 'eligibility'];
+
 export class GiveawayScheduler {
   private readonly giveaways: Collection<GiveawaysEntity>;
   private readonly refreshRate = 5 * 60 * 1000;
@@ -29,7 +32,7 @@ export class GiveawayScheduler {
 
         this.clear(change.documentKey._id.toHexString());
         const giveaway = change.fullDocument;
-        if (!giveaway || !this.owns(giveaway.guild)) return;
+        if (!giveaway || !this.owns(giveaway)) return;
 
         // Every draw, reroll and cancel renders here, whether the bot or the dashboard made it.
         const updated =
@@ -43,6 +46,9 @@ export class GiveawayScheduler {
         if (giveaway.status !== 'active') return;
 
         if (!giveaway.messageId) this.client.giveawayManager.post(giveaway);
+        else if (Object.keys(updated ?? {}).some(isShownField)) {
+          this.client.giveawayManager.scheduleRefresh(giveaway.guild, giveaway._id.toHexString());
+        }
         if (giveaway.endsAt.getTime() < Date.now() + this.refreshRate) this.queue(giveaway);
       }
     );
@@ -51,10 +57,14 @@ export class GiveawayScheduler {
     setInterval(this._refresh.bind(this), this.refreshRate).unref();
   }
 
-  /** Only the cluster that holds the server acts, and a custom bot takes over from the main one. */
-  private owns(guildId: string) {
-    if (!this.client.guilds.cache.has(guildId)) return false;
-    return !(this.client.settings.hasCustomBot(guildId) && !this.client.isCustom());
+  /**
+   * Only the cluster that holds the server acts. A giveaway made in Discord belongs to the bot that
+   * made it. A dashboard one goes to the server's custom bot, or to ClashPerk.
+   */
+  private owns(giveaway: Pick<GiveawaysEntity, 'guild' | 'applicationId'>) {
+    if (!this.client.guilds.cache.has(giveaway.guild)) return false;
+    if (giveaway.applicationId) return giveaway.applicationId === this.client.user.id;
+    return !(this.client.settings.hasCustomBot(giveaway.guild) && !this.client.isCustom());
   }
 
   private queue(giveaway: GiveawaysEntity) {
@@ -99,7 +109,7 @@ export class GiveawayScheduler {
     });
 
     for await (const giveaway of cursor) {
-      if (!this.owns(giveaway.guild)) continue;
+      if (!this.owns(giveaway)) continue;
       if (!giveaway.messageId) this.client.giveawayManager.post(giveaway);
       if (this.queued.has(giveaway._id.toHexString())) continue;
 
@@ -107,4 +117,9 @@ export class GiveawayScheduler {
       else if (giveaway.endsAt.getTime() < now + this.refreshRate) this.queue(giveaway);
     }
   }
+}
+
+/** Matches `eligibility` and dotted paths under it, such as `eligibility.clanTags`. */
+function isShownField(path: string) {
+  return SHOWN_FIELDS.some((field) => path === field || path.startsWith(`${field}.`));
 }
