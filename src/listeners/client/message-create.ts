@@ -1,4 +1,4 @@
-import { Settings } from '@app/constants';
+import { Settings, SUPPORT_SERVER_ID } from '@app/constants';
 import { ClashLinkType, LinkParsingMode } from '@app/entities';
 import { BaseMessageOptions, Message, PermissionFlagsBits } from 'discord.js';
 import {
@@ -16,6 +16,14 @@ import {
 import { Command, Listener } from '../../lib/handlers.js';
 import { countLinkCards } from '../../util/metrics.js';
 import type LayoutCommand from '../../commands/search/layout-post.js';
+
+// Mention questions call Groq's free tier, so each member and the whole server are capped.
+const ASK_MEMBER_COOLDOWN_MS = 30_000;
+const ASK_SERVER_WINDOW_MS = 60_000;
+const ASK_SERVER_LIMIT = 6;
+
+const askedByMember = new Map<string, number>();
+let askedInServer: number[] = [];
 
 export default class MessageCreateListener extends Listener {
   public constructor() {
@@ -64,8 +72,11 @@ export default class MessageCreateListener extends Listener {
       .find((_) => _);
     if (!parsed) return;
 
-    const { command, content, contents } = parsed;
-    if (!command) return;
+    const { command, content, contents, question } = parsed;
+    // Anything that isn't a text command is a question, so "@ClashPerk link my account" asks.
+    if (!command || command.id === 'ask' || command.run === Command.prototype.run) {
+      return this.ask(message, question);
+    }
 
     const resolved: Record<string, string> = {};
     const args = command.args();
@@ -215,8 +226,30 @@ export default class MessageCreateListener extends Listener {
     const command = this.client.commandHandler.getCommand(alias);
     const content = messageContent.slice(startOfArgs + alias.length + 1).trim();
     const contents = content.split(/\s+/g);
+    const question = messageContent.slice(endOfPrefix).trim();
 
-    return { command, content, contents };
+    return { command, content, contents, question };
+  }
+
+  /** Support server only. One question per member every 30 seconds, 6 a minute in the server. */
+  private async ask(message: Message<true>, question: string) {
+    if (message.guildId !== SUPPORT_SERVER_ID) return;
+    if (question.length < 5) return;
+
+    const now = Date.now();
+    for (const [userId, at] of askedByMember) {
+      if (now - at >= ASK_MEMBER_COOLDOWN_MS) askedByMember.delete(userId);
+    }
+    askedInServer = askedInServer.filter((at) => now - at < ASK_SERVER_WINDOW_MS);
+    if (askedByMember.has(message.author.id) || askedInServer.length >= ASK_SERVER_LIMIT) {
+      return message.react('⏳').catch(() => null);
+    }
+    askedByMember.set(message.author.id, now);
+    askedInServer.push(now);
+
+    return this.executeCommand(message, this.client.commandHandler.getCommand('ask')!, {
+      message: question
+    });
   }
 
   private inhibitor(message: Message) {

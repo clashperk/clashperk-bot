@@ -48,6 +48,8 @@ export const PATREON_LINK = 'https://www.patreon.com/clashperk';
 
 export const SUPPORT_SERVER_LINK = 'https://discord.gg/ppuppun';
 
+export const SUPPORT_SERVER_ID = '509784317598105619';
+
 export const CLAN_GAMES_STARTING_DATE = 22;
 
 export const UP_ARROW = '↑';
