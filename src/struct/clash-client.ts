@@ -49,11 +49,17 @@ export class ClashClient extends RestManager {
 
     this.requestHandler = new RequestHandler({
       restRequestTimeout: 10_000,
+      // A bad route to Cloudflare can stall new connections. A healthy one opens in under 300 ms.
+      connectTimeout: 3_000,
       rejectIfNotValid: false,
       cache: false,
-      // Cloudflare resets connections when it moves them between data centers. Only those are retried.
+      // Cloudflare resets connections when it moves them between data centers, and a stalled connect sent
+      // nothing yet. Only those are retried.
       retryLimit: 1,
-      retryOn: { statusCodes: [], errorCodes: ['ECONNRESET', 'EPIPE', 'UND_ERR_SOCKET'] },
+      retryOn: {
+        statusCodes: [],
+        errorCodes: ['ECONNRESET', 'EPIPE', 'UND_ERR_SOCKET', 'UND_ERR_CONNECT_TIMEOUT']
+      },
       keys: [...keys],
       baseURL: process.env.CLASH_OF_CLANS_API_BASE_URL,
       userAgent: userAgent(),
