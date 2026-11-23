@@ -7,6 +7,7 @@ import {
   ButtonBuilder,
   ButtonStyle,
   ChatInputCommandInteraction,
+  Message,
   MessageContextMenuCommandInteraction
 } from 'discord.js';
 import { Command } from '../../lib/handlers.js';
@@ -63,6 +64,20 @@ export default class AskCommand extends Command {
     return interaction.editReply({
       components: [row],
       content: `${content.slice(0, 2000 - mention.length)}${mention}`
+    });
+  }
+
+  /** `@ClashPerk <question>`, answered as a reply to the message. */
+  public async run(message: Message<true>, args: { message: string }) {
+    const question = args.message?.trim();
+    if (!question || question.length < 5) return null;
+
+    await message.channel.sendTyping().catch(() => null);
+    const content = await this.ask(question);
+    return message.reply({
+      content: content?.slice(0, 2000) ?? NO_RESULTS,
+      components: content ? [this.getComponents(message.author.id, message.author.id)] : [],
+      allowedMentions: { parse: [], repliedUser: false }
     });
   }
 
