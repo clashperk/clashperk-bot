@@ -79,7 +79,7 @@ export default class LinkListCommand extends Command {
       this.client.storage.updateClanLinks(interaction.guildId);
 
       return interaction.followUp({
-        content: [`**Click the button below to manage Discord links on our Dashboard.**`].join(
+        content: [`**Click the button below to manage Discord links on the dashboard.**`].join(
           '\n'
         ),
         flags: MessageFlags.Ephemeral,
