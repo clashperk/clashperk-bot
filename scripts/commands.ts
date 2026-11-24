@@ -99,6 +99,7 @@ export const COMMANDS: RESTPostAPIApplicationCommandsJSONBody[] = [
   GIVEAWAY_COMMAND,
   AUTOROLE_COMMAND,
   REMINDERS_COMMAND,
+  TICKET_COMMAND,
 
   // -------- OTHER COMMANDS--------
   LEGEND_COMMAND,
@@ -138,4 +139,4 @@ export const PRIVATE_COMMANDS: RESTPostAPIApplicationCommandsJSONBody[] = [
   ASK_COMMAND
 ];
 
-export const HIDDEN_COMMANDS: RESTPostAPIApplicationCommandsJSONBody[] = [TICKET_COMMAND];
+export const HIDDEN_COMMANDS: RESTPostAPIApplicationCommandsJSONBody[] = [];
