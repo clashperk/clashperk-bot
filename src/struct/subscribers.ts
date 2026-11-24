@@ -1,8 +1,9 @@
 import { Collections, COLOR_CODES, FeatureFlags, Settings } from '@app/constants';
-import { PatreonMembersEntity } from '@app/entities';
+import { BotProfileImagesEntity, PatreonMembersEntity } from '@app/entities';
 import { captureException } from '@sentry/node';
 import { EmbedBuilder, Guild, Interaction, WebhookClient } from 'discord.js';
-import { Collection, WithId } from 'mongodb';
+import { Binary, Collection, WithId } from 'mongodb';
+import { fetchRemoteImage, toDataUri } from '../util/remote-image.js';
 import { Util } from '../util/toolkit.js';
 import { timeoutSignal } from './clash-client.js';
 import { Client } from './client.js';
@@ -491,7 +492,17 @@ export class Subscribers {
   ) {
     if (this.client.isCustom()) return null;
     try {
-      const member = await guild.members.editMe({ ...editData, reason: 'Custom Profile Enabled' });
+      const [avatar, banner] = await Promise.all([
+        this.profileImage(guild.id, 'avatar', editData.avatar),
+        this.profileImage(guild.id, 'banner', editData.banner)
+      ]);
+      const member = await guild.members.editMe({
+        nick: editData.nick,
+        bio: editData.bio,
+        avatar,
+        banner,
+        reason: 'Custom Profile Enabled'
+      });
 
       await this.collection.updateOne(
         { id: patron.id },
@@ -530,6 +541,35 @@ export class Subscribers {
     }
   }
 
+  /** A data URI for the image. Upload links expire in weeks, so a copy is kept for when a patron resumes. */
+  private async profileImage(guildId: string, kind: 'avatar' | 'banner', url?: string | null) {
+    if (!url) return url;
+
+    const images = this.client.db.collection<BotProfileImagesEntity>(
+      Collections.BOT_PROFILE_IMAGES
+    );
+    const result = await fetchRemoteImage(url);
+    if (result.ok) {
+      const { data, contentType } = result.image;
+      await images.updateOne(
+        { guildId, kind },
+        { $set: { url, data: new Binary(data), contentType, updatedAt: new Date() } },
+        { upsert: true }
+      );
+      return toDataUri(result.image);
+    }
+
+    const saved = await images.findOne({ guildId, kind, url });
+    if (saved)
+      return toDataUri({ data: Buffer.from(saved.data.buffer), contentType: saved.contentType });
+
+    // Leaves the current image in place rather than failing the whole profile.
+    this.client.logger.warn(`Bot ${kind} skipped in ${guildId}: ${result.reason}`, {
+      label: 'CustomBot'
+    });
+    return undefined;
+  }
+
   public async unsetBotProfile(
     guild: Guild,
     patron: PatreonMembersEntity,
@@ -553,6 +593,9 @@ export class Subscribers {
           { id: patron.id },
           { $unset: { [`customBots.${guild.id}`]: true } }
         );
+        await this.client.db
+          .collection(Collections.BOT_PROFILE_IMAGES)
+          .deleteMany({ guildId: guild.id });
       } else {
         await this.collection.updateOne(
           { id: patron.id },

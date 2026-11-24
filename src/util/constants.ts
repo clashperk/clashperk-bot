@@ -122,6 +122,7 @@ export const enum Collections {
   GUILD_EVENTS = 'GuildEvents',
 
   CUSTOM_BOTS = 'CustomBots',
+  BOT_PROFILE_IMAGES = 'BotProfileImages',
 
   AUTO_ROLE_DELAYS = 'AutoRoleDelays',
 

@@ -1,5 +1,6 @@
 export * from './auto-board-logs.entity.js';
 export * from './auto-role-delays.entity.js';
+export * from './bot-profile-images.entity.js';
 export * from './callers.entity.js';
 export * from './capital-contributions.entity.js';
 export * from './capital-raid-reminders.entity.js';

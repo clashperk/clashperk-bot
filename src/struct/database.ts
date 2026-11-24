@@ -129,6 +129,10 @@ class MongoDbClient extends MongoClient {
         }
       ]),
 
+      db
+        .collection(Collections.BOT_PROFILE_IMAGES)
+        .createIndex({ guildId: 1, kind: 1 }, { unique: true }),
+
       db.collection(Collections.LEGEND_ATTACKS).createIndexes([
         {
           key: { tag: 1, seasonId: 1 },
