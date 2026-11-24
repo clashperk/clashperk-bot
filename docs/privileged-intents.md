@@ -29,7 +29,8 @@ dropdowns offer **Yes** / **No**.
 | --- | ---------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ---------- |
 | A1  | What does your application do? Please be as detailed as possible, and feel free to include links to image or video examples. | Text                                                  | Always     |
 | A2  | Do you have a public Privacy Policy telling your users about their data usage?                                               | Yes / No                                              | Always     |
-| A2a | Where is your Privacy Policy available? (Please share a link to your Privacy Policy.)                                        | Text                                                  | A2 = Yes   |
+| A2a | Where is your Privacy Policy available?                                                                                      | Text                                                  | A2 = Yes   |
+| A2b | Please share a link to your Privacy Policy.                                                                                  | Text                                                  | A2 = Yes   |
 | A3  | Privileged Gateway Intents: "You are applying for reauthorization for the following intents"                                 | Checkboxes: Server Members, Presence, Message Content | Always     |
 
 ### Server Members Intent
@@ -79,7 +80,15 @@ Terms of Service and Developer Policy. Then **Submit**.
 
 ### A2. Public Privacy Policy
 
-**Yes**. A2a: `https://clashperk.com/privacy`
+**Yes**.
+
+- **A2a, where is it available?**
+  > Our Privacy Policy is at https://clashperk.com/privacy. ClashPerk links it in the welcome
+  > message it posts when added to a server. It's also set as the Privacy Policy URL on our Discord
+  > application, so Discord shows it on the bot's profile and on the screen where a server adds the
+  > bot. The footer of every page on clashperk.com, the dashboard's sign-in page and the dashboard's
+  > Settings link to it too.
+- **A2b, link:** `https://clashperk.com/privacy`
 
 ### A3. Intents
 
