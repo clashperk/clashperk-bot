@@ -67,9 +67,6 @@ Terms of Service and Developer Policy. Then **Submit**.
 
 ## Draft answers
 
-Answers marked **(after build)** describe link parsing and full ticket transcripts, which are being
-built.
-
 ### A1. What does your application do?
 
 > ClashPerk is a Clash of Clans community bot used by clan leaders and their members to run their
@@ -129,12 +126,12 @@ Links to the member-join and role-sync demo videos.
   history.
 - **M3b, deletion requests:**
   > Users can remove their account links themselves with `/link delete`. For any other data, they
-  > can ask in our support server (https://discord.gg/ppuppun), which our privacy policy links to,
-  > and we delete it within 30 days. Server admins can delete their server's settings,
+  > can ask in our support server (https://discord.clashperk.com) or email contact@clashperk.com,
+  > both listed in our privacy policy, and we delete it within 30 days. Server admins can delete their server's settings,
   > rosters and ticket panels from the dashboard or with the matching commands.
 - **M3c, encrypted at rest?** **Yes**.
 
-### C1. Can users opt out? (after build)
+### C1. Can users opt out?
 
 **Yes**.
 
@@ -143,7 +140,7 @@ Links to the member-join and role-sync demo videos.
 > base). Ticket transcripts are a per-panel setting that admins can switch off, and
 > every ticket says when transcripts are on.
 
-### C2. Storing message content off-platform? (after build)
+### C2. Storing message content off-platform?
 
 **No**.
 
@@ -156,12 +153,12 @@ Links to the member-join and role-sync demo videos.
 
 **No**.
 
-### C4. Why do you need the Message Content intent? (after build)
+### C4. Why do you need the Message Content intent?
 
 > ClashPerk needs message content for two features that can't work through interactions.
 >
 > **1. Ticket transcripts.** ClashPerk runs ticket channels for clan applications and support. When
-> staff close a ticket, the bot saves a transcript of the conversation (author, time, text and
+> staff close a ticket, ClashPerk saves a transcript of the conversation (author, time, text and
 > attachment names) as a file in the server's ticket log channel, then deletes the channel. Staff
 > use it to review applications later and to settle disputes. The conversation is between the
 > applicant and staff, not with the bot, so it can't be collected through commands or modals. Without
@@ -180,6 +177,10 @@ Links to the member-join and role-sync demo videos.
 >
 > We only read messages in channels where one of these features is on. We don't store message
 > content, log it, or use it for anything else.
+>
+> Separately, in our support server, members can ask ClashPerk a question by mentioning it. The
+> question is sent to an AI service to write an answer from our documentation. It isn't stored or
+> used for training, and it works without this intent, since the message mentions the bot.
 
 ### C5. Screenshots / videos (Message Content)
 
