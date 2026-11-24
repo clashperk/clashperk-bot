@@ -83,8 +83,8 @@ httpClient.instance.interceptors.request.use((config: RetryableConfig) => {
   config.startedAt ??= performance.now();
   const client = container.resolve(Client);
   config.headers.set('User-Agent', userAgent(client.user?.id));
-  // The API then uses this bot's own token for the Discord calls it makes.
-  if (client.user && client.isCustom()) config.headers.set('x-application-id', client.user.id);
+  // Custom and test bots name themselves, so the API makes its Discord calls with their own token.
+  if (client.user && !client.isPrimary()) config.headers.set('x-application-id', client.user.id);
   return config;
 });
 
