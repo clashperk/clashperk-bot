@@ -177,10 +177,6 @@ Links to the member-join and role-sync demo videos.
 >
 > We only read messages in channels where one of these features is on. We don't store message
 > content, log it, or use it for anything else.
->
-> Separately, in our support server, members can ask ClashPerk a question by mentioning it. The
-> question is sent to an AI service to write an answer from our documentation. It isn't stored or
-> used for training, and it works without this intent, since the message mentions the bot.
 
 ### C5. Screenshots / videos (Message Content)
 
