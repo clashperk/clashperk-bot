@@ -370,7 +370,7 @@ export default class SetupEventsCommand extends Command {
             ['Clan Games', state.clan_games_image_url]
           ] as const;
           const results = await Promise.all(
-            images.map(([, url]) => (url ? fetchRemoteImage(url, { format: 'jpeg' }) : null))
+            images.map(([, url]) => (url ? fetchRemoteImage(url) : null))
           );
           state.brokenImages = images
             .filter((_, i) => results[i] && !results[i].ok)

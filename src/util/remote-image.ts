@@ -5,6 +5,7 @@ import { userAgent } from './user-agent.js';
 const TRANSFORM_BASE_URL = 'https://clashperk.com/cdn-cgi/image';
 const TIMEOUT_MS = 10_000;
 const MAX_BYTES = 8 * 1024 * 1024;
+const DISCORD_FORMATS = new Set(['image/jpeg', 'image/png', 'image/gif']);
 
 export interface RemoteImage {
   data: Buffer;
@@ -15,11 +16,8 @@ export type RemoteImageResult =
   | { ok: true; image: RemoteImage }
   | { ok: false; reason: 'invalid_url' | 'not_image' | 'too_large' | 'unreachable' };
 
-/** Downloads a user's image URL through Cloudflare. Without `format` the original format is kept (GIFs stay animated). */
-export async function fetchRemoteImage(
-  url: string,
-  { format }: { format?: 'jpeg' | 'png' } = {}
-): Promise<RemoteImageResult> {
+/** Downloads a user's image URL through Cloudflare, keeping its format unless Discord can't take it. */
+export async function fetchRemoteImage(url: string): Promise<RemoteImageResult> {
   let source: URL;
   try {
     source = new URL(url);
@@ -30,10 +28,15 @@ export async function fetchRemoteImage(
     return { ok: false, reason: 'invalid_url' };
   }
 
-  const options = ['fit=scale-down', 'width=1920', ...(format ? [`format=${format}`] : [])];
+  const result = await download(source.href, 'fit=scale-down,width=1920');
+  if (!result.ok || DISCORD_FORMATS.has(result.image.contentType)) return result;
+  return download(source.href, 'fit=scale-down,width=1920,format=png');
+}
+
+async function download(href: string, options: string): Promise<RemoteImageResult> {
   const headers = { 'User-Agent': userAgent() };
   try {
-    const res = await fetch(`${TRANSFORM_BASE_URL}/${options.join(',')}/${source.href}`, {
+    const res = await fetch(`${TRANSFORM_BASE_URL}/${options}/${href}`, {
       headers,
       signal: AbortSignal.timeout(TIMEOUT_MS)
     });

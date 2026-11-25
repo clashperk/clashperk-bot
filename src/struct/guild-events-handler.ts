@@ -248,7 +248,7 @@ export class GuildEventsHandler {
   }
 
   private async resolveImage(guild: Guild, url: string) {
-    const result = await fetchRemoteImage(url, { format: 'jpeg' });
+    const result = await fetchRemoteImage(url);
     if (result.ok) return toDataUri(result.image);
 
     this.client.logger.warn(
