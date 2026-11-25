@@ -21,6 +21,7 @@ import {
   imageMaps,
   locationsMap
 } from '../../struct/guild-events-handler.js';
+import { fetchRemoteImage } from '../../util/remote-image.js';
 
 export default class SetupEventsCommand extends Command {
   public constructor() {
@@ -97,6 +98,7 @@ export default class SetupEventsCommand extends Command {
       allowedEvents: value?.allowedEvents ?? [],
       durationOverrides: value?.durationOverrides ?? [],
       tooLargeImage: value?.tooLargeImage ?? false,
+      brokenImages: [] as string[],
 
       clan_games_image_url: value?.images?.clan_games_image_url ?? '',
       raid_week_image_url: value?.images?.raid_week_image_url ?? '',
@@ -182,6 +184,9 @@ export default class SetupEventsCommand extends Command {
           '',
           state.tooLargeImage
             ? '**Action Required: The images you provided are too large (>10MB), so they will not be used.**'
+            : '',
+          state.brokenImages.length
+            ? `**Action Required: These links didn't return an image: ${state.brokenImages.join(', ')}. Use a direct link to an image file.**`
             : ''
         ].join('\n')
       );
@@ -357,6 +362,20 @@ export default class SetupEventsCommand extends Command {
           state.tooLargeImage = false;
 
           await modalSubmit.deferUpdate();
+
+          const images = [
+            ['Season Reset', state.season_reset_image_url],
+            ['CWL', state.cwl_image_url],
+            ['Raid Weekend', state.raid_week_image_url],
+            ['Clan Games', state.clan_games_image_url]
+          ] as const;
+          const results = await Promise.all(
+            images.map(([, url]) => (url ? fetchRemoteImage(url) : null))
+          );
+          state.brokenImages = images
+            .filter((_, i) => results[i] && !results[i].ok)
+            .map(([name]) => name);
+
           await modalSubmit.editReply({
             ...getEmbed(),
             components: [menuRow, durationRow, buttonRow]

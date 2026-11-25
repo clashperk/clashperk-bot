@@ -20,6 +20,7 @@ import {
   viewFromEntity,
   winnerAnnouncement
 } from '../util/giveaways.js';
+import { fetchRemoteImage, imageHost } from '../util/remote-image.js';
 import { Client } from './client.js';
 
 /** How long the live entry count may lag, so a busy giveaway doesn't hit Discord's rate limits. */
@@ -88,11 +89,18 @@ export class GiveawayManager {
   }
 
   private async send(channel: GuildTextBasedChannel, view: GiveawayView) {
-    if (view.imageUrl) {
+    const banner = view.imageUrl ? await fetchRemoteImage(view.imageUrl) : null;
+    if (banner && !banner.ok) {
+      this.client.logger.warn(
+        `Giveaway ${view.id} banner skipped: ${banner.reason} (${imageHost(view.imageUrl!)})`,
+        { label: 'GIVEAWAY' }
+      );
+    }
+    if (banner?.ok) {
       const posted = await channel
         .send({
           components: [buildActiveGiveaway(view)],
-          files: [new AttachmentBuilder(view.imageUrl, { name: GIVEAWAY_BANNER_NAME })],
+          files: [new AttachmentBuilder(banner.image.data, { name: GIVEAWAY_BANNER_NAME })],
           flags: MessageFlags.IsComponentsV2,
           allowedMentions: NO_PINGS
         })

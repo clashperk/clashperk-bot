@@ -12,6 +12,7 @@ import {
 import moment from 'moment';
 import { EMOJIS } from '../util/emojis.js';
 import { i18n } from '../util/i18n.js';
+import { fetchRemoteImage, imageHost, toDataUri } from '../util/remote-image.js';
 import { Util } from '../util/toolkit.js';
 import { Client } from './client.js';
 
@@ -223,6 +224,7 @@ export class GuildEventsHandler {
       if (event.timestamp + maxGraceTime === guildEvent.events[event.type]) continue;
 
       const endTime = this.getMaxDuration(guild.preferredLocale, event, guildEvent);
+      const imageUrl = guildEvent.tooLargeImage ? null : guildEvent.images?.[imageMaps[event.type]];
       await guild.scheduledEvents.create({
         name: event.name,
         entityType: GuildScheduledEventEntityType.External,
@@ -231,7 +233,7 @@ export class GuildEventsHandler {
         scheduledEndTime: new Date(endTime),
         entityMetadata: { location: guildEvent.locations?.[locationsMap[event.type]] ?? 'in game' },
         description: event.value,
-        image: !guildEvent.tooLargeImage ? guildEvent.images?.[imageMaps[event.type]] : null
+        image: imageUrl ? await this.resolveImage(guild, imageUrl) : null
       });
 
       await this.collection.updateOne(
@@ -243,6 +245,17 @@ export class GuildEventsHandler {
         }
       );
     }
+  }
+
+  private async resolveImage(guild: Guild, url: string) {
+    const result = await fetchRemoteImage(url);
+    if (result.ok) return toDataUri(result.image);
+
+    this.client.logger.warn(
+      `Event image skipped in ${guild.id}: ${result.reason} (${imageHost(url)})`,
+      { label: 'GuildEventsHandler' }
+    );
+    return null;
   }
 
   public async init() {
