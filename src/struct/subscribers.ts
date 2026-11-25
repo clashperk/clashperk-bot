@@ -1,8 +1,10 @@
 import { Collections, COLOR_CODES, FeatureFlags, Settings } from '@app/constants';
-import { BotProfileImagesEntity, PatreonMembersEntity } from '@app/entities';
+import { PatreonMembersEntity } from '@app/entities';
 import { captureException } from '@sentry/node';
 import { EmbedBuilder, Guild, Interaction, WebhookClient } from 'discord.js';
-import { Binary, Collection, WithId } from 'mongodb';
+import { Collection, WithId } from 'mongodb';
+import { createHash } from 'node:crypto';
+import { deleteFromR2, r2KeyFromUrl, uploadToR2 } from '../util/r2.js';
 import { fetchRemoteImage, toDataUri } from '../util/remote-image.js';
 import { Util } from '../util/toolkit.js';
 import { timeoutSignal } from './clash-client.js';
@@ -499,8 +501,8 @@ export class Subscribers {
       const member = await guild.members.editMe({
         nick: editData.nick,
         bio: editData.bio,
-        avatar,
-        banner,
+        avatar: avatar.image,
+        banner: banner.image,
         reason: 'Custom Profile Enabled'
       });
 
@@ -511,9 +513,9 @@ export class Subscribers {
             [`customBots.${guild.id}`]: {
               active: true,
               nickname: editData.nick,
-              avatarUrl: editData.avatar,
+              avatarUrl: avatar.savedUrl ?? editData.avatar,
               bio: editData.bio || null,
-              banner: editData.banner || null
+              banner: banner.savedUrl || null
             }
           }
         }
@@ -527,7 +529,7 @@ export class Subscribers {
         label: 'Bot Profile Set',
         color: COLOR_CODES.GREEN,
         status: patron.status,
-        extra: [`**Avatar URL:** ${editData.avatar}`]
+        extra: [`**Avatar URL:** ${avatar.savedUrl ?? editData.avatar}`]
       });
 
       return member;
@@ -541,33 +543,33 @@ export class Subscribers {
     }
   }
 
-  /** A data URI for the image. Upload links expire in weeks, so a copy is kept for when a patron resumes. */
+  /** The image for Discord and the link to save. Upload links expire in weeks, so the saved one is an R2 copy. */
   private async profileImage(guildId: string, kind: 'avatar' | 'banner', url?: string | null) {
-    if (!url) return url;
+    if (!url) return { image: url, savedUrl: url };
 
-    const images = this.client.db.collection<BotProfileImagesEntity>(
-      Collections.BOT_PROFILE_IMAGES
-    );
     const result = await fetchRemoteImage(url);
-    if (result.ok) {
-      const { data, contentType } = result.image;
-      await images.updateOne(
-        { guildId, kind },
-        { $set: { url, data: new Binary(data), contentType, updatedAt: new Date() } },
-        { upsert: true }
-      );
-      return toDataUri(result.image);
+    if (!result.ok) {
+      // Leaves the current image in place rather than failing the whole profile.
+      this.client.logger.warn(`Bot ${kind} skipped in ${guildId}: ${result.reason}`, {
+        label: 'CustomBot'
+      });
+      return { image: undefined, savedUrl: url };
     }
 
-    const saved = await images.findOne({ guildId, kind, url });
-    if (saved)
-      return toDataUri({ data: Buffer.from(saved.data.buffer), contentType: saved.contentType });
-
-    // Leaves the current image in place rather than failing the whole profile.
-    this.client.logger.warn(`Bot ${kind} skipped in ${guildId}: ${result.reason}`, {
-      label: 'CustomBot'
-    });
-    return undefined;
+    let savedUrl: string | null = url;
+    if (!r2KeyFromUrl(url)) {
+      const { data, contentType } = result.image;
+      const hash = createHash('sha256').update(data).digest('hex').slice(0, 16);
+      const extension = contentType.split('/')[1]?.replace('jpeg', 'jpg') ?? 'png';
+      const key = `bot-profiles/${guildId}/${kind}-${hash}.${extension}`;
+      savedUrl = await uploadToR2(key, data, contentType).catch((error) => {
+        this.client.logger.warn(`Bot ${kind} copy failed in ${guildId}: ${error.message}`, {
+          label: 'CustomBot'
+        });
+        return null;
+      });
+    }
+    return { image: toDataUri(result.image), savedUrl: savedUrl ?? url };
   }
 
   public async unsetBotProfile(
@@ -593,9 +595,10 @@ export class Subscribers {
           { id: patron.id },
           { $unset: { [`customBots.${guild.id}`]: true } }
         );
-        await this.client.db
-          .collection(Collections.BOT_PROFILE_IMAGES)
-          .deleteMany({ guildId: guild.id });
+        const profile = patron.customBots?.[guild.id];
+        for (const key of [r2KeyFromUrl(profile?.avatarUrl), r2KeyFromUrl(profile?.banner)]) {
+          if (key) await deleteFromR2(key).catch(() => null);
+        }
       } else {
         await this.collection.updateOne(
           { id: patron.id },
