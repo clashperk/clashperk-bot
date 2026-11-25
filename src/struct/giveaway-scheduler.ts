@@ -8,7 +8,15 @@ import { Client } from './client.js';
 const UNPOSTED_GRACE = 30 * 1000;
 
 /** Fields an edit can change that the posted message shows. */
-const SHOWN_FIELDS = ['prize', 'title', 'description', 'winnerCount', 'endsAt', 'eligibility'];
+const SHOWN_FIELDS = [
+  'prize',
+  'title',
+  'description',
+  'imageUrl',
+  'winnerCount',
+  'endsAt',
+  'eligibility'
+];
 
 export class GiveawayScheduler {
   private readonly giveaways: Collection<GiveawaysEntity>;

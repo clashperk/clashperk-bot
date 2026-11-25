@@ -13,8 +13,10 @@ import {
   buildActiveGiveaway,
   buildCancelledGiveaway,
   buildEndedGiveaway,
+  ATTACHED_BANNER,
   GIVEAWAY_BANNER_NAME,
   GiveawayView,
+  isStoredBanner,
   NO_PINGS,
   viewFromDto,
   viewFromEntity,
@@ -89,17 +91,25 @@ export class GiveawayManager {
   }
 
   private async send(channel: GuildTextBasedChannel, view: GiveawayView) {
-    const banner = view.imageUrl ? await fetchRemoteImage(view.imageUrl) : null;
-    if (banner && !banner.ok) {
+    if (isStoredBanner(view.imageUrl) || !view.imageUrl) {
+      return channel.send({
+        components: [buildActiveGiveaway(view)],
+        flags: MessageFlags.IsComponentsV2,
+        allowedMentions: NO_PINGS
+      });
+    }
+    // A link from before the API kept its own copy: attach the file instead.
+    const banner = await fetchRemoteImage(view.imageUrl);
+    if (!banner.ok) {
       this.client.logger.warn(
-        `Giveaway ${view.id} banner skipped: ${banner.reason} (${imageHost(view.imageUrl!)})`,
+        `Giveaway ${view.id} banner skipped: ${banner.reason} (${imageHost(view.imageUrl)})`,
         { label: 'GIVEAWAY' }
       );
     }
-    if (banner?.ok) {
+    if (banner.ok) {
       const posted = await channel
         .send({
-          components: [buildActiveGiveaway(view)],
+          components: [buildActiveGiveaway({ ...view, imageUrl: ATTACHED_BANNER })],
           files: [new AttachmentBuilder(banner.image.data, { name: GIVEAWAY_BANNER_NAME })],
           flags: MessageFlags.IsComponentsV2,
           allowedMentions: NO_PINGS
@@ -142,10 +152,21 @@ export class GiveawayManager {
 
     const base = viewFromDto(giveaway);
     const view = { ...base, clanNames: await this.clanNames(guildId, base.eligibility) };
-    // The edit sends no files, so the message keeps its banner. Point at it only if it was posted.
-    const hasBanner = message.attachments.some((file) => file.name === GIVEAWAY_BANNER_NAME);
+    // A stored banner shows by link. An older message keeps its attached file until it's replaced.
+    const attached = message.attachments.some((file) => file.name === GIVEAWAY_BANNER_NAME);
+    const keepsFile = attached && !!view.imageUrl && !isStoredBanner(view.imageUrl);
     await message.edit({
-      components: [buildActiveGiveaway({ ...view, imageUrl: hasBanner ? view.imageUrl : null })],
+      components: [
+        buildActiveGiveaway({
+          ...view,
+          imageUrl: keepsFile
+            ? ATTACHED_BANNER
+            : isStoredBanner(view.imageUrl)
+              ? view.imageUrl
+              : null
+        })
+      ],
+      ...(keepsFile ? {} : { attachments: [] }),
       flags: MessageFlags.IsComponentsV2,
       allowedMentions: NO_PINGS
     });
