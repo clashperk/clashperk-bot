@@ -84,6 +84,17 @@ export enum TicketDisplayMode {
   BUTTONS = "buttons",
 }
 
+export enum GuildEventType {
+  ClanGamesStart = "clan_games_start",
+  ClanGamesEnd = "clan_games_end",
+  CwlStart = "cwl_start",
+  CwlSignupEnd = "cwl_signup_end",
+  CwlEnd = "cwl_end",
+  SeasonEnd = "season_end",
+  RaidWeekStart = "raid_week_start",
+  RaidWeekEnd = "raid_week_end",
+}
+
 export enum ButtonType {
   Link = "link",
   Refresh = "refresh",
@@ -395,6 +406,16 @@ export interface SetHiddenInputDto {
   hidden: boolean;
 }
 
+export interface LinksDto {
+  tag: string;
+  name: string;
+  userId: string;
+  username: string;
+  verified: boolean;
+  /** Left out of the owner's task lists. */
+  hidden?: boolean;
+}
+
 export interface GetLinksInputDto {
   /**
    * @maxItems 100
@@ -408,16 +429,6 @@ export interface GetLinksInputDto {
    * @example ["444432489818357760"]
    */
   userIds?: string[];
-}
-
-export interface LinksDto {
-  tag: string;
-  name: string;
-  userId: string;
-  username: string;
-  verified: boolean;
-  /** Left out of the owner's task lists. */
-  hidden?: boolean;
 }
 
 export interface ClanActivityInputDto {
@@ -881,7 +892,7 @@ export interface RankedBattleDto {
   opponent: RankedOpponentDto;
   stars: number;
   destruction: number;
-  /** Trophies this battle gave the attacker. */
+  /** League trophies the player earned from this battle, on attack or on defense. */
   trophies: number;
   /** @format date-time */
   createdAt: string;
@@ -2011,6 +2022,11 @@ export interface CreateGiveawayInput {
   eligibility: GiveawayEligibilityInput;
 }
 
+export interface GiveawayImageDto {
+  /** A link to send as `imageUrl` on create or update. */
+  url: string;
+}
+
 export interface UpdateGiveawayInput {
   /**
    * Null puts the default heading back.
@@ -2022,6 +2038,12 @@ export interface UpdateGiveawayInput {
    * @maxLength 1000
    */
   description?: string | null;
+  /**
+   * A new banner link, or null to remove it. ClashPerk keeps its own WebP copy.
+   * @format uri
+   * @maxLength 2048
+   */
+  imageUrl?: string | null;
   /**
    * Date string or timestamp in milliseconds
    * @format date-time
@@ -2834,6 +2856,58 @@ export interface ButtonMessageInput {
   color?: number | null;
   /** 1 blurple, 2 grey, 3 green, 4 red. */
   buttonStyle: 1 | 2 | 3 | 4;
+}
+
+export interface GuildEventCategoryDto {
+  imageUrl: string | null;
+  location: string | null;
+}
+
+export interface GuildEventsDto {
+  allowedEvents: GuildEventType[];
+  fullDurationEvents: GuildEventType[];
+  enabled: boolean;
+  clanGames: GuildEventCategoryDto;
+  raidWeekend: GuildEventCategoryDto;
+  cwl: GuildEventCategoryDto;
+  seasonReset: GuildEventCategoryDto;
+}
+
+export interface GuildEventCategoryInput {
+  /**
+   * @format uri
+   * @maxLength 256
+   */
+  imageUrl?: string | null;
+  /**
+   * Shown as the event's location. Defaults to "in game".
+   * @minLength 1
+   * @maxLength 100
+   */
+  location?: string | null;
+}
+
+export interface GuildEventsInput {
+  /**
+   * @minItems 1
+   * @uniqueItems true
+   */
+  allowedEvents: GuildEventType[];
+  /**
+   * Start events that stay until the game event ends, instead of 30 minutes.
+   * @uniqueItems true
+   */
+  fullDurationEvents: GuildEventType[];
+  enabled: boolean;
+  clanGames: GuildEventCategoryInput;
+  raidWeekend: GuildEventCategoryInput;
+  cwl: GuildEventCategoryInput;
+  seasonReset: GuildEventCategoryInput;
+}
+
+export interface GuildEventImageDto {
+  /** The uploaded image's public link, to send as a category's `imageUrl`. */
+  url: string;
 }
 
 export interface ManagerRolesDto {
@@ -4000,6 +4074,14 @@ export type SetLinkHiddenData = ResultOkDto;
 
 export type SetLinkHiddenError = ErrorResponseDto;
 
+export interface GetLinksByUserIdParams {
+  userId: string;
+}
+
+export type GetLinksByUserIdData = LinksDto[];
+
+export type GetLinksByUserIdError = ErrorResponseDto;
+
 export type GetLinksData = LinksDto[];
 
 export type GetLinksError = ErrorResponseDto;
@@ -4659,6 +4741,14 @@ export type ListGiveawayEntriesData = GiveawayEntriesDto;
 
 export type ListGiveawayEntriesError = ErrorResponseDto;
 
+export interface UploadGiveawayImageParams {
+  guildId: string;
+}
+
+export type UploadGiveawayImageData = GiveawayImageDto;
+
+export type UploadGiveawayImageError = ErrorResponseDto;
+
 export interface EnterGiveawayParams {
   guildId: string;
   giveawayId: string;
@@ -5104,6 +5194,30 @@ export interface UpdateButtonMessageParams {
 export type UpdateButtonMessageData = ButtonsDto;
 
 export type UpdateButtonMessageError = ErrorResponseDto;
+
+export interface GetGuildEventsParams {
+  guildId: string;
+}
+
+export type GetGuildEventsData = GuildEventsDto;
+
+export type GetGuildEventsError = ErrorResponseDto;
+
+export interface UpdateGuildEventsParams {
+  guildId: string;
+}
+
+export type UpdateGuildEventsData = GuildEventsDto;
+
+export type UpdateGuildEventsError = ErrorResponseDto;
+
+export interface UploadGuildEventImageParams {
+  guildId: string;
+}
+
+export type UploadGuildEventImageData = GuildEventImageDto;
+
+export type UploadGuildEventImageError = ErrorResponseDto;
 
 export interface GetManagerRolesParams {
   guildId: string;
@@ -5646,6 +5760,26 @@ export namespace Links {
   }
 
   /**
+   * No description
+   * @tags Links
+   * @name GetLinksByUserId
+   * @summary Get a Discord user's linked players · cached 30s, per user
+   * @request GET:/links/{userId}
+   * @secure
+   * @response `200` `GetLinksByUserIdData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetLinksByUserId {
+    export type RequestParams = {
+      userId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetLinksByUserIdData;
+  }
+
+  /**
    * @description Send either `playerTags` or `userIds`, not both, with up to 100 values. Player tags must be exact, including the `#`.
    * @tags Links
    * @name GetLinks
@@ -6008,7 +6142,7 @@ export namespace Players {
    * @description Each hero with the pet and equipment used most, and the army used most, from the week's ranked attacks.
    * @tags Players
    * @name GetRankedArmies
-   * @summary Get a player's most used ranked armies · cached 5m
+   * @summary Get a player's most used ranked armies · cached 5m, edge stale 24h
    * @request GET:/players/{playerTag}/ranked/armies
    * @secure
    * @response `200` `GetRankedArmiesData`
@@ -6193,7 +6327,7 @@ export namespace Players {
    * @description Only counts rounds that started on or after `startDate`, newest group first. An attack counts as missed once its round ends.
    * @tags Players
    * @name GetPlayerClanWarLeagueTotals
-   * @summary Get a player's CWL totals per league group · cached 10m
+   * @summary Get a player's CWL totals per league group · cached 10m, edge stale 24h
    * @request GET:/players/{playerTag}/clan-war-leagues/aggregate
    * @secure
    * @response `200` `GetPlayerClanWarLeagueTotalsData`
@@ -6291,7 +6425,7 @@ export namespace Legends {
    * @description Each hero with the pet and equipment used most, and the army used most, from the season's legend attacks.
    * @tags Legends
    * @name GetLegendArmies
-   * @summary Get a player's most used legend armies · cached 5m
+   * @summary Get a player's most used legend armies · cached 5m, edge stale 24h
    * @request GET:/legends/{playerTag}/armies
    * @secure
    * @response `200` `GetLegendArmiesData`
@@ -6414,7 +6548,7 @@ export namespace Rankings {
    * @description Shows where the clan sits on the clan and capital boards in its country and worldwide, and its country rank over the last 6 saved seasons.
    * @tags Rankings
    * @name GetClanRankings
-   * @summary Get a clan's rankings and rank history · cached 5m
+   * @summary Get a clan's rankings and rank history · cached 5m, edge stale 24h
    * @request GET:/rankings/clans/{clanTag}
    * @secure
    * @response `200` `GetClanRankingsData`
@@ -7079,7 +7213,7 @@ export namespace Giveaways {
   }
 
   /**
-   * @description ClashPerk posts it in the channel within a few seconds. Set the end time as a date or epoch milliseconds, up to 60 days ahead. The image must be a public link to a picture.
+   * @description ClashPerk posts it in the channel within a few seconds. Set the end time as a date or epoch milliseconds, up to 60 days ahead. The banner can be an uploaded link or any public picture, which ClashPerk copies as WebP.
    * @tags Giveaways
    * @name CreateGiveaway
    * @summary Create a giveaway
@@ -7120,7 +7254,7 @@ export namespace Giveaways {
   }
 
   /**
-   * @description Attach the posted message ID, or change the prize, winner count or end time.
+   * @description Attach the posted message ID, or change the prize, winners, end time, text, clans or banner. ClashPerk updates the posted message within a few seconds.
    * @tags Giveaways
    * @name UpdateGiveaway
    * @summary Update a giveaway
@@ -7167,6 +7301,29 @@ export namespace Giveaways {
     export type RequestBody = never;
     export type RequestHeaders = {};
     export type ResponseBody = ListGiveawayEntriesData;
+  }
+
+  /**
+   * @description Takes a PNG, JPEG, GIF or WebP file up to 8 MB, 20 an hour per user. Send the returned link as `imageUrl` to use it.
+   * @tags Giveaways
+   * @name UploadGiveawayImage
+   * @summary Upload a giveaway banner
+   * @request POST:/giveaways/{guildId}/images
+   * @secure
+   * @response `201` `UploadGiveawayImageData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace UploadGiveawayImage {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = {
+      /** @format binary */
+      file: File;
+    };
+    export type RequestHeaders = {};
+    export type ResponseBody = UploadGiveawayImageData;
   }
 
   /**
@@ -8356,6 +8513,69 @@ export namespace Guilds {
   /**
    * No description
    * @tags Guilds
+   * @name GetGuildEvents
+   * @summary Get the server's scheduled Discord events
+   * @request GET:/guilds/{guildId}/events
+   * @secure
+   * @response `200` `GetGuildEventsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace GetGuildEvents {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = never;
+    export type RequestHeaders = {};
+    export type ResponseBody = GetGuildEventsData;
+  }
+
+  /**
+   * @description Replaces the setting. The bot creates the events on its next check, within 30 minutes.
+   * @tags Guilds
+   * @name UpdateGuildEvents
+   * @summary Update the server's scheduled Discord events
+   * @request PUT:/guilds/{guildId}/events
+   * @secure
+   * @response `200` `UpdateGuildEventsData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace UpdateGuildEvents {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = GuildEventsInput;
+    export type RequestHeaders = {};
+    export type ResponseBody = UpdateGuildEventsData;
+  }
+
+  /**
+   * @description Takes a PNG, JPEG, GIF or WebP file up to 8 MB, 20 an hour per user. Send the returned link as a category image to use it.
+   * @tags Guilds
+   * @name UploadGuildEventImage
+   * @summary Upload a cover image for scheduled events
+   * @request POST:/guilds/{guildId}/events/images
+   * @secure
+   * @response `201` `UploadGuildEventImageData`
+   * @response `500` `ErrorResponseDto`
+   */
+  export namespace UploadGuildEventImage {
+    export type RequestParams = {
+      guildId: string;
+    };
+    export type RequestQuery = {};
+    export type RequestBody = {
+      /** @format binary */
+      file: File;
+    };
+    export type RequestHeaders = {};
+    export type ResponseBody = UploadGuildEventImageData;
+  }
+
+  /**
+   * No description
+   * @tags Guilds
    * @name GetManagerRoles
    * @summary Get the server's manager roles
    * @request GET:/guilds/{guildId}/managers
@@ -9403,7 +9623,7 @@ export class HttpClient<SecurityDataType = unknown> {
 
 /**
  * @title ClashPerk Discord Bot API
- * @version v2.0.187
+ * @version v2.0.195
  * @baseUrl /v1
  * @contact
  *
@@ -9664,6 +9884,29 @@ export class Api<SecurityDataType extends unknown> {
         body: data,
         secure: true,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Links
+     * @name GetLinksByUserId
+     * @summary Get a Discord user's linked players · cached 30s, per user
+     * @request GET:/links/{userId}
+     * @secure
+     * @response `200` `GetLinksByUserIdData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getLinksByUserId: (
+      { userId }: GetLinksByUserIdParams,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<GetLinksByUserIdData, GetLinksByUserIdError>({
+        path: `/links/${userId}`,
+        method: "GET",
+        secure: true,
         format: "json",
         ...params,
       }),
@@ -10056,7 +10299,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetRankedArmies
-     * @summary Get a player's most used ranked armies · cached 5m
+     * @summary Get a player's most used ranked armies · cached 5m, edge stale 24h
      * @request GET:/players/{playerTag}/ranked/armies
      * @secure
      * @response `200` `GetRankedArmiesData`
@@ -10256,7 +10499,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Players
      * @name GetPlayerClanWarLeagueTotals
-     * @summary Get a player's CWL totals per league group · cached 10m
+     * @summary Get a player's CWL totals per league group · cached 10m, edge stale 24h
      * @request GET:/players/{playerTag}/clan-war-leagues/aggregate
      * @secure
      * @response `200` `GetPlayerClanWarLeagueTotalsData`
@@ -10355,7 +10598,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Legends
      * @name GetLegendArmies
-     * @summary Get a player's most used legend armies · cached 5m
+     * @summary Get a player's most used legend armies · cached 5m, edge stale 24h
      * @request GET:/legends/{playerTag}/armies
      * @secure
      * @response `200` `GetLegendArmiesData`
@@ -10491,7 +10734,7 @@ export class Api<SecurityDataType extends unknown> {
      *
      * @tags Rankings
      * @name GetClanRankings
-     * @summary Get a clan's rankings and rank history · cached 5m
+     * @summary Get a clan's rankings and rank history · cached 5m, edge stale 24h
      * @request GET:/rankings/clans/{clanTag}
      * @secure
      * @response `200` `GetClanRankingsData`
@@ -11194,7 +11437,7 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description ClashPerk posts it in the channel within a few seconds. Set the end time as a date or epoch milliseconds, up to 60 days ahead. The image must be a public link to a picture.
+     * @description ClashPerk posts it in the channel within a few seconds. Set the end time as a date or epoch milliseconds, up to 60 days ahead. The banner can be an uploaded link or any public picture, which ClashPerk copies as WebP.
      *
      * @tags Giveaways
      * @name CreateGiveaway
@@ -11243,7 +11486,7 @@ export class Api<SecurityDataType extends unknown> {
       }),
 
     /**
-     * @description Attach the posted message ID, or change the prize, winner count or end time.
+     * @description Attach the posted message ID, or change the prize, winners, end time, text, clans or banner. ClashPerk updates the posted message within a few seconds.
      *
      * @tags Giveaways
      * @name UpdateGiveaway
@@ -11288,6 +11531,35 @@ export class Api<SecurityDataType extends unknown> {
         method: "GET",
         query: query,
         secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Takes a PNG, JPEG, GIF or WebP file up to 8 MB, 20 an hour per user. Send the returned link as `imageUrl` to use it.
+     *
+     * @tags Giveaways
+     * @name UploadGiveawayImage
+     * @summary Upload a giveaway banner
+     * @request POST:/giveaways/{guildId}/images
+     * @secure
+     * @response `201` `UploadGiveawayImageData`
+     * @response `500` `ErrorResponseDto`
+     */
+    uploadGiveawayImage: (
+      { guildId }: UploadGiveawayImageParams,
+      data: {
+        /** @format binary */
+        file: File;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.http.request<UploadGiveawayImageData, UploadGiveawayImageError>({
+        path: `/giveaways/${guildId}/images`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
         format: "json",
         ...params,
       }),
@@ -12663,6 +12935,84 @@ export class Api<SecurityDataType extends unknown> {
         body: data,
         secure: true,
         type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Guilds
+     * @name GetGuildEvents
+     * @summary Get the server's scheduled Discord events
+     * @request GET:/guilds/{guildId}/events
+     * @secure
+     * @response `200` `GetGuildEventsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    getGuildEvents: (
+      { guildId }: GetGuildEventsParams,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<GetGuildEventsData, GetGuildEventsError>({
+        path: `/guilds/${guildId}/events`,
+        method: "GET",
+        secure: true,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Replaces the setting. The bot creates the events on its next check, within 30 minutes.
+     *
+     * @tags Guilds
+     * @name UpdateGuildEvents
+     * @summary Update the server's scheduled Discord events
+     * @request PUT:/guilds/{guildId}/events
+     * @secure
+     * @response `200` `UpdateGuildEventsData`
+     * @response `500` `ErrorResponseDto`
+     */
+    updateGuildEvents: (
+      { guildId }: UpdateGuildEventsParams,
+      data: GuildEventsInput,
+      params: RequestParams = {},
+    ) =>
+      this.http.request<UpdateGuildEventsData, UpdateGuildEventsError>({
+        path: `/guilds/${guildId}/events`,
+        method: "PUT",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Takes a PNG, JPEG, GIF or WebP file up to 8 MB, 20 an hour per user. Send the returned link as a category image to use it.
+     *
+     * @tags Guilds
+     * @name UploadGuildEventImage
+     * @summary Upload a cover image for scheduled events
+     * @request POST:/guilds/{guildId}/events/images
+     * @secure
+     * @response `201` `UploadGuildEventImageData`
+     * @response `500` `ErrorResponseDto`
+     */
+    uploadGuildEventImage: (
+      { guildId }: UploadGuildEventImageParams,
+      data: {
+        /** @format binary */
+        file: File;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.http.request<UploadGuildEventImageData, UploadGuildEventImageError>({
+        path: `/guilds/${guildId}/events/images`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.FormData,
         format: "json",
         ...params,
       }),
