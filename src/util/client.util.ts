@@ -1,11 +1,13 @@
 import { SheetType } from '@app/entities';
-import { captureException, setContext } from '@sentry/node';
+import { captureException } from '@sentry/node';
 import {
   ActivityType,
   BaseInteraction,
   ChannelType,
   Collection,
   CommandInteraction,
+  DiscordjsError,
+  DiscordjsErrorCodes,
   ForumChannel,
   Guild,
   GuildMember,
@@ -21,6 +23,14 @@ import { Client } from '../struct/client.js';
 import { CreateGoogleSheet, createGoogleSheet, updateGoogleSheet } from '../struct/google.js';
 import { Collections, FeatureFlags, Settings } from './constants.js';
 import { dashboardUrl } from './helper.js';
+import { errorStack } from './logger.js';
+
+// Small guilds sometimes take over 5 s to answer a member request, even with nothing queued.
+const MEMBERS_FETCH_TIMEOUT = 15_000;
+const MEMBERS_FRESH_FOR = 5 * 60 * 1000;
+
+const isMembersTimeout = (error: unknown) =>
+  error instanceof DiscordjsError && error.code === DiscordjsErrorCodes.GuildMembersTimeout;
 
 export class ClientUtil {
   private readonly fetchRecords: Record<string, Date> = {};
@@ -57,35 +67,46 @@ export class ClientUtil {
     interaction: BaseInteraction<'cached'> | Guild
   ): Promise<Collection<string, GuildMember>> {
     const guild = interaction instanceof Guild ? interaction : interaction.guild;
-    if (this.client.cacheOverLimitGuilds.has(guild.id)) {
-      return guild.members.cache;
-    }
+    if (this.client.cacheOverLimitGuilds.has(guild.id)) return guild.members.cache;
 
+    // Marked before fetching, so calls made meanwhile read the cache instead of fetching again.
     this.client.cacheOverLimitGuilds.add(guild.id);
-    setTimeout(() => {
-      this.client.cacheOverLimitGuilds.delete(guild.id);
-    }, 300 * 1000);
+    const unmark = setTimeout(
+      () => this.client.cacheOverLimitGuilds.delete(guild.id),
+      MEMBERS_FRESH_FOR
+    );
 
     try {
-      try {
-        const members = await guild.members.fetch({ time: 5000 });
-        this.fetchRecords[guild.id] = new Date();
-        return members;
-      } catch (error) {
-        throw new Error(error.message);
-      }
+      const members = await this.fetchAllMembers(guild);
+      this.fetchRecords[guild.id] = new Date();
+      return members;
     } catch (error) {
-      setContext('guild_members_fetch_errored', {
-        guildId: guild.id,
-        member_count: guild.memberCount,
-        cached_member_count: guild.members.cache.size,
-        last_fetched_at: this.fetchRecords[guild.id],
-        errored_at: new Date()
+      // A rate-limited guild stays marked for retry_after (gateway-rate-limit listener).
+      if (isMembersTimeout(error)) {
+        clearTimeout(unmark);
+        this.client.cacheOverLimitGuilds.delete(guild.id);
+      }
+      captureException(error, {
+        contexts: {
+          guild_members_fetch_errored: {
+            guildId: guild.id,
+            member_count: guild.memberCount,
+            cached_member_count: guild.members.cache.size,
+            last_fetched_at: this.fetchRecords[guild.id]
+          }
+        }
       });
-      captureException(error);
-      this.client.logger.warn(error, { label: 'ClientUtil' });
-
+      this.client.logger.warn(errorStack(error), { label: 'ClientUtil' });
       return guild.members.cache;
+    }
+  }
+
+  private async fetchAllMembers(guild: Guild) {
+    try {
+      return await guild.members.fetch({ time: MEMBERS_FETCH_TIMEOUT });
+    } catch (error) {
+      if (!isMembersTimeout(error)) throw error;
+      return guild.members.fetch({ time: MEMBERS_FETCH_TIMEOUT });
     }
   }
 
