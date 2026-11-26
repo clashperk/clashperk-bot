@@ -15,6 +15,13 @@ import {
 import { GiveawayDto, GiveawayEntryResultDto } from '../api/generated.js';
 
 export const GIVEAWAY_BANNER_NAME = 'giveaway-banner.png';
+/** How a message's gallery points at a banner attached to it, as older giveaways did. */
+export const ATTACHED_BANNER = `attachment://${GIVEAWAY_BANNER_NAME}`;
+const MEDIA_URL = process.env.R2_PUBLIC_URL || 'https://media.clashperk.com';
+
+/** A banner the API keeps in our media bucket, which a message can show by its link. */
+export const isStoredBanner = (url: string | null): url is string =>
+  !!url && url.startsWith(`${MEDIA_URL}/`);
 export const DEFAULT_DESCRIPTION = 'Click the button below to enter. Good luck!';
 export const MAX_TITLE = 100;
 export const MAX_DESCRIPTION = 1000;
@@ -85,7 +92,10 @@ const GIVEAWAY_ERROR_TEXT: Record<string, string> = {
 };
 
 export function giveawayErrorText(error: unknown, fallback = 'Something went wrong. Try again.') {
-  const code = (error as { response?: { data?: { code?: string } } })?.response?.data?.code;
+  const response = (error as { response?: { status?: number; data?: { code?: string } } })
+    ?.response;
+  if (response?.status === 415) return "That image can't be used. Try a PNG, JPEG, GIF or WebP.";
+  const code = response?.data?.code;
   return (code && GIVEAWAY_ERROR_TEXT[code]) || fallback;
 }
 
@@ -153,9 +163,7 @@ export function buildActiveGiveaway(view: GiveawayView, { preview = false } = {}
   );
   if (view.imageUrl) {
     container.addMediaGalleryComponents(
-      new MediaGalleryBuilder().addItems(
-        new MediaGalleryItemBuilder().setURL(`attachment://${GIVEAWAY_BANNER_NAME}`)
-      )
+      new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL(view.imageUrl))
     );
   }
   const endsAt = new Date(view.endsAtMs);
