@@ -8,12 +8,15 @@ import {
   DiscordjsError,
   DiscordjsErrorCodes,
   EmbedBuilder,
+  MessageFlags,
   ModalBuilder,
   PermissionFlagsBits,
   StringSelectMenuBuilder,
   TextInputBuilder,
   TextInputStyle
 } from 'discord.js';
+import { api } from '../../api/axios.js';
+import { GuildEventType } from '../../api/generated.js';
 import { Command } from '../../lib/handlers.js';
 import {
   GuildEventData,
@@ -220,34 +223,39 @@ export default class SetupEventsCommand extends Command {
       if (action.customId === customIds.confirm) {
         await action.deferUpdate();
 
-        const value = await this.client.db
-          .collection<GuildEventData>(Collections.GUILD_EVENTS)
-          .findOneAndUpdate(
+        // The API copies each cover link into our media bucket, so a cover can't go missing later.
+        const category = (image: string | null, location: string | null) => ({
+          imageUrl: image || null,
+          location: location || null
+        });
+        try {
+          await api.guilds.updateGuildEvents(
             { guildId: interaction.guild.id },
             {
-              $set: {
-                images: {
-                  clan_games_image_url: state.clan_games_image_url,
-                  raid_week_image_url: state.raid_week_image_url,
-                  cwl_image_url: state.cwl_image_url,
-                  season_reset_image_url: state.season_reset_image_url
-                },
-                locations: {
-                  clan_games_location: state.clan_games_location,
-                  raid_week_location: state.raid_week_location,
-                  cwl_location: state.cwl_location,
-                  season_reset_location: state.season_reset_location
-                },
-                enabled: true,
-                allowedEvents: [...state.allowedEvents],
-                durationOverrides: [...state.durationOverrides]
-              },
-              $unset: {
-                tooLargeImage: true
-              }
-            },
-            { returnDocument: 'after' }
+              enabled: true,
+              allowedEvents: [...state.allowedEvents] as GuildEventType[],
+              fullDurationEvents: [...state.durationOverrides] as GuildEventType[],
+              clanGames: category(state.clan_games_image_url, state.clan_games_location),
+              raidWeekend: category(state.raid_week_image_url, state.raid_week_location),
+              cwl: category(state.cwl_image_url, state.cwl_location),
+              seasonReset: category(state.season_reset_image_url, state.season_reset_location)
+            }
           );
+        } catch (error) {
+          const status = (error as { response?: { status?: number } }).response?.status;
+          await action.followUp({
+            flags: MessageFlags.Ephemeral,
+            content:
+              status === 415
+                ? "One of the cover links isn't an image. Use a direct link to an image file, or clear it."
+                : "Your settings weren't saved. Try again."
+          });
+          return;
+        }
+
+        const value = await this.client.db
+          .collection<GuildEventData>(Collections.GUILD_EVENTS)
+          .findOne({ guildId: interaction.guild.id });
 
         if (!value) {
           await action.editReply({
