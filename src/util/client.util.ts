@@ -126,6 +126,14 @@ export class ClientUtil {
     return null;
   }
 
+  /** Archived threads and forum posts aren't cached, so this asks Discord for them. */
+  public async fetchChannel(channelId: string) {
+    return (
+      this.client.channels.cache.get(channelId) ??
+      (await this.client.channels.fetch(channelId).catch(() => null))
+    );
+  }
+
   public getTextBasedChannel(channelId: string) {
     const channel = this.client.channels.cache.get(channelId);
     if (channel) {

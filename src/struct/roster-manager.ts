@@ -2057,11 +2057,8 @@ export class RosterManager {
       return null;
     }
 
-    // Archived forum posts aren't cached, and a webhook send to their forum without threadId fails.
-    const channel =
-      this.client.channels.cache.get(config.channelId) ??
-      (await this.client.channels.fetch(config.channelId).catch(() => null));
-    // A forum itself only takes new posts, which would open one per change.
+    // A webhook sends to a thread only with threadId. A forum itself would get a new post per change.
+    const channel = await this.client.util.fetchChannel(config.channelId);
     if (channel?.isThreadOnly()) return null;
 
     const webhook = new WebhookClient(config.webhook);

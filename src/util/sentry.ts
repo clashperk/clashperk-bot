@@ -7,15 +7,12 @@ const CHILD_SPAN_RATE = 0.1;
 // Webhook and interaction URLs carry a token that lets anyone post as the bot.
 const DISCORD_TOKEN_PATH = /\/(webhooks|interactions)\/(\d+)\/[^/?#\s"]+/g;
 
-const scrubDiscordTokens = (value: string) => value.replace(DISCORD_TOKEN_PATH, '/$1/$2/[token]');
+const redactTokens = (value: string) => value.replace(DISCORD_TOKEN_PATH, '/$1/$2/[token]');
 
-const scrubValues = <T extends Record<string, unknown> | undefined>(data: T): T => {
-  if (!data) return data;
+const redactStringValues = (data: Record<string, unknown> = {}) => {
   for (const [key, value] of Object.entries(data)) {
-    if (typeof value === 'string')
-      (data as Record<string, unknown>)[key] = scrubDiscordTokens(value);
+    if (typeof value === 'string') data[key] = redactTokens(value);
   }
-  return data;
 };
 
 export const sentryConfig: NodeOptions = {
@@ -39,13 +36,13 @@ export const sentryConfig: NodeOptions = {
     return event;
   },
   beforeSendSpan(span) {
-    if (span.description) span.description = scrubDiscordTokens(span.description);
-    scrubValues(span.data);
+    span.description &&= redactTokens(span.description);
+    redactStringValues(span.data);
     return span;
   },
   beforeBreadcrumb(breadcrumb) {
-    if (breadcrumb.message) breadcrumb.message = scrubDiscordTokens(breadcrumb.message);
-    scrubValues(breadcrumb.data);
+    breadcrumb.message &&= redactTokens(breadcrumb.message);
+    redactStringValues(breadcrumb.data);
     return breadcrumb;
   },
 
