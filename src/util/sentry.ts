@@ -4,6 +4,17 @@ import { NodeOptions, httpIntegration, rewriteFramesIntegration } from '@sentry/
 // Child spans (HTTP, Mongo, Redis) are kept on this share of command traces, to stay within the span quota.
 const CHILD_SPAN_RATE = 0.1;
 
+// Webhook and interaction URLs carry a token that lets anyone post as the bot.
+const DISCORD_TOKEN_PATH = /\/(webhooks|interactions)\/(\d+)\/[^/?#\s"]+/g;
+
+const redactTokens = (value: string) => value.replace(DISCORD_TOKEN_PATH, '/$1/$2/[token]');
+
+const redactStringValues = (data: Record<string, unknown> = {}) => {
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value === 'string') data[key] = redactTokens(value);
+  }
+};
+
 export const sentryConfig: NodeOptions = {
   dsn: process.env.SENTRY_DSN,
   serverName: process.env.SERVICE_NAME ?? 'clashperk_bot',
@@ -23,6 +34,16 @@ export const sentryConfig: NodeOptions = {
     if (event.contexts?.trace?.op !== 'command_executed') return null;
     if (Math.random() >= CHILD_SPAN_RATE) event.spans = [];
     return event;
+  },
+  beforeSendSpan(span) {
+    span.description &&= redactTokens(span.description);
+    redactStringValues(span.data);
+    return span;
+  },
+  beforeBreadcrumb(breadcrumb) {
+    breadcrumb.message &&= redactTokens(breadcrumb.message);
+    redactStringValues(breadcrumb.data);
+    return breadcrumb;
   },
 
   integrations: [

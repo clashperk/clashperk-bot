@@ -20,6 +20,23 @@ import { Command, CommandOptions } from '../../lib/handlers.js';
 import { dashboardRow, hexToNanoId } from '../../util/helper.js';
 import { Util } from '../../util/toolkit.js';
 
+// A reminder can name every clan in the server, more than one message holds.
+const MAX_CLAN_LIST_LENGTH = 800;
+
+const clansField = (names: string[]) => {
+  if (!names.length) return '**Clans** \nAny';
+
+  const shown: string[] = [];
+  let length = 0;
+  for (const name of names) {
+    length += name.length + 2;
+    if (length > MAX_CLAN_LIST_LENGTH) break;
+    shown.push(name);
+  }
+  const hidden = names.length - shown.length;
+  return `**Clans** \n${escapeMarkdown(shown.join(', '))}${hidden ? ` and ${hidden} more` : ''}`;
+};
+
 export default class RemindersListCommand extends Command {
   public constructor() {
     super('reminders-list', {
@@ -102,7 +119,7 @@ export default class RemindersListCommand extends Command {
       const id = `**🔔 Reminder (ID: ${hexToNanoId(reminder._id)})**`;
       const channel = `**Channel** \n<#${reminder.channel}>`;
       const timeLeft = `**Time Left** \n${label(reminder.duration)}`;
-      const clanInfo = `**Clans** \n${clanNames.length ? `${escapeMarkdown(clanNames.join(', '))}` : 'Any'}`;
+      const clanInfo = clansField(clanNames);
       const message = `**Message** \n${filtered.length === 1 ? reminder.message : reminder.message.slice(0, 300)}`;
 
       if (args.compact_list) {
@@ -206,7 +223,7 @@ export default class RemindersListCommand extends Command {
       const id = `**🔔 Reminder (ID: ${hexToNanoId(reminder._id)})**`;
       const channel = `**Channel** \n<#${reminder.channel}>`;
       const timeLeft = `**Time Left** \n${label(reminder.duration)}`;
-      const clanInfo = `**Clans** \n${clanNames.length ? `${escapeMarkdown(clanNames.join(', '))}` : 'Any'}`;
+      const clanInfo = clansField(clanNames);
       const message = `**Message** \n${filtered.length === 1 ? reminder.message : reminder.message.slice(0, 300)}`;
 
       if (args.compact_list) {
@@ -302,7 +319,7 @@ export default class RemindersListCommand extends Command {
       const id = `**🔔 Reminder (ID: ${hexToNanoId(reminder._id)})**`;
       const channel = `**Channel** \n<#${reminder.channel}>`;
       const timeLeft = `**Time Left** \n${label(reminder.duration)}`;
-      const clanInfo = `**Clans** \n${clanNames.length ? `${escapeMarkdown(clanNames.join(', '))}` : 'Any'}`;
+      const clanInfo = clansField(clanNames);
       const message = `**Message** \n${filtered.length === 1 ? reminder.message : reminder.message.slice(0, 300)}`;
 
       if (args.compact_list) {

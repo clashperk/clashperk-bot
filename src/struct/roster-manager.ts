@@ -2057,8 +2057,11 @@ export class RosterManager {
       return null;
     }
 
+    // A webhook sends to a thread only with threadId. A forum itself would get a new post per change.
+    const channel = await this.client.util.fetchChannel(config.channelId);
+    if (channel?.isThreadOnly()) return null;
+
     const webhook = new WebhookClient(config.webhook);
-    const channel = this.client.util.getTextBasedChannel(config.channelId);
 
     try {
       return await webhook.send(
