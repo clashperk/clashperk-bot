@@ -38,6 +38,9 @@ export const TAG_REGEX = /^#?[0289CGJLOPQRUVY]+$/i;
 
 export const DISCORD_ID_REGEX = /^\d{17,19}/;
 
+/** Dashboard users who signed in without Discord have `u_…` IDs, which can't be mentioned. */
+export const isDiscordId = (userId: string) => /^\d{17,20}$/.test(userId);
+
 export const DISCORD_MENTION_REGEX = /<@!?(\d{17,19})>/;
 
 export const UNICODE_EMOJI_REGEX = /\p{Extended_Pictographic}/u;

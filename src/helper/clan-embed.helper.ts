@@ -1,4 +1,4 @@
-import { Collections, UNRANKED_CAPITAL_LEAGUE_ID } from '@app/constants';
+import { Collections, UNRANKED_CAPITAL_LEAGUE_ID, isDiscordId } from '@app/constants';
 import { APIClan } from 'clashofclans.js';
 import { EmbedBuilder } from 'discord.js';
 import { container } from 'tsyringe';
@@ -76,7 +76,7 @@ export const clanEmbedMaker = async (
         value: leaders
           .map((leader) => {
             const user = users.find((u) => u.tag === leader.tag);
-            return user
+            return user && isDiscordId(user.userId)
               ? `${EMOJIS.OWNER} <@${user.userId}> (${leader.name})`
               : `${EMOJIS.OWNER} ${leader.name}`;
           })

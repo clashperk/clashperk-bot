@@ -14,7 +14,7 @@ import { AnyBulkWriteOperation, ObjectId } from 'mongodb';
 import { title, unique } from 'radash';
 import { container } from 'tsyringe';
 import { Client } from '../struct/client.js';
-import { Collections, FeatureFlags, Settings, UNRANKED_TIER_ID } from './constants.js';
+import { Collections, FeatureFlags, Settings, UNRANKED_TIER_ID, isDiscordId } from './constants.js';
 import { Season, Util } from './toolkit.js';
 
 /** Absolute URL on the web dashboard, `DASHBOARD_URL` with https://app.clashperk.com as fallback. */
@@ -34,6 +34,10 @@ export const dashboardButton = (path: string, campaign: string, label = 'Open in
 /** `dashboardButton` on a row of its own. */
 export const dashboardRow = (...args: Parameters<typeof dashboardButton>) =>
   new ActionRowBuilder<ButtonBuilder>().addComponents(dashboardButton(...args));
+
+/** A mention, or nothing for a link without a Discord account. */
+export const userMention = (userId?: string | null) =>
+  userId && isDiscordId(userId) ? `<@${userId}>` : '';
 
 export const hexToNanoId = (hex: ObjectId) => {
   return hex.toHexString().slice(-5).toUpperCase();

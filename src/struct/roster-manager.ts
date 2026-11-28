@@ -31,6 +31,7 @@ import { EventEmitter } from 'node:events';
 import { parallel, unique } from 'radash';
 import { RosterCommandSortOptions } from '../util/command.options.js';
 import { EMOJIS, HOME_BASE_LEAGUES, TOWN_HALLS } from '../util/emojis.js';
+import { userMention } from '../util/helper.js';
 import { Util } from '../util/toolkit.js';
 import { Client } from './client.js';
 import Google, { CreateGoogleSheet, createGoogleSheet, updateGoogleSheet } from './google.js';
@@ -2006,9 +2007,7 @@ export class RosterManager {
       [
         `### ${label}`,
         //
-        members
-          .map((mem) => `\u200e${mem.name} (${mem.tag}) ${mem.userId ? `<@${mem.userId}>` : ''}`)
-          .join('\n')
+        members.map((mem) => `\u200e${mem.name} (${mem.tag}) ${userMention(mem.userId)}`).join('\n')
       ].join('\n')
     );
     if (action === RosterLog.CHANGE_GROUP) {
