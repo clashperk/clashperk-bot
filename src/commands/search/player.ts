@@ -1,4 +1,4 @@
-import { Collections } from '@app/constants';
+import { Collections, isDiscordId } from '@app/constants';
 import { APIPlayer } from 'clashofclans.js';
 import {
   ActionRowBuilder,
@@ -271,7 +271,7 @@ export default class PlayerCommand extends Command {
 
   private async getLinkedUser(tag: string) {
     const data = await this.client.db.collection(Collections.PLAYER_LINKS).findOne({ tag });
-    if (!data) return null;
+    if (!data || !isDiscordId(data.userId)) return null;
 
     return { mention: `<@${data.userId}>`, userId: data.userId };
   }

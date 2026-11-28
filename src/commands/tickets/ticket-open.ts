@@ -1,4 +1,4 @@
-import { Collections, PLAYER_LEAGUE_MAP } from '@app/constants';
+import { Collections, PLAYER_LEAGUE_MAP, isDiscordId } from '@app/constants';
 import {
   PlayerLinksEntity,
   TicketEntity,
@@ -1367,7 +1367,7 @@ export default class TicketOpenCommand extends Command {
     const link = await this.client.db
       .collection<PlayerLinksEntity>(Collections.PLAYER_LINKS)
       .findOne({ tag: leader.tag });
-    return { name: leader.name, userId: link?.userId ?? null };
+    return { name: leader.name, userId: link && isDiscordId(link.userId) ? link.userId : null };
   }
 
   /** Home village hero levels, e.g. "Barbarian King 95, Archer Queen 95". Null if the API fails. */

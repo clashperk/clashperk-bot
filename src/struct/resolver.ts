@@ -7,7 +7,8 @@ import {
   Settings,
   TAG_REGEX,
   UNRANKED_TIER_ID,
-  getHttpStatusText
+  getHttpStatusText,
+  isDiscordId
 } from '@app/constants';
 import { ClanStoresEntity, PlayerLinksEntity } from '@app/entities';
 import { APIClan, APIPlayer } from 'clashofclans.js';
@@ -260,15 +261,18 @@ export class Resolver {
       .find({ tag: { $in: players.map((player) => player.tag) } })
       .toArray();
 
-    const result = links.map((link) => {
-      return {
-        tag: link.tag,
-        userId: link.userId,
-        verified: link.verified,
-        username: link.username,
-        displayName: link.displayName || link.username
-      };
-    });
+    // Callers mention or fetch these users on Discord.
+    const result = links
+      .filter((link) => isDiscordId(link.userId))
+      .map((link) => {
+        return {
+          tag: link.tag,
+          userId: link.userId,
+          verified: link.verified,
+          username: link.username,
+          displayName: link.displayName || link.username
+        };
+      });
 
     return Object.fromEntries(result.map((link) => [link.tag, link]));
   }
@@ -282,7 +286,7 @@ export class Resolver {
     const link = await this.client.db
       .collection(Collections.PLAYER_LINKS)
       .findOne({ tag: playerTag });
-    if (!link) return null;
+    if (!link || !isDiscordId(link.userId)) return null;
     return this.client.users.fetch(link.userId).catch(() => null);
   }
 

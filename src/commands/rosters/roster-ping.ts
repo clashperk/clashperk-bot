@@ -2,7 +2,7 @@ import { Settings } from '@app/constants';
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CommandInteraction } from 'discord.js';
 import { ObjectId } from 'mongodb';
 import { Command } from '../../lib/handlers.js';
-import { nullsLastSortAlgo } from '../../util/helper.js';
+import { nullsLastSortAlgo, userMention } from '../../util/helper.js';
 import { createInteractionCollector } from '../../util/collectors.js';
 import { Util } from '../../util/toolkit.js';
 
@@ -71,7 +71,7 @@ export default class RosterPingCommand extends Command {
       const result = groupMembers.map((member) => {
         return {
           name: `${member.name} (${member.tag})`,
-          mention: `${member.userId ? `<@${member.userId}>` : ''}`
+          mention: userMention(member.userId)
         };
       });
 
@@ -93,7 +93,7 @@ export default class RosterPingCommand extends Command {
       const result = members.map((member) => {
         return {
           name: `${member.name} (${member.tag})`,
-          mention: `${member.userId ? `<@${member.userId}>` : ''}`
+          mention: userMention(member.userId)
         };
       });
       return this.followUp(interaction, header, result, compact);
@@ -110,7 +110,7 @@ export default class RosterPingCommand extends Command {
       const result = missingMembers.map((member) => {
         return {
           name: `${member.name} (${member.tag})`,
-          mention: `${member.userId ? `<@${member.userId}>` : ''}`
+          mention: userMention(member.userId)
         };
       });
       return this.followUp(interaction, header, result, compact);
@@ -119,7 +119,7 @@ export default class RosterPingCommand extends Command {
     const result = updated.members.map((member) => {
       return {
         name: `${member.name} (${member.tag})`,
-        mention: `${member.userId ? `<@${member.userId}>` : ''}`
+        mention: userMention(member.userId)
       };
     });
     return this.followUp(interaction, header, result, compact);
