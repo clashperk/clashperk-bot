@@ -178,7 +178,7 @@ export default class LootHistoryCommand extends Command {
         rows: chunks.map((r) => [
           r.name,
           r.tag,
-          ...seasonIds.map((id) => r.records[id]?.darkLoot ?? 0)
+          ...seasonIds.map((id) => r.records[id]?.goldLoot ?? 0)
         ])
       },
       {
