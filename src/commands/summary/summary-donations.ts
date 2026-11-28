@@ -123,10 +123,22 @@ export default class DonationSummaryCommand extends Command {
             default: args.sort_by?.includes('difference')
           },
           {
+            label: 'Donation Ratio',
+            description: 'Donation ratio',
+            value: 'ratio',
+            default: args.sort_by?.includes('ratio')
+          },
+          {
             label: 'Town-Hall Level',
             description: 'Sorted by Town-Hall level',
             value: 'townHallLevel',
             default: args.sort_by?.includes('townHallLevel')
+          },
+          {
+            label: 'Donations + Received',
+            description: 'Sum of donations and donations received',
+            value: 'total',
+            default: args.sort_by?.includes('total')
           }
         ])
     );
@@ -159,12 +171,43 @@ export default class DonationSummaryCommand extends Command {
     });
   }
 
-  private donation(num: number, space: number) {
-    return num.toString().padStart(space, ' ');
-  }
-
   private predict(num: number) {
     return num > 999999 ? 7 : num > 99999 ? 6 : 5;
+  }
+
+  private columns(sortBy: SortType[] | undefined, rows: DonationStats[]) {
+    const width = (values: (number | string)[], min: number) =>
+      Math.max(min, ...values.map((value) => value.toString().length));
+    const column = (label: string, value: (row: DonationStats) => number | string) => ({
+      label,
+      value,
+      width: width(rows.map(value), label.length)
+    });
+
+    const ratio = column('RATIO', (row) => row.ratio);
+    if (sortBy?.includes('ratio')) return [column('DON', (row) => row.donations), ratio];
+    if (sortBy?.includes('difference')) return [column('DIFF', (row) => row.difference), ratio];
+    if (sortBy?.includes('total')) return [column('D+R', (row) => row.total), ratio];
+
+    return [
+      {
+        ...column('DON', (row) => row.donations),
+        width: this.predict(Math.max(...rows.map((row) => row.donations)))
+      },
+      {
+        ...column('REC', (row) => row.donationsReceived),
+        width: this.predict(Math.max(...rows.map((row) => row.donationsReceived)))
+      }
+    ];
+  }
+
+  private formatColumns(
+    columns: ReturnType<DonationSummaryCommand['columns']>,
+    row?: DonationStats
+  ) {
+    return columns
+      .map((col) => (row ? col.value(row) : col.label).toString().padStart(col.width, ' '))
+      .join(' ');
   }
 
   private async clanDonations(
@@ -197,7 +240,7 @@ export default class DonationSummaryCommand extends Command {
 
     const aggregated = await this.client.db
       .collection(Collections.PLAYER_SEASONS)
-      .aggregate<Aggregated>([
+      .aggregate<DonationStats>([
         {
           $match: {
             season: seasonId,
@@ -257,27 +300,22 @@ export default class DonationSummaryCommand extends Command {
             }
           }
         },
+        ...ratioAndTotal,
         ...orders
       ])
       .toArray();
 
-    const [clanDp, clanRp] = [
-      this.predict(Math.max(...aggregated.map((m) => m.donations))),
-      this.predict(Math.max(...aggregated.map((m) => m.donationsReceived)))
-    ];
+    const columns = this.columns(sortBy, aggregated);
 
     if (aggregated.length) {
       embed.setDescription(
         [
           '**Top Clans**',
-          `${EMOJIS.HASH} \`\u200e${'DON'.padStart(clanDp, ' ')} ${'REC'.padStart(clanRp, ' ')}  ${'CLAN'.padEnd(15, ' ')}\u200f\``,
+          `${EMOJIS.HASH} \`\u200e${this.formatColumns(columns)}  ${'CLAN'.padEnd(15, ' ')}\u200f\``,
           Util.splitMessage(
             aggregated
               .map((clan, n) => {
-                return `${BLUE_NUMBERS[++n]} \`\u200e${this.donation(clan.donations, clanDp)} ${this.donation(
-                  clan.donationsReceived,
-                  clanRp
-                )}  ${Util.escapeBackTick(clan.name).padEnd(15, ' ')}\u200f\``;
+                return `${BLUE_NUMBERS[++n]} \`\u200e${this.formatColumns(columns, clan)}  ${Util.escapeBackTick(clan.name).padEnd(15, ' ')}\u200f\``;
               })
               .join('\n'),
             { maxLength: 4000 }
@@ -309,14 +347,7 @@ export default class DonationSummaryCommand extends Command {
 
     let members = await this.client.db
       .collection(Collections.PLAYER_SEASONS)
-      .aggregate<{
-        name: string;
-        tag: string;
-        donations: number;
-        donationsReceived: number;
-        townHallLevel: number;
-        difference: number;
-      }>([
+      .aggregate<DonationStats & { townHallLevel: number }>([
         {
           $match: {
             __clans: { $in: clans.map((clan) => clan.tag) },
@@ -346,9 +377,6 @@ export default class DonationSummaryCommand extends Command {
           }
         },
         {
-          $set: { difference: { $subtract: ['$donations', '$donationsReceived'] } }
-        },
-        {
           $match: { clanTag: { $in: clans.map((clan) => clan.tag) } }
         },
         {
@@ -371,6 +399,8 @@ export default class DonationSummaryCommand extends Command {
             }
           }
         },
+        { $set: { difference: { $subtract: ['$donations', '$donationsReceived'] } } },
+        ...ratioAndTotal,
         ...orders,
         {
           $limit: 150
@@ -381,10 +411,7 @@ export default class DonationSummaryCommand extends Command {
     const playerTags = clans.flatMap((clan) => clan.memberList.map((m) => m.tag));
     members = members.filter((m) => playerTags.includes(m.tag)).slice(0, 100);
 
-    const [memDp, memRp] = [
-      this.predict(Math.max(...members.map((m) => m.donations))),
-      this.predict(Math.max(...members.map((m) => m.donationsReceived)))
-    ];
+    const columns = this.columns(sortBy, members);
 
     const embed = new EmbedBuilder()
       .setColor(this.client.embed(interaction))
@@ -395,16 +422,14 @@ export default class DonationSummaryCommand extends Command {
     if (members.length) {
       embed.setDescription(
         [
-          `${EMOJIS.HASH} \u200e\`${'DON'.padStart(memDp, ' ')} ${'REC'.padStart(memRp, ' ')}  ${'PLAYER'.padEnd(15, ' ')}\u200f\``,
+          `${EMOJIS.HASH} \u200e\`${this.formatColumns(columns)}  ${'PLAYER'.padEnd(15, ' ')}\u200f\``,
           Util.splitMessage(
             members
               .map((mem, i) => {
                 const icon = (isTH ? ORANGE_NUMBERS : BLUE_NUMBERS)[
                   isTH ? mem.townHallLevel : i + 1
                 ];
-                const don = this.donation(mem.donations, memDp);
-                const rec = this.donation(mem.donationsReceived, memRp);
-                return `${icon} \`\u200e${don} ${rec}  ${Util.escapeBackTick(mem.name).padEnd(15, ' ')}\u200f\``;
+                return `${icon} \`\u200e${this.formatColumns(columns, mem)}  ${Util.escapeBackTick(mem.name).padEnd(15, ' ')}\u200f\``;
               })
               .join('\n'),
             { maxLength: 4000 }
@@ -416,20 +441,31 @@ export default class DonationSummaryCommand extends Command {
   }
 }
 
-interface Aggregated {
+interface DonationStats {
   tag: string;
   name: string;
   donations: number;
   donationsReceived: number;
   difference: number;
-  // members: {
-  // 	tag: string;
-  // 	name: string;
-  // 	clanTag: string;
-  // 	donations: number;
-  // 	donationsReceived: number;
-  // }[];
+  ratio: number;
+  total: number;
 }
 
-type SortType = 'donations' | 'donationsReceived' | 'difference' | 'townHallLevel';
+const ratioAndTotal = [
+  {
+    $set: {
+      ratio: {
+        $cond: [
+          { $eq: ['$donationsReceived', 0] },
+          0,
+          { $round: [{ $divide: ['$donations', '$donationsReceived'] }, 2] }
+        ]
+      },
+      total: { $add: ['$donations', '$donationsReceived'] }
+    }
+  }
+];
+
+type SortType =
+  'donations' | 'donationsReceived' | 'difference' | 'ratio' | 'townHallLevel' | 'total';
 type OrderType = 'asc' | 'desc';
